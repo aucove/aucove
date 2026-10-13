@@ -15,6 +15,8 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 ### Fixed
 
 - GitHub adapter: when a branch or tag write is rejected or its response is lost, the confirmation read is repeated after 0.5 and 1 s if GitHub still shows the previous state of the ref, since GitHub can serve it for a moment after a write. Before, claiming a task that someone had claimed a moment earlier could fail with a validation error instead of reporting that the task is already claimed, deleting a branch that was just deleted could fail instead of reporting that it did not exist, and an update whose response was lost could fail as a timeout although it was applied.
+- The installation commands that `doctor` and the `E_CONFIG_CORE_MISMATCH` error suggest apply the `requirements-lock.txt` of the release, like the README, and `aucove --help` no longer says that the project must use LaTeX.
+- The README no longer asks for `--force` to add the `evidence` extra to an existing installation: `uv tool install` adds it, or changes the version, without it.
 - The PyPI page shows the logo and working links: the release rewrites the relative paths of the README, which is the package description, as absolute links pinned to the release tag. The README in the repository does not change.
 
 ## [0.1.0rc1] - 2026-10-12

@@ -3,7 +3,7 @@
 
 [cli.help]
 usage_prefix = "uso: "
-description = "Operaciones del núcleo sobre un proyecto de investigación en LaTeX y git."
+description = "Operaciones del núcleo sobre un proyecto de investigación en git, con LaTeX opcional."
 epilog = "Ayuda de cada operación: {prog} <operación> --help"
 commands = "operaciones"
 globals = "opciones globales"

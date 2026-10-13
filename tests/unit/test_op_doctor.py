@@ -1128,6 +1128,7 @@ def test_python_launcher_missing_warns_with_install_command(tmp_path: Path, repo
     assert python["status"] == "warn"
     fix = str(python["fix"])
     assert f"uv tool install \"{_meta.NAME}=={_meta.__version__}\"" in fix and "uv tool update-shell" in fix  # core_pin; REQ-ARCH-33
+    assert "--constraints requirements-lock.txt" in fix  # con el lock de la Release (10-seguridad REQ-SEC-45)
 
 
 @pytest.mark.skipif(os.name != "nt", reason="solo Windows exige un .exe")

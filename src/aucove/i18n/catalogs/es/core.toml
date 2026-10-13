@@ -20,7 +20,7 @@ hint = "Actualiza el núcleo o pide al responsable que migre la convención."
 
 [error.E_CONFIG_CORE_MISMATCH]
 message = "La versión instalada del núcleo no satisface `project.yaml: core`."
-hint = "Instala la versión fijada en `project.yaml: core_pin` con `uv tool install \"aucove==<core_pin>\"`."
+hint = "Instala la versión fijada en `project.yaml: core_pin` con `uv tool install \"aucove==<core_pin>\" --constraints requirements-lock.txt`, con el `requirements-lock.txt` de la Release de esa versión."
 
 [error.E_CONFIG_GIT_UNAVAILABLE]
 message = "No se puede usar git: falta, su versión es insuficiente o la raíz no es un repositorio."

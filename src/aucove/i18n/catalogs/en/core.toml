@@ -20,7 +20,7 @@ hint = "Update the core or ask the lead to migrate the convention."
 
 [error.E_CONFIG_CORE_MISMATCH]
 message = "The installed core version does not satisfy `project.yaml: core`."
-hint = "Install the version pinned in `project.yaml: core_pin` with `uv tool install \"aucove==<core_pin>\"`."
+hint = "Install the version pinned in `project.yaml: core_pin` with `uv tool install \"aucove==<core_pin>\" --constraints requirements-lock.txt`, with the `requirements-lock.txt` of that version's Release."
 
 [error.E_CONFIG_GIT_UNAVAILABLE]
 message = "Git cannot be used: it is missing, its version is too old, or the root is not a repository."

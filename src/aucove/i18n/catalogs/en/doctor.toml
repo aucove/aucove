@@ -14,7 +14,7 @@ warn_launcher = "Python {version}, but the `{name}` launcher is not on the `PATH
 warn_not_exe = "Python {version}, but the `{name}` launcher is not an `.exe`: {launcher}."
 warn_relative_path = "Also, the `PATH` has entries that depend on the current directory ({entries}): Claude Code resolves them against the project folder, so it would run a `{name}` placed there instead of the installed one."
 fix_python = "Install Python 3.11 or later."
-fix_launcher = "Install the core with `uv tool install \"{name}=={pin}\"`, run `uv tool update-shell` and restart the terminal."
+fix_launcher = "Install the core with `uv tool install \"{name}=={pin}\" --constraints requirements-lock.txt`, with the `requirements-lock.txt` of that version's Release; then run `uv tool update-shell` and restart the terminal."
 fix_relative_path = "Remove those entries from the `PATH` or replace them with absolute paths, then restart the terminal and Claude Code."
 
 [doctor.git]

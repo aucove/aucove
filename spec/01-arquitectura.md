@@ -425,7 +425,7 @@ La semántica de referencia de `domain/compat.py` es la de `packaging` en la ver
 
 | Comando | `level == "error"` | `level == "warning"` |
 |---|---|---|
-| `doctor` | nunca aborta: reporta el chequeo fallido con el comando exacto `uv tool install "aucove==<core_pin>"` | lo reporta |
+| `doctor` | nunca aborta: reporta el chequeo fallido con el comando exacto de §5.1 para `core_pin`, `uv tool install "aucove==<core_pin>" --constraints requirements-lock.txt`, con el `requirements-lock.txt` de esa Release (10-seguridad REQ-SEC-45) | lo reporta |
 | Solo lectura (`status`, `context`, `check-path` por CLI, `review list`, `review show`, `metrics`) | corre y agrega una advertencia (formato: 05-operaciones) | advertencia |
 | `init` sobre un repo recién creado desde la plantilla | solo exige que la convención esté soportada; reescribe `core` y `core_pin` (REQ-ARCH-44) | se ejecuta |
 | `validate` | falla con el código de §6.3 (en CI la versión es siempre `core_pin`) | advertencia |
@@ -565,7 +565,7 @@ Ubicación: `src/aucove/i18n/catalogs/es.toml` y `en.toml`. Las claves son rutas
 ```toml
 # es.toml
 [compat]
-core_mismatch = "El núcleo instalado ({installed}) no cumple `core: {required}` de `project.yaml`. Instala la versión fijada: `uv tool install \"aucove=={pin}\"`."
+core_mismatch = "El núcleo instalado ({installed}) no cumple `core: {required}` de `project.yaml`. Instala la versión fijada: `uv tool install \"aucove=={pin}\" --constraints requirements-lock.txt`."
 
 [net]
 stale.one = "Datos de la forja de hace {n} hora (sin conexión)."
@@ -575,7 +575,7 @@ stale.other = "Datos de la forja de hace {n} horas (sin conexión)."
 ```toml
 # en.toml
 [compat]
-core_mismatch = "The installed core ({installed}) does not satisfy `core: {required}` in `project.yaml`. Install the pinned version: `uv tool install \"aucove=={pin}\"`."
+core_mismatch = "The installed core ({installed}) does not satisfy `core: {required}` in `project.yaml`. Install the pinned version: `uv tool install \"aucove=={pin}\" --constraints requirements-lock.txt`."
 
 [net]
 stale.one = "Forge data from {n} hour ago (offline)."

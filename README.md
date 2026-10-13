@@ -108,7 +108,7 @@ uv tool update-shell
 
 Then restart the terminal and your agent. `aucove doctor` checks the installation, the GitHub token and the project, and says what to fix.
 
-To verify evidence seals on your computer (`aucove evidence verify`), install it with the `evidence` extra: in the `uv tool install` command, write `"aucove[evidence]==0.1.0rc1"`, and add `--force` if aucove is already installed. CI seals every submission without it.
+To verify evidence seals on your computer (`aucove evidence verify`), install it with the `evidence` extra: in the `uv tool install` command, write `"aucove[evidence]==0.1.0rc1"`. If aucove is already installed, the same command adds the extra. CI seals every submission without it.
 
 ### Getting started
 
@@ -289,7 +289,7 @@ uv tool update-shell
 
 Después, reinicia la terminal y tu agente. `aucove doctor` comprueba la instalación, el token de GitHub y el proyecto, y dice qué arreglar.
 
-Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc1"` y agrega `--force` si aucove ya estaba instalado. El CI sella cada entrega sin él.
+Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc1"`. Si aucove ya estaba instalado, el mismo comando le agrega el extra. El CI sella cada entrega sin él.
 
 ### Primeros pasos
 

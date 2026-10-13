@@ -452,7 +452,7 @@ jobs:
 ### 6.5 Política de actualización
 
 - **REQ-SEC-51.** Los repos del framework DEBEN tener Dependabot para `github-actions` y para el ecosistema de Python, con `cooldown.default-days` ≥ 7 para las actualizaciones de versión (Dependabot no aplica cooldown a las de seguridad).
-- Los proyectos actualizan el núcleo reinstalando la versión fijada: `uv tool install "aucove==<nuevo core_pin>"`. La documentación NO DEBE indicar `uv tool upgrade aucove`, que respeta la restricción `==` original. `aucove upgrade` está reservado.
+- Los proyectos actualizan el núcleo reinstalando la versión fijada con su lock: `uv tool install "aucove==<nuevo core_pin>" --constraints requirements-lock.txt`, con el `requirements-lock.txt` de esa Release (REQ-SEC-45). La documentación NO DEBE indicar `uv tool upgrade aucove`, que respeta la restricción `==` original. `aucove upgrade` está reservado.
 - **REQ-SEC-53.** `aucove doctor` DEBERÍA comparar la versión instalada del núcleo con la versión mínima segura del último aviso de seguridad del framework (§11) cuando tenga red, y avisar si es inferior (Q-SEC-6).
 
 ## 7. LaTeX como ejecución de código
