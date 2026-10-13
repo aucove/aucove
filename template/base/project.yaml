@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://aucove.invalid/schemas/project/v1
+# Configuración del proyecto (clase lead). Claves y valores por defecto: 03-esquemas §3.
+# `aucove init` reescribe core, core_pin, name, title, language, format, disclosure y forge.repo,
+# y escribe licenses (11-trazabilidad §7.3).
+convention: "0.1"
+core: "{{var:core}}"
+core_pin: "{{var:core_pin}}"
+name: {{var:name}}
+title: "{{var:title}}"
+language: {{var:language}}
+format: latex
+disclosure: milestones        # private | milestones | open (open exige data_policy.level: public)
+forge:
+  type: github
+  repo: {{var:forge_repo}}
+  base_branch: main
+build:
+  engine: pdflatex            # pdflatex | xelatex | lualatex
+  main: tex/main.tex
+  image: registry.gitlab.com/islandoftex/images/texlive:TL2026-2026-09-20-full@sha256:7334b00bf8e7a0996f7ddd65482363aaf7711d372e569f3ea78509619e3083ff
+  bibliography: biber         # biber | bibtex | none
+  bib_files:
+    - bib/references.bib
+  shell_escape: disabled      # disabled | restricted
+  compile_on_submit: if_available   # never | if_available | always
+  timeout_minutes: 10         # de 1 a 12
+limits:
+  max_active_claims: 3
+  claim_expiry_days: 14
+  expiry_warning_days: 3
+  handoff_hold_days: 7
+  exclusive_sections: false
+context:
+  max_chars: 8000
+  recent_decisions: 5
+coordinator:
+  require_direction_ack: false
+review:
+  sla_hours: 72
+data_policy:
+  level: internal             # public | internal
+  # Sin require_commercial, vale true mientras disclosure no sea open: no se admiten
+  # cuentas de IA de consumo. Escribir false lo permite y se registra en una decisión.
+  human_subjects: false       # true exige ethics_ref
+  ethics_ref: null
+ci:
+  pdf_retention_days: 14
+  latexdiff: false

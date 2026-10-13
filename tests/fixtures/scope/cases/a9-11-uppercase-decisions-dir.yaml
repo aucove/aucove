@@ -1,0 +1,17 @@
+id: a9-11-uppercase-decisions-dir
+description: >
+  Variante de mayúsculas: memory/Decisions/ no es la carpeta de decisiones (clase
+  append), así que la ruta cae en la clase lead.
+covers: [a9:case-variants]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: memory/Decisions/2026-09-30-17-sampling.md
+    content: |
+      Decisión en una carpeta con otra grafía.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_LEAD_ONLY_PATH]
+  paths: [memory/Decisions/2026-09-30-17-sampling.md]

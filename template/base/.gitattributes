@@ -1,0 +1,11 @@
+# .gitattributes (clase lead). Todas las líneas son obligatorias (conv.gitattributes.required).
+* text=auto eol=lf
+*.tex   text diff=tex
+*.bib   text diff=bibtex
+*.md    text diff=markdown
+*.py    text diff=python
+*.ipynb text eol=lf filter=nbstripout diff=ipynb
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary

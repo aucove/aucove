@@ -1,0 +1,24 @@
+id: a9-14-backslash-lead-files
+description: >
+  Variante de barras hacia archivos lead: '.github\workflows\build.yml' y
+  'tex\notation.tex' son, en git, nombres de la raíz con '\' (no se leen con '/'), y
+  scope los rechaza como rutas inválidas (02 §3.1, REQ-CONV-7).
+covers: [a9:backslash-variants]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: '.github\workflows\build.yml'
+    content: |
+      name: build
+      on: [push]
+      jobs: {}
+  - status: added
+    path: 'tex\notation.tex'
+    content: |
+      % Notación con otra ruta.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_OUTSIDE_REPO]
+  mentions: ['.github\workflows\build.yml', 'tex\notation.tex']

@@ -1,0 +1,17 @@
+id: a9-04-other-task-note-new
+description: La investigadora de la tarea 17 crea la nota de otra tarea (16).
+covers: [a9:other-task-note]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: memory/notes/task-16.md
+    content: |
+      # Tarea 16
+
+      Nota creada desde otra tarea.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_OUTSIDE_TASK]
+  paths: [memory/notes/task-16.md]

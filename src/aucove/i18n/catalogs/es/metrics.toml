@@ -1,0 +1,29 @@
+# Textos de `metrics` (05-operaciones §9.9; 12-mvp §5.2 y §5.3).
+# Paridad con en/metrics.toml: mismas claves, marcadores y fragmentos entre acentos graves.
+
+[metrics.salt]
+message = "Falta la sal de la seudonimización: `{variable}` no está definida o no tiene al menos 64 caracteres hexadecimales, en número par."
+hint = "Define `{variable}` con la sal común del piloto (64 hexadecimales o más) o usa `--no-pseudonymize` para exportar los logins tal cual."
+
+[metrics.text]
+range = "Métricas del {since} al {until}, en horas de calendario:"
+range_all = "Métricas hasta el {until}, en horas de calendario:"
+line = "  {id} {label}: {value} {unit}"
+
+[metrics.label]
+M1 = "tiempo de entrega, mediana"
+M2_median = "tiempo hasta la primera revisión, mediana"
+M2_p90 = "tiempo hasta la primera revisión, p90"
+M3 = "revisiones con cambios pedidos por tarea integrada, media"
+M6 = "proporción de falsas alarmas de solapamiento"
+M6_missed = "solapamientos no detectados"
+M7 = "tareas con `ack:overlap`"
+M8 = "negativas de las guardas por entrega, mediana"
+M11 = "integraciones sin aprobación válida"
+M12_count = "Issues de rama base rota"
+M12_median = "tiempo hasta cerrar la rama base rota, mediana"
+
+[metrics.unit]
+h = "h"
+count = ""
+ratio = ""

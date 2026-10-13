@@ -1,0 +1,18 @@
+id: ci-15-state-proposed
+description: >
+  La tarea sigue propuesta (nadie del equipo responsable quitó state:proposed), aunque
+  la rama y el reclamo existen.
+covers: [ci-4.2:state-proposed]
+task: {number: 17, claimant: carla, sections: [methods], state: proposed}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Trabajo sobre una tarea no aceptada.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_STATE_INVALID_TRANSITION]
+  mentions: [proposed]

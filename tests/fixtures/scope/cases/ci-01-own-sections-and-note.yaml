@@ -1,0 +1,27 @@
+id: ci-01-own-sections-and-note
+description: >
+  Investigadora en task/17, con reclamo propio, que toca solo su sección declarada
+  (methods) y la nota de su tarea.
+covers: [ci-4.2:own-sections, a9:own-section]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Texto de los métodos, con la fuente de datos.
+  - status: added
+    path: sections/methods/data.tex
+    content: |
+      \subsection{Datos}
+      Dos olas de la encuesta.
+  - status: added
+    path: memory/notes/task-17.md
+    content: |
+      # Tarea 17
+
+      Nota de la entrega.
+expect:
+  valid: true
+  checks: {scope: pass}

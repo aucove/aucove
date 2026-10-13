@@ -1,0 +1,15 @@
+name: editor-review-trigger
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+permissions: {}
+jobs:
+  trigger:
+    # Corre la definición del merge commit del PR, que el PR puede cambiar: no tiene permisos,
+    # secretos ni pasos que lean el PR. Solo dispara el workflow_run de editor-review.yml, que
+    # decide con la definición de la rama por defecto (REQ-CI-60).
+    runs-on: ubuntu-slim
+    timeout-minutes: 1
+    permissions: {}
+    steps:
+      - run: exit 0

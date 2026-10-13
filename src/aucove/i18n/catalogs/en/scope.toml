@@ -1,0 +1,93 @@
+# Catalog of the scope area, in English (00-marco D-32 f).
+# Texts of the validate scope rule (09-ci §4.2) and of the task Issue body findings
+# (03-esquemas §8.3). The placeholders of finding.<code>.message are the ones in CODES
+# in ops/rules/scope.py.
+
+[scope.reason]
+not_task_branch = "it must have the form task/<n>"
+fork = "the PR comes from a fork, and the scope check only accepts branches of the same repository"
+no_task = "there is no task Issue #{task}"
+
+[scope.claim]
+author = "someone else opened the PR and the claim belongs to {claimant}"
+author_unclaimed = "the task has no identifiable claimant"
+push = "pushed to the branch {branch}, which only {claimant} may move"
+unknown_actor = "(unknown actor)"
+
+[scope.body]
+repeated_field = "the field {field} is repeated (line {line})"
+
+[scope.unavailable]
+mode = "the rule only applies in pr mode"
+policy = "the base branch policy is missing"
+pr = "the PR data is missing"
+forge = "forge access is missing"
+forge_error = "the forge did not respond while reading the task ({kind})"
+head_mismatch = "the checked tree ({tree}) is not the current PR head ({head})"
+too_many_files = "the PR changes {limit} files or more and the API lists no more; split the change into several PRs"
+activity = "the activity API of the branch {branch} is not available"
+missing_mode = "{file} is not in the head tree (git ls-tree)"
+check_failed = "{file} could not be evaluated"
+
+[finding.E_PERM_OUTSIDE_REPO]
+message = "The path {file} is not valid: it is outside the repository, is under .git/, contains a backslash, or uses a name that Windows cannot extract (CON, PRN, AUX, NUL, COM1-9, LPT1-9, a trailing dot or space, <>:\"|?*, or a short name such as GIT~1)."
+hint = "Work only with project paths and separate folders with /: in git, a \\ is part of the file name. If Windows does not accept the name, rename the file (for example, auxiliary.tex instead of aux.tex): with it, nobody could check out the repository on Windows."
+
+[finding.E_PERM_SYMLINK]
+message = "{file} is a symbolic link, which is not allowed."
+hint = "Use the real path of the file; symbolic links are not allowed."
+
+[finding.E_PERM_LOCAL_PATH]
+message = "{file} is local configuration (local class) and is not versioned."
+hint = "Those files are not edited from a task."
+
+[finding.E_PERM_GENERATED_PATH]
+message = "{file} is a generated file: only the lead or the deputy change it, and it must be identical to the regeneration."
+hint = "Change the source and regenerate with `aucove sync-roles`."
+
+[finding.E_PERM_APPEND_ONLY]
+message = "{file} already exists on the base branch and is append-only: it is neither modified nor deleted."
+hint = "Create a new decision with `supersedes`."
+
+[finding.E_PERM_LEAD_ONLY_PATH]
+message = "{file} is a lead file (lead class)."
+hint = "Only the lead modifies it; use `aucove direction propose`."
+
+[finding.E_PERM_EDITOR_ONLY_PATH]
+message = "{file} is a file of the article editor (editor class)."
+hint = "Only the article editor modifies it; ask them in the PR review."
+
+[finding.E_PERM_OUTSIDE_TASK]
+message = "{file} is outside what task #{task} declares."
+hint = "Ask for the task to be extended or create another one."
+
+[finding.E_PERM_SECTION_NOT_OWNED]
+message = "{file} is in the part {section}, owned by {owner}."
+hint = "Coordinate with the owner or propose a task for them."
+
+[finding.E_PERM_NOT_A_MEMBER]
+message = "{login} is not in the roles.yaml of the base branch."
+hint = "Ask the lead to add you to roles.yaml."
+
+[finding.E_STATE_NOT_ON_TASK_BRANCH]
+message = "The PR head branch ({branch}) is not a valid task branch: {reason}."
+hint = "Claim a task with `aucove claim <n>` or propose one with `aucove task propose`."
+
+[finding.E_CLAIM_NOT_HELD]
+message = "{login} does not hold the claim on task #{task}: {reason}."
+hint = "Only the person who claimed the task opens its PR and pushes to its branch; claim it with `aucove claim <n>` or work on one of your tasks."
+
+[finding.E_STATE_INVALID_TRANSITION]
+message = "Task #{task} is in the state {state}, which does not allow merging changes."
+hint = "Check `aucove status --task <n>`: only claimed, current tasks are merged."
+
+[finding.E_VALIDATION_TASK_BODY]
+message = "The body of Issue #{task} is not valid: {reason}."
+hint = "Fix the Issue with the task form fields, without repeating headings."
+
+[finding.W_VALIDATION_TASK_UNKNOWN_FIELD]
+message = "The body of Issue #{task} has text before the first form field, and it is ignored."
+
+[finding.W_VALIDATION_TASK_NO_SECTIONS]
+message = "Task #{task} declares no parts."
+hint = "A task without parts cannot modify any part."

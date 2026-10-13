@@ -1,0 +1,16 @@
+# Ejemplo de 02-convencion §6.4 (el crédito va sin el signo de copyright).
+version: 1
+outputs:
+  - path: figures/sample-sizes.pdf      # relativa a la carpeta de la sección
+    kind: figure                        # figure | table | data
+    generator: analysis/sample_sizes.py # ruta en analysis/, o "manual", o "external"
+    inputs:
+      - dataset: school-survey          # id de data/README.md
+      - path: analysis/derived/counts.csv
+  - path: figures/flowchart.pdf
+    kind: figure
+    generator: manual
+  - path: figures/map.png
+    kind: figure
+    generator: external
+    credit: "OpenStreetMap contributors, ODbL"

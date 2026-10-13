@@ -1,0 +1,24 @@
+% tex/main.tex (clase editor). Solo incluye archivos: 02-convencion §4.1.
+% Cada sección del artículo es un archivo de tex/outline/, que incluye sus partes (§4.1.1).
+\documentclass[11pt,a4paper]{article}
+\input{preamble}
+\input{notation}
+\addbibresource{../bib/references.bib}
+\addbibresource{../sections/introduction/pending.bib}
+\addbibresource{../sections/background/pending.bib}
+\addbibresource{../sections/theory/pending.bib}
+\addbibresource{../sections/methodology/pending.bib}
+\addbibresource{../sections/experiments/pending.bib}
+\addbibresource{../sections/results/pending.bib}
+\addbibresource{../sections/conclusions/pending.bib}
+\begin{document}
+\maketitle
+\input{outline/introduction}
+\input{outline/background}
+\input{outline/theory}
+\input{outline/methodology}
+\input{outline/experiments}
+\input{outline/results}
+\input{outline/conclusions}
+\printbibliography
+\end{document}

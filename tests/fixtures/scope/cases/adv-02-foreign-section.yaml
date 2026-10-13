@@ -1,0 +1,19 @@
+id: adv-02-foreign-section
+description: >
+  Humo en el perfil advisory: una sección ajena deja el check en rojo igual que en
+  enforced.
+covers: [advisory:fail]
+profile: advisory
+task: {number: 17, claimant: carla, sections: [methods, results]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/results/results.tex
+    content: |
+      \section{Resultados}
+      Cambio en una sección ajena en un repositorio advisory.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_SECTION_NOT_OWNED]
+  paths: [sections/results/results.tex]

@@ -1,0 +1,342 @@
+# Tabla de expansión de 02-convencion §2.2 (00-marco D-35 j y D-36; 12-mvp REQ-MVP-4).
+#
+# Cada ítem entre acentos graves de la columna «Ruta» de 02 §2.2 aparece aquí una sola vez
+# (clave spec, escrita igual que en la tabla). tools/gen_template_manifest.py lo comprueba contra
+# la spec y produce tests/fixtures/template-manifest.txt y src/aucove/_data/required-paths.json.
+#
+# - in_template: origen con T en 02 §2.2, o generado por D-35 j (CODEOWNERS y task.yml, que la
+#   plantilla trae generados desde su roles.yaml de ejemplo; amendment = "D-35").
+# - required: lo exige conv.tree.missing. LICENSES/** no, porque init elige las licencias
+#   (11-trazabilidad §7.3); los ítems que no vienen en la plantilla, tampoco, salvo los que solo
+#   existen con otro formato (formats).
+# - paths: rutas concretas con su hito (columna «Hito» de 12-mvp §1.2). Los workflows van por
+#   archivo según 09-ci §2 y las licencias según 11-trazabilidad §7.2. <id> se expande con cada
+#   parte de la plantilla (sections_example; 00-marco D-55) en el manifiesto y es {id} en
+#   required-paths.json.
+# - glob: patrón completo cuando la celda escribe una ruta relativa a la anterior («tables/**»).
+# - require_dir: la regla exige la carpeta (per_section_dirs) y no el .gitkeep que la mantiene.
+# - milestone del ítem: solo en los que aún no tienen rutas concretas (skills, H4).
+# - early: la ruta llegó a la plantilla antes que el resto de su hito, así que ya va en el
+#   manifiesto del hito anterior. Se quita cuando milestone pasa a ese hito.
+# - formats de una ruta: un subconjunto de los del ítem, para una sola ruta (los workflows del
+#   editor del artículo solo existen con format: latex, 09-ci REQ-CI-57).
+# - formats: formatos de project.yaml en los que el ítem existe y se exige (D-43; D-36 enmendada);
+#   sin la clave, todos. La plantilla publicada es la variante latex (REQ-CONV-1), así que
+#   in_template habla de ella; un ítem solo de format: none (in_template = false) está en el render
+#   none (01-arquitectura REQ-ARCH-100) y sus rutas van en required-paths.json con su filtro.
+#
+# 12-mvp §1.2 no asigna hito a README.md, .gitattributes ni data/README.md: se toman de H2, porque
+# la plantilla de H2 los trae. «.github/ISSUE_TEMPLATE/**» dice «H2 / H3»: los tres archivos
+# ya están en H2.
+
+milestone = "H3"
+sections_example = ["introduction", "background", "theory", "methodology", "experiments", "results", "conclusions"]
+
+[[item]]
+spec = "README.md"
+in_template = true
+required = true
+paths = [{ path = "README.md", milestone = "H2" }]
+
+[[item]]
+spec = "AGENTS.md"
+in_template = true
+required = true
+paths = [{ path = "AGENTS.md", milestone = "H2" }]
+
+[[item]]
+spec = "CLAUDE.md"
+in_template = true
+required = true
+paths = [{ path = "CLAUDE.md", milestone = "H2" }]
+
+[[item]]
+spec = "LICENSE"
+in_template = true
+required = true
+paths = [{ path = "LICENSE", milestone = "H2" }]
+
+[[item]]
+spec = "LICENSES/**"
+in_template = true
+required = false
+paths = [
+  { path = "LICENSES/CC0-1.0.txt", milestone = "H2" },
+  { path = "LICENSES/MIT-0.txt", milestone = "H2" },
+]
+
+[[item]]
+spec = "REUSE.toml"
+in_template = true
+required = true
+paths = [{ path = "REUSE.toml", milestone = "H2" }]
+
+[[item]]
+spec = "project.yaml"
+in_template = true
+required = true
+paths = [{ path = "project.yaml", milestone = "H2" }]
+
+[[item]]
+spec = "roles.yaml"
+in_template = true
+required = true
+paths = [{ path = "roles.yaml", milestone = "H2" }]
+
+[[item]]
+spec = "plan.md"
+in_template = true
+required = true
+paths = [{ path = "plan.md", milestone = "H2" }]
+
+[[item]]
+spec = ".gitignore"
+in_template = true
+required = true
+paths = [{ path = ".gitignore", milestone = "H2" }]
+
+[[item]]
+spec = ".gitattributes"
+in_template = true
+required = true
+paths = [{ path = ".gitattributes", milestone = "H2" }]
+
+[[item]]
+spec = ".latexmkrc"
+in_template = true
+required = true
+formats = ["latex"]
+paths = [{ path = ".latexmkrc", milestone = "H2" }]
+
+[[item]]
+spec = ".mcp.json"
+in_template = true
+required = true
+paths = [{ path = ".mcp.json", milestone = "H3" }]
+
+[[item]]
+spec = ".claude/settings.json"
+in_template = true
+required = true
+paths = [{ path = ".claude/settings.json", milestone = "H4" }]
+
+[[item]]
+spec = ".claude/skills/**"
+in_template = true
+required = true
+milestone = "H4"
+note = "H4: una ruta SKILL.md por cada uno de los 6 skills de 00-marco §5.8 (01-arquitectura §10.3)."
+paths = []
+
+[[item]]
+spec = ".agents/skills/**"
+in_template = true
+required = true
+milestone = "H4"
+note = "H4: una ruta SKILL.md por cada uno de los 6 skills de 00-marco §5.8 (01-arquitectura §10.3)."
+paths = []
+
+[[item]]
+spec = ".gemini/settings.json"
+in_template = false
+required = false
+paths = []
+
+[[item]]
+spec = ".codex/config.toml"
+in_template = false
+required = false
+paths = []
+
+[[item]]
+spec = ".devcontainer/devcontainer.json"
+in_template = true
+required = true
+paths = [{ path = ".devcontainer/devcontainer.json", milestone = "H4" }]
+
+[[item]]
+spec = ".github/CODEOWNERS"
+in_template = true
+required = true
+amendment = "D-35"
+paths = [{ path = ".github/CODEOWNERS", milestone = "H2" }]
+
+[[item]]
+spec = ".github/ISSUE_TEMPLATE/task.yml"
+in_template = true
+required = true
+amendment = "D-35"
+paths = [{ path = ".github/ISSUE_TEMPLATE/task.yml", milestone = "H2" }]
+
+[[item]]
+spec = ".github/ISSUE_TEMPLATE/config.yml"
+in_template = true
+required = true
+paths = [{ path = ".github/ISSUE_TEMPLATE/config.yml", milestone = "H2" }]
+
+[[item]]
+spec = ".github/pull_request_template.md"
+in_template = true
+required = true
+paths = [{ path = ".github/pull_request_template.md", milestone = "H2" }]
+
+[[item]]
+spec = ".github/workflows/**"
+in_template = true
+required = true
+paths = [
+  { path = ".github/workflows/build.yml", milestone = "H2" },
+  { path = ".github/workflows/compile.yml", milestone = "H2" },
+  { path = ".github/workflows/validate.yml", milestone = "H2" },
+  { path = ".github/workflows/seal.yml", milestone = "H2" },  # D-50 (c): ci seal en H2; primera corrida real en H3
+  # El editor del artículo (00-marco D-56; 09-ci §4.5): solo con format: latex.
+  { path = ".github/workflows/editor-review.yml", milestone = "H3", formats = ["latex"] },
+  { path = ".github/workflows/editor-review-trigger.yml", milestone = "H3", formats = ["latex"] },
+  { path = ".github/workflows/main-broken.yml", milestone = "H3" },
+  { path = ".github/workflows/expire-claims.yml", milestone = "H3" },
+]
+
+[[item]]
+spec = "memory/constitution.md"
+in_template = true
+required = true
+paths = [{ path = "memory/constitution.md", milestone = "H2" }]
+
+[[item]]
+spec = "memory/decisions/.gitkeep"
+in_template = true
+required = true
+paths = [{ path = "memory/decisions/.gitkeep", milestone = "H2" }]
+
+[[item]]
+spec = "memory/notes/.gitkeep"
+in_template = true
+required = true
+paths = [{ path = "memory/notes/.gitkeep", milestone = "H2" }]
+
+[[item]]
+spec = "memory/decisions/<archivo>.md"
+in_template = false
+required = false
+paths = []
+
+[[item]]
+spec = "memory/notes/task-<n>.md"
+in_template = false
+required = false
+paths = []
+
+[[item]]
+spec = "bib/references.bib"
+in_template = true
+required = true
+formats = ["latex"]
+paths = [{ path = "bib/references.bib", milestone = "H2" }]
+
+[[item]]
+spec = "data/README.md"
+in_template = true
+required = true
+paths = [{ path = "data/README.md", milestone = "H2" }]
+
+[[item]]
+spec = "tex/main.tex"
+in_template = true
+required = true
+formats = ["latex"]
+paths = [{ path = "tex/main.tex", milestone = "H2" }]
+
+[[item]]
+spec = "tex/preamble.tex"
+in_template = true
+required = true
+formats = ["latex"]
+paths = [{ path = "tex/preamble.tex", milestone = "H2" }]
+
+[[item]]
+spec = "tex/notation.tex"
+in_template = true
+required = true
+formats = ["latex"]
+paths = [{ path = "tex/notation.tex", milestone = "H2" }]
+
+# Esqueleto del editor (00-marco D-56): en la plantilla, cada sección del artículo tiene el mismo id
+# que su parte. No son obligatorios, porque las secciones se pueden renombrar o quitar (D-55).
+[[item]]
+spec = "tex/outline/<id>.tex"
+in_template = true
+required = false
+formats = ["latex"]
+paths = [{ path = "tex/outline/<id>.tex", milestone = "H2" }]
+
+[[item]]
+spec = "tex/guide.md"
+in_template = true
+required = true
+formats = ["latex"]
+paths = [{ path = "tex/guide.md", milestone = "H2" }]
+
+[[item]]
+spec = "tex/assets/**"
+in_template = false
+required = false
+formats = ["latex"]
+paths = []
+
+[[item]]
+spec = "sections/<id>/<id>.tex"
+in_template = true
+required = true
+formats = ["latex"]
+paths = [{ path = "sections/<id>/<id>.tex", milestone = "H2" }]
+
+# Variante format: none (D-43): la produce el render none (init --format none), no la plantilla.
+[[item]]
+spec = "sections/<id>/<id>.md"
+in_template = false
+required = true
+formats = ["none"]
+paths = [{ path = "sections/<id>/<id>.md", milestone = "H2" }]
+
+[[item]]
+spec = "sections/<id>/pending.bib"
+in_template = true
+required = true
+formats = ["latex"]
+paths = [{ path = "sections/<id>/pending.bib", milestone = "H2" }]
+
+[[item]]
+spec = "sections/<id>/figures/**"
+in_template = true
+required = true
+paths = [
+  { path = "sections/<id>/figures/.gitkeep", milestone = "H2", require_dir = "sections/<id>/figures" },
+]
+
+[[item]]
+spec = "tables/**"
+glob = "sections/<id>/tables/**"
+in_template = true
+required = true
+paths = [
+  { path = "sections/<id>/tables/.gitkeep", milestone = "H2", require_dir = "sections/<id>/tables" },
+]
+
+[[item]]
+spec = "sections/<id>/analysis/**"
+in_template = false
+required = false
+paths = []
+
+[[item]]
+spec = "provenance.yaml"
+glob = "sections/<id>/provenance.yaml"
+in_template = false
+required = false
+paths = []
+
+[[item]]
+spec = "sections/<id>/notes/**"
+in_template = false
+required = false
+paths = []

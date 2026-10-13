@@ -1,0 +1,73 @@
+# Catálogo del área roles: textos de check-path, sync-roles y las reglas
+# roles-sync y generated-sync, y finding.<código>.* de E_VALIDATION_ROLES_OUT_OF_SYNC y
+# E_VALIDATION_GENERATED. Mismas claves, marcadores y fragmentos entre
+# acentos graves que en en/roles.toml (REQ-ARCH-72..74).
+
+# --- Hallazgos de validate (09-ci §4.1) ---
+
+[finding.E_VALIDATION_ROLES_OUT_OF_SYNC]
+message = "El archivo generado no coincide con su regeneración desde `roles.yaml` y `project.yaml`: {reason}."
+hint = "Ejecuta `aucove sync-roles` y agrega el resultado a tu PR."
+
+[finding.E_VALIDATION_GENERATED]
+message = "Este archivo está bajo `.claude/skills/` o `.agents/skills/`, pero esta versión del núcleo no genera skills."
+hint = "Quita el archivo del cambio: los skills los generará el núcleo en una versión posterior."
+
+# Motivos de roles-sync (marcador {reason} del hallazgo) y de unavailable.
+[roles.reason]
+differs = "el contenido es distinto"
+missing = "falta el archivo"
+not_regular = "no es un archivo regular (enlace u otro tipo de entrada)"
+roles_missing = "falta `roles.yaml` o no es un archivo regular"
+roles_invalid = "`roles.yaml` no es válido, así que no se puede regenerar"
+project_missing = "falta `project.yaml` o no es un archivo regular"
+project_invalid = "`project.yaml` no es válido, así que no se conoce el idioma"
+render_failed = "la regeneración desde `roles.yaml` no es posible"
+codeowners_error = "la forja informa un error en `CODEOWNERS`: {error}"
+codeowners_more = "la forja informa {n} errores más en `CODEOWNERS`"
+no_tree = "no hay contenido que comparar"
+forge_unavailable = "no hay acceso a la forja para leer los errores de `CODEOWNERS`"
+forge_error = "la forja no respondió al leer los errores de `CODEOWNERS`"
+
+# --- check-path (05-operaciones §9.8; 06-permisos §2.4) ---
+
+[roles.check_path.reason]
+outside_repo = "La ruta queda fuera del repositorio, dentro de `.git` o con un nombre que Windows no admite (`CON`, `AUX`, `NUL`, `COM1`…, punto o espacio final, `:` o un nombre corto como `GIT~1`)."
+symlink = "La ruta pasa por un enlace simbólico o una unión."
+not_a_member = "Tu cuenta no corresponde a ninguna persona activa de `roles.yaml` de la rama base (se compara el `forge_id` si está declarado y, si no, el login)."
+no_identity = "No se conoce tu login en la forja (no hay identidad en la caché local), así que no se puede autorizar ninguna escritura."
+local_path = "Es un archivo local de esta máquina y no se versiona."
+generated_path = "Es un archivo generado: se regenera con `aucove sync-roles`, no a mano."
+not_on_task_branch = "No hay una tarea activa: cambia a su rama `task/<n>` o indica `--task`."
+claim_not_held = "La tarea #{task} no está reclamada por ti."
+invalid_transition = "La tarea #{task} está en estado {state}, que no admite escrituras."
+outside_task_section = "La parte {section} no está declarada en la tarea #{task}."
+outside_task_notes = "Las notas de sesión no se editan durante la sesión: las escribe `aucove submit`."
+outside_task_other = "La ruta no está dentro del alcance de la tarea #{task}."
+append_only = "La decisión ya existe en la rama base: las decisiones no se modifican ni se borran."
+section_not_owned = "La parte {section} es de @{owner}."
+lead_only_path = "Solo el responsable o el suplente pueden cambiar esta ruta."
+editor_only_path = "Solo el editor del artículo puede cambiar esta ruta."
+policy_unavailable = "No hay una política válida de la rama base."
+internal = "Error interno al evaluar la ruta: se deniega por seguridad."
+confirm = "Es una ruta de control: la puerta debe pedir confirmación a la persona antes de escribir."
+
+[roles.check_path.render]
+basis = "Base {ref} · identidad {identity} · tarea {task}"
+unknown = "desconocida"
+none = "ninguna"
+allowed = "permitida"
+denied = "denegada"
+confirm = "permitida con confirmación"
+line = "{verdict}: {file} ({cls})"
+
+# --- sync-roles (05-operaciones §9.4) ---
+
+[roles.sync.plan]
+write = "Regenerar {file} desde roles.yaml"
+
+[roles.sync.render]
+file = "{action}: {file}"
+updated = "actualizado"
+unchanged = "sin cambios"
+would_update = "por actualizar"

@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://aucove.invalid/schemas/roles/v1
+version: 1
+lead: ana-perez
+deputy: bruno-diaz          # coincide con "Bruno-Diaz": los login no distinguen mayúsculas
+editor: carla-soto          # editor del artículo (D-56); si falta, lo es el responsable
+people:
+  - login: ana-perez
+    name: "Ana Pérez Rojas"
+    email: ana.perez@uni.example
+    orcid: "0000-0002-1825-0097"
+    role: lead
+    account_type: team
+    credit: [conceptualization, funding-acquisition, supervision, writing-review-editing]
+  - login: Bruno-Diaz
+    name: "Bruno Díaz"
+    role: researcher
+    account_type: enterprise
+    credit: [methodology, formal-analysis, writing-original-draft]
+  - login: carla-soto
+    name: "Carla Soto"
+    email: csoto@uni.example
+    role: researcher
+    account_type: consumer_training_off
+    credit: [investigation, data-curation]
+  - login: diego-luna
+    name: "Diego Luna"
+    role: researcher
+    account_type: api
+    active: false             # dejó el proyecto; conserva su crédito
+    credit: [software]
+sections:
+  - id: introduccion
+    title: "Introducción"
+    owner: ana-perez
+  - id: metodos
+    title: "Métodos"
+    owner: Bruno-Diaz
+  - id: resultados
+    title: "Resultados"
+    owner: carla-soto

@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aucove.invalid/schemas/evidence-manifest/v1",
+  "title": "Manifiesto de evidencia",
+  "description": "Lo que se sella (00-marco D-45; 11-trazabilidad §8.3). Se escribe en JSON canónico (RFC 8785, perfil restringido de 11-trazabilidad §8.3: claves ASCII, enteros menores que 2^53, sin flotantes, sin espacios ni salto de línea final); la huella sellada es el SHA-256 de esos bytes exactos, que se guardan tal cual y nunca se regeneran. No contiene rutas, contenidos, logins, nombres ni correos: cada archivo y cada actor aparecen como compromisos con sal, cuyas aperturas viven en evidence-openings/v1. El orden de 'entries' (por 'p' ascendente), la unicidad de 'p' y de 'actors[].r', y que el último de 'commits' sea 'commit' los verifica el núcleo, no el esquema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "kind",
+    "generator",
+    "created_at",
+    "forge",
+    "repository_id",
+    "commit",
+    "tree",
+    "base",
+    "commits",
+    "task",
+    "pr",
+    "commitment",
+    "actors",
+    "entries"
+  ],
+  "properties": {
+    "schema": {
+      "const": "https://aucove.invalid/schemas/evidence-manifest/v1"
+    },
+    "kind": {
+      "description": "submission: la cabeza de un PR frente al merge-base con la rama base; integration: un push a la base, desde el último commit ya sellado.",
+      "enum": [
+        "submission",
+        "integration"
+      ]
+    },
+    "generator": {
+      "description": "Núcleo que lo produjo, como <nombre>/<versión>.",
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9-]*/[0-9]+\\.[0-9]+\\.[0-9]+[a-z0-9.+-]*$"
+    },
+    "created_at": {
+      "description": "Hora del runner en UTC (RFC 3339 con Z y sin fracciones). Es declarativa: la fecha verificable es la de los sellos.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "forge": {
+      "const": "github"
+    },
+    "repository_id": {
+      "description": "Id numérico y durable del repositorio en la forja (GITHUB_REPOSITORY_ID). No revela el nombre, que va en las aperturas.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "commit": {
+      "description": "Commit sellado: la cabeza del PR (submission) o el commit de la base tras el push (integration).",
+      "$ref": "#/$defs/oid"
+    },
+    "tree": {
+      "description": "Árbol de 'commit'.",
+      "$ref": "#/$defs/oid"
+    },
+    "base": {
+      "description": "Commit contra el que se calcularon las entradas: el merge-base (submission) o el último commit de primer padre ya sellado (integration). null = árbol vacío (primer registro del repo).",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/oid"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "commits": {
+      "description": "Commits de primer padre de (base, commit], del más antiguo al más reciente; si hay más de 100, los 100 más recientes (los anteriores quedan cubiertos por la cadena de padres de git). El último es 'commit'.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/oid"
+      }
+    },
+    "task": {
+      "description": "Número del Issue de la tarea; null si el commit no salió de un PR de tarea.",
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "pr": {
+      "description": "Número del PR; null en un push sin PR.",
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "commitment": {
+      "description": "Esquema de compromiso: SHA-256 con sal de 32 bytes y separación de dominio (11-trazabilidad §8.3).",
+      "const": "sha256-salted-v1"
+    },
+    "actors": {
+      "description": "Compromisos de identidad de 'commit' (11-trazabilidad §8.3): pr_author (login de quien abrió el PR), merged_by (login de quien integró; solo integration), author y committer (\"Nombre <correo>\" del objeto commit). Un rol sin dato no aparece.",
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/actor"
+      }
+    },
+    "entries": {
+      "description": "Un compromiso por archivo cambiado entre 'base' y 'commit' (git diff-tree -r --no-renames).",
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "submission"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "base": {
+            "$ref": "#/$defs/oid"
+          },
+          "task": {
+            "type": "integer"
+          },
+          "pr": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "oid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Id de objeto de git (SHA-1, 40 hex en minúsculas)."
+    },
+    "hex256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "p",
+        "c"
+      ],
+      "properties": {
+        "p": {
+          "description": "Compromiso de la ruta: SHA-256(\"evidence.path.v1\" || 0x00 || sal || bytes exactos de la ruta según git, sin normalizar).",
+          "$ref": "#/$defs/hex256"
+        },
+        "c": {
+          "description": "Compromiso del contenido: SHA-256(\"evidence.blob.v1\" || 0x00 || sal || bytes del blob de git); null si el archivo se borró.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/hex256"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "r",
+        "a"
+      ],
+      "properties": {
+        "r": {
+          "enum": [
+            "pr_author",
+            "merged_by",
+            "author",
+            "committer"
+          ]
+        },
+        "a": {
+          "description": "SHA-256(\"evidence.actor.v1\" || 0x00 || sal || r || 0x00 || valor en UTF-8).",
+          "$ref": "#/$defs/hex256"
+        }
+      }
+    }
+  }
+}

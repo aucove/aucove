@@ -1,0 +1,43 @@
+# Catálogo del área status: la vista legible de `status` (05-operaciones §9.6) y la
+# pantalla de inicio (REQ-OPS-68). La pantalla se dibuja solo con ASCII: los acentos se
+# quitan al renderizar. Mismas claves, marcadores y fragmentos entre acentos graves que
+# en en/status.toml (REQ-ARCH-72..74).
+
+[status.state]
+proposed = "propuesta"
+open = "abierta"
+claimed = "reclamada"
+in_review = "en revisión"
+changes_requested = "con cambios pedidos"
+merged = "integrada"
+expired = "vencida"
+cancelled = "cancelada"
+
+[status.render]
+me = "Identidad: {login} ({role})."
+base = "Base {branch}: CI {ci}, commit {sha}."
+main_broken = "La rama base está rota: Issue #{number} con `main-broken`."
+cache = "Sin conexión: datos de la forja de hace {minutes} min."
+none = "No hay tareas que mostrar."
+task = "#{number} [{state}] {owner} · partes: {sections} · {title} {pr}"
+pr = "(PR #{number}: CI {ci}, revisión {review})"
+anomalies = "anomalías: {anomalies}"
+more = "Hay más tareas: repite con `--cursor {cursor}`."
+
+[home]
+header = "{name} {version}"
+outside = "No estás dentro de un proyecto: no hay `project.yaml` con `.git` desde aquí hacia arriba."
+outside_start = "Para empezar, clona el repositorio de tu grupo y ejecuta `{name}` dentro. Si eres el responsable de un proyecto nuevo, créalo desde la plantilla y ejecuta `{name} init`."
+project = "Proyecto: {project}"
+no_board = "No se pudo leer el tablero ({code}). Prueba `{name} doctor`."
+me = "Identidad: {login} ({role})"
+cache = "Sin conexión: datos de la forja de hace {minutes} min."
+main_broken = "La rama base está rota: Issue #{number}."
+open_title = "Tareas abiertas ({n}):"
+active_title = "Quién trabaja en qué ({n}; * = tuyas):"
+task = "#{number} [{state}] {title} (partes: {sections})"
+task_owner = "#{number} [{state}] {owner}: {title} (partes: {sections})"
+parts_title = "Partes y dueños:"
+part = "{id} ({title}): {owner}"
+evidence_title = "Sellos de tus entregas en `{dir}/evidence/` ({n}):"
+next = "Siguiente paso: abre tu agente en esta carpeta y usa el skill `{skill}`, o reclama una tarea con `{name} claim <n>`."

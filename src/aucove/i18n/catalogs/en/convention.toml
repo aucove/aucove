@@ -1,0 +1,266 @@
+# Rule convention (conv.* of 02-convencion §12) and rule plan-ids (03-esquemas §5).
+# Area convention (D-32 f): keys convention.* and finding.<code>.* of the codes emitted by
+# ops/rules/convention.py and ops/rules/plan_ids.py. finding.E_VALIDATION_DUPLICATE_ID is in config.toml.
+
+# -- reasons for a rule that could not be evaluated (unavailable) ------------------------
+
+[convention.reason]
+no_tree = "there is no tree to validate (PR from a fork or without `--tree`)"
+no_roles = "there is no valid `roles.yaml` to resolve the parts"
+check_failed = "the {check} check failed unexpectedly"
+plan_unreadable = "`plan.md` cannot be read as UTF-8 text of 5 MiB or less"
+base_plan_unreadable = "the base `plan.md` cannot be read as UTF-8 text of 5 MiB or less"
+
+# -- texts of the {problem} placeholders ----------------------------------------------
+
+[convention.encoding]
+not_utf8 = "it is not valid UTF-8"
+bom = "it starts with a BOM"
+crlf = "it has CRLF or CR line endings"
+
+[convention.data]
+no_table = "there is no table"
+header = "the table headers must be exactly {columns}"
+separator = "the separator row `|---|` is missing under the headers"
+row = "the row has {count} cells and must have {expected}"
+id = "the id '{id}' does not match `^[a-z0-9]+(-[a-z0-9]+)*$`"
+duplicate = "the id '{id}' already appears on line {first}"
+level = "the classification '{value}' is not a valid level ({levels})"
+
+[convention.provenance]
+yaml = "it is not valid YAML"
+unreadable = "it cannot be read as text of 5 MiB or less"
+not_mapping = "the document must be a mapping with `version` and `outputs`"
+unknown_key = "unknown key {key}"
+version = "`version` must be 1"
+outputs = "`outputs` must be a list"
+entry = "each item of `outputs` must be a mapping"
+entry_path = "`path` must be a path relative to the part folder, without `..`"
+duplicate = "the output {file} appears twice"
+path_missing = "the output {file} does not exist in the part folder"
+kind = "`kind` must be one of {kinds}"
+generator = "`generator` must be `manual`, `external` or a script in `analysis/`"
+generator_missing = "the generator {file} does not exist in the part folder"
+credit = "`credit` is missing or empty (required with `generator: external`)"
+inputs = "`inputs` must be a list"
+input = "each item of `inputs` must have only `dataset` or only `path`"
+dataset = "the dataset '{dataset}' is not declared in `data/README.md`"
+input_missing = "the input {file} does not exist in the part folder"
+
+[convention.notebook]
+outside = "a notebook may only live in the `analysis/` folder of a part"
+invalid = "it is not a valid JSON notebook"
+outputs = "a code cell has outputs (they must be `[]`)"
+execution_count = "a code cell has an `execution_count` other than `null`"
+attachments = "a cell has `attachments`"
+widgets = "the metadata has `widgets`"
+
+[convention.convention]
+missing = "`convention` is missing; it must be {expected} in quotes"
+not_string = "`convention` is {value}, which is not a string; write {expected} in quotes"
+value = "`convention` is {value} and must be {expected}"
+build_value = "`{key}` must be {expected} in this convention"
+build_engine = "`build.engine` must be one of {engines}"
+
+[convention.license]
+invalid = "it is neither a valid SPDX identifier nor a `LicenseRef-*`"
+no_text = "its text is missing from {file}"
+
+[convention.agents]
+title = "it must start with a single level-1 title (`#`)"
+size = "it is {size} bytes; the maximum is {max}"
+lines = "it has {count} lines; the maximum is {max}"
+heading = "level-2 heading outside the numbering `## 1.` to `## 7.` in order"
+sections = "the numbered sections {missing} are missing"
+section7 = "section 7 is {size} bytes; the maximum is {max}"
+
+[convention.constitution]
+size = "it is {size} bytes; the maximum is {max}"
+lines = "it has {count} lines; the maximum is {max}"
+heading = "level-2 heading outside the numbering `## 1.` to `## 7.` in order"
+sections = "the numbered sections {missing} are missing"
+import = "it has the import @{target}; the constitution does not import files"
+plan_id = "it defines the plan ID {id}; IDs are defined only in `plan.md`"
+macro = "it defines a macro with {command}; the notation goes in `tex/notation.tex`"
+assignment = "it seems to assign part {section} to {login}; owners are declared only in `roles.yaml`"
+
+[convention.section.files]
+latex = "its `.tex`, `pending.bib`, `figures/` and `tables/`"
+none = "its `.md`, `figures/` and `tables/`"
+
+[convention.claude]
+first_line = "the first line must be exactly `@AGENTS.md`"
+import = "it has the import @{target}; only `@AGENTS.md` on the first line is allowed"
+size = "it is {size} bytes; the maximum is {max}"
+
+# -- findings of the convention rule ---------------------------------------------------
+
+[finding.conv.tree.missing]
+message = "The required file or folder {file} is missing."
+hint = "Restore it from the template or from the base branch."
+
+[finding.conv.format.unused]
+message = "With `format: none`, files of the LaTeX manuscript are left over."
+hint = "Left over: {unused}. Delete them in a task of the lead, or change `format` to `latex`."
+
+[finding.conv.path.invalid-name]
+message = "The segment '{segment}' does not match `^[A-Za-z0-9._-]+$` (ASCII, no spaces)."
+hint = "Rename the path using ASCII letters, digits, `.`, `_` or `-`."
+
+[finding.conv.path.case-collision]
+message = "The path differs only in case from {other}."
+hint = "Keep a single spelling: on Windows and macOS both paths are the same file."
+
+[finding.conv.path.symlink]
+message = "Versioned symbolic link or submodule (mode {mode})."
+hint = "Replace it with a regular file; the convention allows neither links nor submodules."
+
+[finding.conv.path.local-committed]
+message = "Versioned local state file; these paths are never versioned."
+hint = "Remove it from the index with `git rm --cached` and check `.gitignore`."
+
+[finding.conv.path.nested-instructions]
+message = "Agent instruction file or folder outside the root."
+hint = "Delete it: agent instructions live only in `AGENTS.md` and `CLAUDE.md` at the root."
+
+[finding.conv.path.foreign-instructions]
+message = "Instruction file that the convention does not manage."
+hint = "Move its content to section 7 of `AGENTS.md` and delete it."
+
+[finding.conv.section.undeclared]
+message = "The folder of part '{section}' is not declared in `roles.yaml`."
+hint = "Declare the part in `roles.yaml` or move the folder."
+
+[finding.conv.section.missing]
+message = "The part '{section}' of `roles.yaml` has no folder."
+hint = "Create `sections/{section}/` with {files}."
+
+[finding.conv.section.disallowed-file]
+message = "File type not allowed at this location of the part; allowed: {allowed}."
+hint = "Move it to the right subfolder or convert it to an allowed format."
+
+[finding.conv.section.large]
+message = "The folder of part '{section}' is {size}, more than 20 MiB."
+hint = "Shrink the figures or take the large files out of the repository."
+
+[finding.conv.file.large]
+message = "The file is {size}, more than 1 MiB."
+hint = "Compress or shrink the file; more than 5 MiB makes validation fail."
+
+[finding.conv.file.too-large]
+message = "The file is larger than 5 MiB or cannot be read as a regular file."
+hint = "Take the file out of the repository or shrink it below 5 MiB."
+
+[finding.conv.file.encoding]
+message = "Invalid encoding: {problem}."
+hint = "Save it as UTF-8 without BOM and with LF line endings."
+
+[finding.conv.memory.unexpected-file]
+message = "File not allowed in `memory/`."
+hint = "`memory/` only holds `constitution.md`, `decisions/*.md`, `notes/task-<n>.md` and `.gitkeep`."
+
+[finding.conv.memory.note-large]
+message = "The note is {size}, 32 KiB or more."
+hint = "Summarize the note: the maximum is 64 KiB and each session block, 4000 characters."
+
+[finding.conv.gitignore.required]
+message = "The required line `{entry}` is missing."
+hint = "Add the line exactly as in the template."
+
+[finding.conv.gitattributes.required]
+message = "The required line `{entry}` is missing."
+hint = "Add the line, as in the template."
+
+[finding.conv.gitattributes.lfs]
+message = "Pattern with `filter=lfs`: Git LFS is not used in this convention."
+hint = "Remove the filter and take the large files out of the repository."
+
+[finding.conv.data.unexpected-file]
+message = "Versioned file under `data/` other than `data/README.md`."
+hint = "Raw data is not versioned: describe it in `data/README.md` and remove the file."
+
+[finding.conv.data.index]
+message = "Invalid table in `data/README.md`: {problem}."
+hint = "Use the table with the columns `id`, `description`, `location`, `access`, `classification` and `version`."
+
+[finding.conv.data.credential-url]
+message = "`location` has a URL with the credential parameter '{param}'."
+hint = "Remove the parameter or the signed link and explain in `access` how to request access."
+
+[finding.conv.provenance.missing]
+message = "The output has no entry in the `provenance.yaml` of its part."
+hint = "Record in `outputs` its `path`, `kind` and `generator`."
+
+[finding.conv.provenance.invalid]
+message = "Invalid `provenance.yaml`: {problem}."
+hint = "Follow the `provenance.yaml` format of the convention."
+
+[finding.conv.notebook.outputs]
+message = "Invalid notebook: {problem}."
+hint = "Clean the notebook with `nbstripout` and keep it in `analysis/` of its part."
+
+[finding.conv.convention.value]
+message = "`project.yaml` outside the convention: {problem}."
+hint = "Write `convention: \"0.1\"` and use the `build` values of the template."
+
+[finding.conv.agents.structure]
+message = "Invalid structure of `AGENTS.md`: {problem}."
+hint = "Keep the title and the seven numbered sections of the template, with 8 KiB and 150 lines at most."
+
+[finding.conv.agents.import]
+message = "Import not allowed @{target}."
+hint = "The only import allowed in `AGENTS.md` is `@memory/constitution.md`."
+
+[finding.conv.agents.modified]
+message = "Section {number} differs from the render of the convention."
+hint = "Sections 1 to 6 are not edited; project-specific rules go in section 7."
+
+[finding.conv.claude.content]
+message = "Invalid content of `CLAUDE.md`: {problem}."
+hint = "`CLAUDE.md` starts with `@AGENTS.md`, imports nothing else and is 1 KiB at most."
+
+[finding.conv.constitution.structure]
+message = "Invalid `memory/constitution.md`: {problem}."
+hint = "Keep the seven sections of the template, with 8 KiB and 150 lines at most."
+
+[finding.conv.latexmkrc.noncanonical]
+message = "`.latexmkrc` differs from the canonical one of the convention for the {engine} engine."
+hint = "Replace it with the `.latexmkrc` of the template with the `$pdf_mode` of `build.engine`."
+
+[finding.E_VALIDATION_LICENSE_UNKNOWN]
+message = "The license '{value}' of `licenses.{category}` is not valid: {problem}."
+hint = "Use an SPDX identifier or a `LicenseRef-*` and add its text in `LICENSES/`."
+
+# -- findings of the plan-ids rule ----------------------------------------------------
+
+[finding.E_VALIDATION_PLAN_SYNTAX]
+message = "The line looks like a plan definition but does not follow the grammar: {text}"
+hint = "Write `- RQ-1: ...` without indentation, with the ID in uppercase and no leading zeros."
+
+[finding.E_VALIDATION_UNKNOWN_PLAN_ID]
+message = "The plan ID {id} is not defined in `plan.md`."
+hint = "Fix the reference or define the item."
+
+[finding.E_VALIDATION_UNKNOWN_DECISION]
+message = "The decision {id} does not exist in `memory/decisions/`."
+hint = "Cite a decision of the base or add the record in the same PR."
+
+[finding.E_VALIDATION_PLAN_ID_REMOVED]
+message = "The ID {id} of the base is no longer in `plan.md`."
+hint = "An ID is never deleted: mark it with `(retired)` after the ID."
+
+[finding.E_VALIDATION_PLAN_RETIRED_CHANGED]
+message = "The retired ID {id} was reactivated or its text changed."
+hint = "A retired item stays retired with the same text; only the decision may be added if it had none."
+
+[finding.E_VALIDATION_PLAN_ID_REUSED]
+message = "The new ID {id} reuses a number; the maximum of its prefix in the base is {max}."
+hint = "Use a number greater than {max}."
+
+[finding.W_VALIDATION_PLAN_TEXT_CHANGED]
+message = "The text of plan item {id} changed."
+hint = "A change of direction is declared with the corresponding task and PR."
+
+[finding.W_VALIDATION_PLAN_REF_RETIRED]
+message = "The retired ID {id} is cited."
+hint = "Cite the current item that replaces it."

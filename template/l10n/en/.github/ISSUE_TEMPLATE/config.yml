@@ -1,0 +1,7 @@
+# Issue chooser (lead class). Tasks are proposed with the "Task" form (task.yml),
+# which the core generates from roles.yaml; that is why blank Issues are disabled.
+blank_issues_enabled: false
+contact_links:
+  - name: Project guide
+    url: https://github.com/{{var:forge_repo}}#readme
+    about: How to propose, claim and submit tasks in this repository.

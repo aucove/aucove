@@ -1,0 +1,21 @@
+id: ci-11-foreign-push
+description: >
+  Otra persona (bruno, el suplente) empujó a task/17, que reclamó carla: E_CLAIM_NOT_HELD
+  aunque los archivos estén en alcance.
+covers: [ci-4.2:foreign-push]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Texto con un commit ajeno encima.
+pushes:
+  - {actor: carla, type: push}
+  - {actor: bruno, type: push}
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_CLAIM_NOT_HELD]
+  mentions: [bruno, task/17]

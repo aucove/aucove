@@ -1,0 +1,5 @@
+description = "un SKILL.md generado se editó a mano: difiere de la regeneración desde la fuente"
+lang = "es"
+base = "rendered/es"
+source = "source"
+expect = ["regen"]

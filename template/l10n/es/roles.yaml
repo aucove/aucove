@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://aucove.invalid/schemas/roles/v1
+# Personas, roles y dueños de parte (clase lead). Formato: 03-esquemas §4.
+# Única fuente de personas y dueños: `aucove sync-roles` genera desde aquí
+# .github/CODEOWNERS y .github/ISSUE_TEMPLATE/task.yml.
+# Las 7 partes siguen el esquema del artículo por defecto (00-marco D-55). Renómbralas, quítalas o
+# divídelas en subpartes (por ejemplo, experiments-a y experiments-b), cada una con su dueño.
+# Con LaTeX, el editor del artículo reúne las partes de cada sección en tex/outline/<id>.tex.
+version: 1
+lead: example-lead
+# deputy: example-researcher   # suplente (D-17): una persona activa con role researcher
+# editor: example-researcher   # editor del artículo (D-56); si falta, lo es el responsable
+people:
+  - login: example-lead
+    name: "Example Lead"
+    role: lead
+    account_type: team        # cámbialo por el régimen real de tu cuenta (03-esquemas §4.4)
+    credit: []
+  - login: example-researcher
+    name: "Example Researcher"
+    role: researcher
+    account_type: team        # cámbialo por el régimen real de tu cuenta
+    credit: []
+sections:
+  - id: introduction
+    title: "Introducción"
+    owner: example-lead
+  - id: background
+    title: "Antecedentes y trabajo previo"
+    owner: example-lead
+  - id: theory
+    title: "Marco teórico"
+    owner: example-lead
+  - id: methodology
+    title: "Propuesta y metodología"
+    owner: example-lead
+  - id: experiments
+    title: "Experimentos"
+    owner: example-lead
+  - id: results
+    title: "Análisis de resultados"
+    owner: example-lead
+  - id: conclusions
+    title: "Conclusiones"
+    owner: example-lead

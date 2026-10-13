@@ -1,0 +1,18 @@
+id: a9-24-backslash-rename-out-of-foreign-section
+description: >
+  Renombre de un archivo de la sección de bruno a 'sections\methods\tables.tex': el
+  destino es una ruta inválida en git (02 §3.1, REQ-CONV-7) y el borrado del origen se
+  sigue evaluando (06 §2.4: delete + create), así que también se deniega en la ruta vieja.
+covers: [a9:backslash-variants, a9:rename-across-sections]
+task: {number: 17, claimant: carla, sections: [methods, results]}
+pr: {author: carla}
+changes:
+  - status: renamed
+    previous_path: sections/results/tables.tex
+    path: 'sections\methods\tables.tex'
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_OUTSIDE_REPO, E_PERM_SECTION_NOT_OWNED]
+  paths: [sections/results/tables.tex]
+  mentions: [bruno, 'sections\methods\tables.tex']

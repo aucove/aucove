@@ -1,0 +1,18 @@
+id: ci-13-no-task
+description: >
+  Investigadora sin tarea: la cabeza tiene la forma task/<n>, pero no hay un Issue de
+  tarea #99. La pista remite a claim y a task propose.
+covers: [ci-4.2:no-task]
+task: null
+pr: {author: carla, head_branch: task/99}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Cambio sin tarea.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_STATE_NOT_ON_TASK_BRANCH]
+  mentions: ["#99", claim <n>, task propose]

@@ -1,0 +1,266 @@
+# Regla convention (conv.* de 02-convencion §12) y regla plan-ids (03-esquemas §5).
+# Área convention (D-32 f): claves convention.* y finding.<código>.* de los códigos que emiten
+# ops/rules/convention.py y ops/rules/plan_ids.py. finding.E_VALIDATION_DUPLICATE_ID está en config.toml.
+
+# -- motivos de una regla que no pudo evaluarse (unavailable) ----------------------------
+
+[convention.reason]
+no_tree = "no hay árbol que validar (PR desde un fork o sin `--tree`)"
+no_roles = "no hay un `roles.yaml` válido para resolver las partes"
+check_failed = "la comprobación {check} falló de forma inesperada"
+plan_unreadable = "`plan.md` no se puede leer como texto UTF-8 de 5 MiB o menos"
+base_plan_unreadable = "el `plan.md` de la base no se puede leer como texto UTF-8 de 5 MiB o menos"
+
+# -- textos de los marcadores {problem} ----------------------------------------------
+
+[convention.encoding]
+not_utf8 = "no es UTF-8 válido"
+bom = "empieza con BOM"
+crlf = "tiene finales de línea CRLF o CR"
+
+[convention.data]
+no_table = "no hay ninguna tabla"
+header = "los encabezados de la tabla deben ser exactamente {columns}"
+separator = "falta la fila separadora `|---|` bajo los encabezados"
+row = "la fila tiene {count} celdas y deben ser {expected}"
+id = "el id '{id}' no cumple `^[a-z0-9]+(-[a-z0-9]+)*$`"
+duplicate = "el id '{id}' ya aparece en la línea {first}"
+level = "la clasificación '{value}' no es un nivel válido ({levels})"
+
+[convention.provenance]
+yaml = "no es YAML válido"
+unreadable = "no se puede leer como texto de 5 MiB o menos"
+not_mapping = "el documento debe ser un mapa con `version` y `outputs`"
+unknown_key = "clave desconocida {key}"
+version = "`version` debe ser 1"
+outputs = "`outputs` debe ser una lista"
+entry = "cada elemento de `outputs` debe ser un mapa"
+entry_path = "`path` debe ser una ruta relativa a la carpeta de la parte, sin `..`"
+duplicate = "la salida {file} aparece dos veces"
+path_missing = "la salida {file} no existe en la carpeta de la parte"
+kind = "`kind` debe ser uno de {kinds}"
+generator = "`generator` debe ser `manual`, `external` o un script de `analysis/`"
+generator_missing = "el generador {file} no existe en la carpeta de la parte"
+credit = "falta `credit` o está vacío (obligatorio con `generator: external`)"
+inputs = "`inputs` debe ser una lista"
+input = "cada entrada de `inputs` debe tener solo `dataset` o solo `path`"
+dataset = "el conjunto de datos '{dataset}' no está declarado en `data/README.md`"
+input_missing = "la entrada {file} no existe en la carpeta de la parte"
+
+[convention.notebook]
+outside = "un notebook solo puede estar en `analysis/` de una parte"
+invalid = "no es un notebook JSON válido"
+outputs = "una celda de código tiene salidas (deben ser `[]`)"
+execution_count = "una celda de código tiene `execution_count` distinto de `null`"
+attachments = "una celda tiene `attachments`"
+widgets = "los metadatos tienen `widgets`"
+
+[convention.convention]
+missing = "falta `convention`; debe valer {expected} entre comillas"
+not_string = "`convention` vale {value}, que no es una cadena; escribe {expected} entre comillas"
+value = "`convention` vale {value} y debe valer {expected}"
+build_value = "`{key}` debe valer {expected} en esta convención"
+build_engine = "`build.engine` debe ser uno de {engines}"
+
+[convention.license]
+invalid = "no es un identificador SPDX válido ni un `LicenseRef-*`"
+no_text = "falta su texto en {file}"
+
+[convention.agents]
+title = "debe empezar con un único título de nivel 1 (`#`)"
+size = "pesa {size} bytes; el máximo es {max}"
+lines = "tiene {count} líneas; el máximo es {max}"
+heading = "encabezado de nivel 2 fuera de la numeración `## 1.` a `## 7.` en orden"
+sections = "faltan las secciones numeradas {missing}"
+section7 = "la sección 7 pesa {size} bytes; el máximo es {max}"
+
+[convention.constitution]
+size = "pesa {size} bytes; el máximo es {max}"
+lines = "tiene {count} líneas; el máximo es {max}"
+heading = "encabezado de nivel 2 fuera de la numeración `## 1.` a `## 7.` en orden"
+sections = "faltan las secciones numeradas {missing}"
+import = "tiene la importación @{target}; la constitución no importa archivos"
+plan_id = "define el ID del plan {id}; los IDs se definen solo en `plan.md`"
+macro = "define una macro con {command}; la notación va en `tex/notation.tex`"
+assignment = "parece asignar la parte {section} a {login}; los dueños se declaran solo en `roles.yaml`"
+
+[convention.section.files]
+latex = "su `.tex`, `pending.bib`, `figures/` y `tables/`"
+none = "su `.md`, `figures/` y `tables/`"
+
+[convention.claude]
+first_line = "la primera línea debe ser exactamente `@AGENTS.md`"
+import = "tiene la importación @{target}; solo se admite `@AGENTS.md` en la primera línea"
+size = "pesa {size} bytes; el máximo es {max}"
+
+# -- hallazgos de la regla convention ------------------------------------------------
+
+[finding.conv.tree.missing]
+message = "Falta el archivo o la carpeta obligatoria {file}."
+hint = "Restáuralo desde la plantilla o desde la rama base."
+
+[finding.conv.format.unused]
+message = "Con `format: none` sobran archivos del manuscrito LaTeX."
+hint = "Sobran {unused}. Bórralos en una tarea del responsable, o cambia `format` a `latex`."
+
+[finding.conv.path.invalid-name]
+message = "El segmento '{segment}' no cumple `^[A-Za-z0-9._-]+$` (ASCII, sin espacios)."
+hint = "Renombra la ruta con letras ASCII, dígitos, `.`, `_` o `-`."
+
+[finding.conv.path.case-collision]
+message = "La ruta difiere solo en mayúsculas de {other}."
+hint = "Deja una sola grafía: en Windows y macOS las dos rutas son el mismo archivo."
+
+[finding.conv.path.symlink]
+message = "Enlace simbólico o submódulo versionado (modo {mode})."
+hint = "Reemplázalo por un archivo regular; la convención no admite enlaces ni submódulos."
+
+[finding.conv.path.local-committed]
+message = "Archivo de estado local versionado; estas rutas nunca se versionan."
+hint = "Quítalo del índice con `git rm --cached` y comprueba `.gitignore`."
+
+[finding.conv.path.nested-instructions]
+message = "Archivo o carpeta de instrucciones para agentes fuera de la raíz."
+hint = "Bórralo: las instrucciones para agentes solo viven en `AGENTS.md` y `CLAUDE.md` de la raíz."
+
+[finding.conv.path.foreign-instructions]
+message = "Archivo de instrucciones que la convención no gestiona."
+hint = "Mueve su contenido a la sección 7 de `AGENTS.md` y bórralo."
+
+[finding.conv.section.undeclared]
+message = "La carpeta de la parte '{section}' no está declarada en `roles.yaml`."
+hint = "Declara la parte en `roles.yaml` o mueve la carpeta."
+
+[finding.conv.section.missing]
+message = "La parte '{section}' de `roles.yaml` no tiene carpeta."
+hint = "Crea `sections/{section}/` con {files}."
+
+[finding.conv.section.disallowed-file]
+message = "Tipo de archivo no permitido en esta ubicación de la parte; se admiten: {allowed}."
+hint = "Muévelo a la subcarpeta que corresponde o conviértelo a un formato admitido."
+
+[finding.conv.section.large]
+message = "La carpeta de la parte '{section}' pesa {size}, más de 20 MiB."
+hint = "Reduce las figuras o saca del repositorio los archivos grandes."
+
+[finding.conv.file.large]
+message = "El archivo pesa {size}, más de 1 MiB."
+hint = "Comprime o reduce el archivo; más de 5 MiB hace fallar la validación."
+
+[finding.conv.file.too-large]
+message = "El archivo supera 5 MiB o no se puede leer como archivo regular."
+hint = "Saca el archivo del repositorio o redúcelo por debajo de 5 MiB."
+
+[finding.conv.file.encoding]
+message = "Codificación inválida: {problem}."
+hint = "Guárdalo como UTF-8 sin BOM y con finales de línea LF."
+
+[finding.conv.memory.unexpected-file]
+message = "Archivo no permitido en `memory/`."
+hint = "En `memory/` solo van `constitution.md`, `decisions/*.md`, `notes/task-<n>.md` y `.gitkeep`."
+
+[finding.conv.memory.note-large]
+message = "La nota pesa {size}, 32 KiB o más."
+hint = "Resume la nota: el máximo es 64 KiB y cada bloque de sesión, 4000 caracteres."
+
+[finding.conv.gitignore.required]
+message = "Falta la línea obligatoria `{entry}`."
+hint = "Agrega la línea tal cual, como en la plantilla."
+
+[finding.conv.gitattributes.required]
+message = "Falta la línea obligatoria `{entry}`."
+hint = "Agrega la línea, como en la plantilla."
+
+[finding.conv.gitattributes.lfs]
+message = "Patrón con `filter=lfs`: Git LFS no se usa en esta convención."
+hint = "Quita el filtro y saca del repositorio los archivos grandes."
+
+[finding.conv.data.unexpected-file]
+message = "Archivo versionado bajo `data/` distinto de `data/README.md`."
+hint = "Los datos crudos no se versionan: descríbelos en `data/README.md` y quita el archivo."
+
+[finding.conv.data.index]
+message = "Tabla de `data/README.md` inválida: {problem}."
+hint = "Usa la tabla con las columnas `id`, `description`, `location`, `access`, `classification` y `version`."
+
+[finding.conv.data.credential-url]
+message = "`location` tiene una URL con el parámetro de credencial '{param}'."
+hint = "Quita el parámetro o el enlace firmado y explica en `access` cómo pedir acceso."
+
+[finding.conv.provenance.missing]
+message = "La salida no tiene entrada en el `provenance.yaml` de su parte."
+hint = "Registra en `outputs` su `path`, `kind` y `generator`."
+
+[finding.conv.provenance.invalid]
+message = "`provenance.yaml` inválido: {problem}."
+hint = "Sigue el formato de `provenance.yaml` de la convención."
+
+[finding.conv.notebook.outputs]
+message = "Notebook inválido: {problem}."
+hint = "Limpia el notebook con `nbstripout` y déjalo en `analysis/` de su parte."
+
+[finding.conv.convention.value]
+message = "`project.yaml` fuera de la convención: {problem}."
+hint = "Escribe `convention: \"0.1\"` y usa los valores de `build` de la plantilla."
+
+[finding.conv.agents.structure]
+message = "Estructura de `AGENTS.md` inválida: {problem}."
+hint = "Conserva el título y las siete secciones numeradas de la plantilla, con 8 KiB y 150 líneas como máximo."
+
+[finding.conv.agents.import]
+message = "Importación no permitida @{target}."
+hint = "La única importación admitida en `AGENTS.md` es `@memory/constitution.md`."
+
+[finding.conv.agents.modified]
+message = "La sección {number} difiere del render de la convención."
+hint = "Las secciones 1 a 6 no se editan; las reglas propias van en la sección 7."
+
+[finding.conv.claude.content]
+message = "Contenido de `CLAUDE.md` inválido: {problem}."
+hint = "`CLAUDE.md` empieza con `@AGENTS.md`, no importa nada más y pesa 1 KiB como máximo."
+
+[finding.conv.constitution.structure]
+message = "`memory/constitution.md` inválido: {problem}."
+hint = "Conserva las siete secciones de la plantilla, con 8 KiB y 150 líneas como máximo."
+
+[finding.conv.latexmkrc.noncanonical]
+message = "`.latexmkrc` difiere del canónico de la convención para el motor {engine}."
+hint = "Reemplázalo por el `.latexmkrc` de la plantilla con el `$pdf_mode` de `build.engine`."
+
+[finding.E_VALIDATION_LICENSE_UNKNOWN]
+message = "La licencia '{value}' de `licenses.{category}` no es válida: {problem}."
+hint = "Usa un identificador SPDX o un `LicenseRef-*` y agrega su texto en `LICENSES/`."
+
+# -- hallazgos de la regla plan-ids ---------------------------------------------------
+
+[finding.E_VALIDATION_PLAN_SYNTAX]
+message = "La línea parece una definición del plan pero no cumple la gramática: {text}"
+hint = "Escribe `- RQ-1: ...` sin sangría, con el ID en mayúsculas y sin ceros a la izquierda."
+
+[finding.E_VALIDATION_UNKNOWN_PLAN_ID]
+message = "El ID del plan {id} no está definido en `plan.md`."
+hint = "Corrige la referencia o define el elemento."
+
+[finding.E_VALIDATION_UNKNOWN_DECISION]
+message = "La decisión {id} no existe en `memory/decisions/`."
+hint = "Cita una decisión de la base o agrega el registro en el mismo PR."
+
+[finding.E_VALIDATION_PLAN_ID_REMOVED]
+message = "El ID {id} de la base ya no está en `plan.md`."
+hint = "Un ID no se borra: márcalo con `(retired)` después del ID."
+
+[finding.E_VALIDATION_PLAN_RETIRED_CHANGED]
+message = "El ID retirado {id} se reactivó o cambió su texto."
+hint = "Un retirado sigue retirado con el mismo texto; solo puede agregarse la decisión si no tenía."
+
+[finding.E_VALIDATION_PLAN_ID_REUSED]
+message = "El ID nuevo {id} reutiliza un número; el máximo de su prefijo en la base es {max}."
+hint = "Usa un número mayor que {max}."
+
+[finding.W_VALIDATION_PLAN_TEXT_CHANGED]
+message = "Cambió el texto del elemento {id} del plan."
+hint = "Un cambio de dirección se declara con la tarea y el PR correspondientes."
+
+[finding.W_VALIDATION_PLAN_REF_RETIRED]
+message = "Se cita el ID retirado {id}."
+hint = "Cita el elemento vigente que lo reemplaza."

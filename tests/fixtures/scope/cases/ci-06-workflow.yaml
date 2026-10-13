@@ -1,0 +1,22 @@
+id: ci-06-workflow
+description: La investigadora toca .github/workflows/build.yml (clase lead).
+covers: [ci-4.2:workflow, a9:lead-file]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: .github/workflows/build.yml
+    content: |
+      name: build
+      on: [pull_request]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo cambiado
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_LEAD_ONLY_PATH]
+  paths: [.github/workflows/build.yml]

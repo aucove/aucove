@@ -1,0 +1,18 @@
+id: ci-16-state-expired
+description: >
+  El reclamo venció: el responsable puso state:expired y el PR es un borrador, así que
+  el estado base es claimed y derive_state da expired.
+covers: [ci-4.2:state-expired]
+task: {number: 17, claimant: carla, sections: [methods], state: expired}
+pr: {author: carla, draft: true}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Trabajo sobre un reclamo vencido.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_STATE_INVALID_TRANSITION]
+  mentions: [expired]

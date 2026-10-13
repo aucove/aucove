@@ -1,0 +1,18 @@
+id: a9-19-lead-undeclared-section
+description: >
+  El responsable tampoco sale del alcance de su tarea: task/18 declara introduction y el
+  PR toca methods.
+covers: [a9:lead-outside-task]
+task: {number: 18, claimant: ana, sections: [introduction]}
+pr: {author: ana}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Cambio del responsable fuera de su tarea.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_OUTSIDE_TASK]
+  paths: [sections/methods/methods.tex]

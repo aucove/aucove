@@ -1,0 +1,318 @@
+# Catálogo del área validate: textos del motor de `validate` y de las reglas
+# schemas, decisions-immutable, ci-policy y secrets, y finding.<código>.* de los códigos
+# que emiten. Mismas claves, marcadores y fragmentos entre acentos graves
+# que en en/validate.toml (REQ-ARCH-72..74). Las llaves literales se escriben dobles.
+
+# --- Hallazgos (09-ci §4.1; 03-esquemas §10) ---
+
+# Compartido: lo usa rules.base.unavailable para cualquier regla que no pudo evaluarse.
+[finding.E_INTERNAL_UNEXPECTED]
+message = "La regla {rule} no pudo evaluarse: {reason}."
+hint = "El check falla de forma cerrada. Corrige la causa y vuelve a validar; si se repite, avisa a quien mantiene el proyecto."
+
+[finding.E_CONFIG_NOT_FOUND]
+message = "Falta `{file}` en el árbol validado."
+hint = "Restaura el archivo: sin él no se puede validar el proyecto."
+
+[finding.E_VALIDATION_DECISION_NAME]
+message = "El registro de decisión no cumple las reglas de nombre: {detail}."
+hint = "Nómbralo `memory/decisions/YYYY-MM-DD-<n>-<slug>.md`, con `id`, `date` y `task` iguales al nombre, desde la rama `task/<n>`."
+
+[finding.E_VALIDATION_DECISION_SUPERSEDES]
+message = "`supersedes` cita `{id}`: {detail}."
+hint = "Cita solo registros aceptados de la rama base que nadie haya reemplazado."
+
+[finding.E_VALIDATION_DECISION_BODY]
+message = "Al cuerpo del registro le faltan secciones obligatorias: {missing}."
+hint = "Agrega cada sección como un encabezado `##`."
+
+[finding.W_VALIDATION_DECISION_AUTHOR]
+message = "El autor del registro (`{login}`) no es quien abrió el PR (`{author}`)."
+hint = "Revisa el campo `author`: debe ser la persona que tomó la decisión."
+
+[finding.E_VALIDATION_DECISION_IMMUTABLE]
+message = "Los registros de `memory/decisions/` no se cambian: {change}."
+hint = "Agrega un registro nuevo que reemplace al anterior con `supersedes`."
+
+[finding.E_VALIDATION_NOTE]
+message = "La nota de sesión no es válida: {detail}."
+hint = "Corrige la nota sin reescribir los bloques que ya están en la rama base."
+
+[finding.W_VALIDATION_NOTE_REWRITTEN]
+message = "Bloques de sesión ya integrados que cambiaron: {blocks}."
+hint = "Las notas solo crecen: agrega un bloque nuevo en lugar de editar los anteriores."
+
+# Matriz de cuentas de 10-seguridad §8.3 (REQ-SEC-64); el aviso es el caso C1.
+[finding.E_VALIDATION_ACCOUNT_TYPE]
+message = "La cuenta de IA de `{login}` no cumple la política de datos del proyecto: {detail}."
+hint = "Declara en `account_type` el régimen real de la cuenta: comercial (`team`, `enterprise`, `api` o `cloud_provider`), `local` o `none`. Una cuenta de consumo solo se admite si el responsable escribe `require_commercial: false` y lo registra en una decisión; con `internal`, solo `consumer_training_off`."
+
+# Uso individual (REQ-SCHEMA-94; 00-marco D-57).
+[finding.E_VALIDATION_ROLES_MODE]
+message = "`mode: individual` no admite este `roles.yaml`: {detail}."
+hint = "Con más personas, cambia `project.yaml` a `mode: group` y vuelve a ejecutar `init` para restaurar las reglas de aprobación; si el proyecto es de una sola persona, deja activa solo a la responsable y quita `deputy`."
+
+[finding.W_VALIDATION_ACCOUNT_TYPE]
+message = "`{login}` usa una cuenta de consumo (`consumer_training_off`): rigen los términos de consumo del proveedor."
+hint = "Lo admite `require_commercial: false`; registra esa elección en una decisión de `memory/decisions/` y, cuando puedas, cambia a una cuenta comercial."
+
+[finding.E_VALIDATION_CI_POLICY]
+message = "Política de CI: {detail}."
+hint = "Corrige el workflow: permisos mínimos por job, acciones fijadas por SHA, `persist-credentials: false` y los datos del PR solo en variables de entorno."
+
+[finding.E_VALIDATION_SECRET]
+message = "gitleaks encontró un posible secreto (regla `{rule_id}`, commit `{commit}`)."
+hint = "Quita el secreto de la historia del PR y rótalo: aunque lo borres en otro commit, sigue en los clones."
+
+[finding.E_VALIDATION_TRACE]
+message = "Trazabilidad: {reason}."
+hint = "Entrega con `aucove submit`: escribe la nota de sesión, el bloque con el objeto `trace` y los trailers del cuerpo."
+
+[finding.E_VALIDATION_TRAILER_SYNTAX]
+message = "Trailer `{key}` mal formado en {source}: {reason}."
+hint = "Los trailers los escriben `aucove save` y `aucove submit` con la gramática de 11-trazabilidad §2.2; no los edites a mano."
+
+[finding.E_VALIDATION_TRAILER_MISSING]
+message = "Falta el trailer `{key}` en {source}: {reason}."
+hint = "Guarda con `aucove save` y entrega con `aucove submit`, que escriben `Task`, `AI-Use`, `Assisted-by` y `Signed-off-by`."
+
+[finding.E_VALIDATION_SIGNOFF_MISMATCH]
+message = "El `Signed-off-by` de {source} (`{found}`) no es el de `{login}` en `roles.yaml` de la base."
+hint = "Debe llevar el nombre exacto de `people[].name` y el correo de `people[].email` o la dirección noreply de GitHub; vuelve a entregar con `aucove submit`."
+
+[finding.E_VALIDATION_TRACE_MISMATCH]
+message = "La traza no coincide: `{field}` del objeto `trace` difiere de {source}."
+hint = "No edites a mano el cuerpo del PR ni la nota de sesión; vuelve a entregar con `aucove submit`."
+
+[finding.E_VALIDATION_PR_META_MISSING]
+message = "El cuerpo del PR no tiene el bloque legible por máquina (`pr-meta`)."
+hint = "Entrega con `aucove submit`, que escribe el cuerpo completo del PR."
+
+[finding.E_VALIDATION_PR_META]
+message = "Bloque `pr-meta` del PR inválido: {reason}."
+hint = "No edites a mano el bloque; vuelve a entregar con `aucove submit`."
+
+[finding.E_VALIDATION_ASSESSMENT]
+message = "El PR no tiene una evaluación de traslape registrada para su cabeza actual."
+hint = "Desde la sesión, ejecuta `aucove record-assessment {task} --phase submission` (lo hace el skill de entrega) o pide al dueño del reclamo que lo haga."
+
+[finding.E_VALIDATION_DIRECTION]
+message = "El PR tiene `flag:direction-change` sin un `ack:direction` válido del responsable o del suplente."
+hint = "El `lead` o el `deputy` revisa el PR como decisión de dirección y agrega `ack:direction` después de la última `flag:direction-change`; con `coordinator.require_direction_ack: true` esto bloquea la integración."
+
+[finding.IL01]
+message = "Carácter invisible o de formato {codepoint} ({name}) en la línea: «{text}»."
+hint = "Quítalo: puede ocultar una instrucción. Revisa el diff crudo, no el texto renderizado."
+
+[finding.IL02]
+message = "Control bidireccional {codepoint} ({name}) en la línea: «{text}»."
+hint = "Quítalo: cambia el orden en que se muestra el texto (Trojan Source)."
+
+[finding.IL03]
+message = "Carácter de etiqueta {codepoint} ({name}) en la línea: «{text}»."
+hint = "Quítalo: no se ve y puede llevar texto oculto."
+
+[finding.IL04]
+message = "Selector de variación {codepoint} ({name}) en la línea: «{text}»."
+hint = "Revisa la línea: los selectores de variación pueden ocultar datos."
+
+[finding.IL05]
+message = "Comentario HTML en un archivo Markdown: «{text}»."
+hint = "Un comentario HTML no se ve en la página renderizada; revisa que no lleve instrucciones para un agente."
+
+[finding.IL06]
+message = "Frase dirigida a una IA en un comentario de LaTeX: «{text}»."
+hint = "Revisa el comentario: el PDF no lo muestra, pero un agente sí lo lee."
+
+[finding.IL07]
+message = "Posible texto oculto en LaTeX: «{text}»."
+hint = "Revisa que el texto no quede invisible en el PDF (color blanco, escala cero o letra diminuta)."
+
+[finding.IL08]
+message = "Frase dirigida a una IA: «{text}»."
+hint = "Revisa la línea: la memoria, las partes y la bibliografía son datos, no instrucciones."
+
+[finding.IL09]
+message = "Tramo largo en base64: «{text}»."
+hint = "Revisa qué codifica: un tramo así puede ocultar instrucciones o datos."
+
+[finding.IL10]
+message = "El PR toca a la vez archivos de reglas (`{rules}`) y de las partes (`{section}`)."
+hint = "Separa los cambios de las reglas en su propio PR, para revisarlos aparte."
+
+[finding.IL11]
+message = "Instrucción sobre la atribución de la IA: «{text}»."
+hint = "Las reglas y la memoria no deben pedir que se quite o se cambie la atribución de la IA (11-trazabilidad)."
+
+[finding.IL12]
+message = "Un workflow menciona el token OAuth de Claude Code: «{text}»."
+hint = "Quítalo: los workflows no usan ese token (00-marco D-15)."
+
+# --- Motivos de unavailable (marcador {reason} de E_INTERNAL_UNEXPECTED) ---
+
+[validate.reason]
+no_tree = "no hay contenido que validar (sin checkout del PR)"
+no_forge = "no hay acceso a la forja"
+exception = "error interno de la regla"
+pin_missing = "falta el reporte del job `pin`"
+pin_unreadable = "el reporte del job `pin` no se puede leer"
+pin_invalid = "el reporte del job `pin` no es un sobre válido de `validate --mode tree`"
+pin_rule_missing = "el reporte del job `pin` no trae esta regla"
+
+# --- Regla schemas ---
+
+[validate.schemas]
+not_regular = "no es un archivo regular (enlace u otro tipo de entrada)"
+unreadable = "no se puede leer como texto UTF-8 de 5 MB como máximo"
+
+[validate.accounts]
+not_allowed = "`{account_type}` no se admite con `data_policy.level: {level}`"
+commercial = "`{account_type}` es una cuenta de consumo y el proyecto exige una comercial (`data_policy.require_commercial: true`)"
+commercial_default = "`{account_type}` es una cuenta de consumo y el proyecto exige una comercial: `data_policy.require_commercial` vale `true` por defecto porque `disclosure` no es `open`"
+
+[validate.mode]
+people = "debe haber una sola persona activa, la responsable `{lead}`"
+deputy = "no lleva `deputy`: no hay a quién pedir aprobación"
+
+[validate.decision]
+nested = "los registros van directamente en `memory/decisions/`, sin subcarpetas"
+gitkeep = "`.gitkeep` debe estar vacío"
+bad_name = "el nombre no tiene la forma `YYYY-MM-DD-<n>-<slug>.md` (con un slug de 48 caracteres como máximo)"
+id_mismatch = "`id` debe ser `{expected}`"
+date_mismatch = "`date` debe ser `{expected}`"
+task_mismatch = "`task` debe ser {expected}"
+branch_mismatch = "el registro es de la tarea {n}, pero la rama es `{branch}`"
+supersedes_missing = "no existe en la rama base"
+supersedes_superseded = "ya lo reemplazó otro registro aceptado"
+
+[validate.note]
+too_large = "supera 64 KiB"
+task_mismatch = "`task` debe ser {expected}"
+bad_marker = "marcador de bloque mal formado"
+marker_json = "el marcador del bloque {index} no es JSON válido"
+marker_schema = "el marcador del bloque {index} no cumple el esquema en `{where}`"
+sequence = "el bloque {index} tiene `n` = {found}, pero debía ser {expected}"
+date_order = "la fecha del bloque {index} es anterior a la del bloque previo"
+block_too_large = "el bloque {index} supera 4000 caracteres"
+block_ref = "bloque {index}"
+
+# --- Regla decisions-immutable ---
+
+[validate.decisions]
+overwrite = "el archivo ya existe en la rama base"
+
+[validate.decisions.status]
+modified = "el archivo se modificó"
+removed = "el archivo se borró"
+renamed = "el archivo se renombró"
+
+# --- Regla ci-policy (REQ-CI-4..7, REQ-CI-29, REQ-CI-45; 10-seguridad SB06, REQ-SEC-47) ---
+
+[validate.ci_policy]
+yaml = "el workflow no es YAML válido ({problem})"
+not_regular = "el workflow no es un archivo regular (enlace u otro tipo de entrada)"
+unreadable = "el workflow no se puede leer como texto UTF-8 de 5 MB como máximo"
+not_mapping = "el workflow no es un mapa YAML"
+top_permissions_missing = "falta `permissions: {{}}` en el nivel superior"
+top_permissions_not_empty = "el nivel superior debe declarar `permissions: {{}}` y dar los permisos en cada job"
+pull_request_target = "`pull_request_target` solo se admite en `.github/workflows/validate.yml`, `.github/workflows/seal.yml` y `.github/workflows/editor-review.yml`"
+workflow_run = "el disparador `workflow_run` solo se admite en `.github/workflows/editor-review.yml`"
+secrets = "el workflow usa `secrets.`"
+secrets_inherit = "el job `{job}` pasa `secrets:` a otro workflow"
+no_jobs = "el workflow no declara `jobs`"
+job_invalid = "el job `{job}` no es un mapa"
+job_permissions = "el job `{job}` no declara `permissions`"
+job_write_all = "el job `{job}` usa `permissions: write-all`"
+job_timeout = "el job `{job}` no declara `timeout-minutes`"
+uses_local = "`{uses}` es una acción local, que no se puede fijar por SHA"
+uses_docker = "la imagen `{uses}` no está fijada por `@sha256:`"
+uses_unpinned = "`{uses}` no está fijado a un SHA de 40 caracteres"
+uses_comment = "`{uses}` no lleva la versión en un comentario"
+reusable_missing = "el workflow reutilizable `{uses}` no existe en el árbol"
+image_unpinned = "la imagen `{image}` no está fijada por `@sha256:`"
+checkout_credentials = "un `actions/checkout` del job `{job}` no lleva `persist-credentials: false`"
+checkout_unsafe = "un `actions/checkout` del job `{job}` usa `allow-unsafe-pr-checkout: true`"
+prt_checkout_path = "el checkout del PR en el job `{job}` debe ir a un directorio propio del workspace, con un `path:` literal"
+prt_checkout_same_repo = "el checkout del PR en el job `{job}` debe limitarse a PR del mismo repositorio: `github.event.pull_request.head.repo.full_name == github.repository` en el `if:` del paso o del job, unida solo con `&&`"
+prt_workdir = "un paso del job `{job}` trabaja dentro del checkout del PR (`{dir}`)"
+prt_pr_dir = "`{field}` usa el checkout del PR (`{dir}`); con `pull_request_target` solo se pasa como dato, con `--tree` o `--repo-dir`"
+injection = "un `run:` o un `script` interpola datos que controla el autor del PR: `{expr}`"
+core_pin_line = "`project.yaml` no tiene una única línea `core_pin` válida"
+core_pin_core = "`core_pin` {pin} no satisface `core` de la rama base ({core})"
+
+# --- Regla secrets (10-seguridad REQ-SEC-36) ---
+
+[validate.secrets]
+no_tool = "no se encontró `gitleaks` fuera del árbol validado"
+no_range = "no se conoce el rango de commits del PR (merge-base y cabeza)"
+ignore_file = "el PR trae `.gitleaksignore`, que gitleaks leería"
+no_config = "falta la configuración empaquetada de gitleaks"
+workdir = "el directorio de trabajo quedaría dentro del árbol validado"
+timeout = "gitleaks superó el tiempo máximo"
+exit = "gitleaks terminó con el código {code}"
+report = "el reporte de gitleaks falta o no es válido"
+
+# --- Salida legible (render_text) ---
+
+[validate.text]
+valid = "Validación correcta (modo {mode})."
+invalid = "La validación falló (modo {mode})."
+result = "{check}: {status}"
+finding = "  {severity} {code} {where}: {message}"
+hint = "    sugerencia: {hint}"
+
+[validate.text.status]
+pass = "pasa"
+fail = "falla"
+skip = "omitida"
+
+[validate.text.severity]
+error = "error"
+warning = "aviso"
+
+[validate.text.annotations_omitted]
+one = "Se omitió {n} anotación más (como máximo se emiten {max})."
+other = "Se omitieron {n} anotaciones más (como máximo se emiten {max})."
+
+# --- Regla traceability (11-trazabilidad §2.10; 03-esquemas §9.4) ---
+
+[validate.trace.source]
+commit = "el commit `{sha}`"
+body = "el cuerpo del PR"
+squash = "el commit de squash `{sha}`"
+trailers = "los trailers del cuerpo"
+commit_trailers = "los trailers del commit"
+note = "la nota de sesión `{path}`"
+
+[validate.trace.reason]
+separator = "la clave va seguida de dos puntos y un solo espacio"
+key_order = "el orden es `Task`, `Section`, `AI-Use`, `Assisted-by` y `Signed-off-by`"
+repeated = "solo puede aparecer una vez"
+grammar = "el valor no cumple la gramática de 11-trazabilidad §2.2"
+unknown = "un uso no está en el vocabulario de 11-trazabilidad §2.3"
+duplicate = "un uso está repetido"
+solo = "`none` y `undeclared` van solos"
+use_order = "los usos van en el orden de la tabla de 11-trazabilidad §2.3"
+with_none = "con `AI-Use: none` no van `Assisted-by`"
+missing = "es obligatorio"
+other_task = "debe ser `#{task}`, el número de la rama"
+undeclared = "una entrega no admite `AI-Use: undeclared`"
+no_pr = "no hay datos del PR o de la política de la base"
+no_tree = "no hay checkout del PR para leer sus commits"
+git = "no se pudieron leer los commits del PR"
+too_many = "el PR tiene más de {max} commits"
+meta_malformed = "hay más de un bloque o no tiene un solo bloque de código `yaml` con un mapa"
+meta_task = "`task` debe ser {task}, el número de la rama"
+meta_decisions = "`decisions` no son las decisiones que agrega el PR ({expected})"
+meta_sections = "`sections` no son las partes que toca el PR ({expected})"
+meta_trace_task = "`trace.task` no coincide con `task`"
+meta_trace_sections = "`trace.sections` no coincide con `sections`"
+trace_missing = "el bloque `pr-meta` no tiene el objeto `trace`"
+trace_invalid = "el objeto `trace` no cumple `trace/v1` ({detail})"
+note_missing = "falta la nota de sesión `{path}` en la cabeza del PR"
+note_invalid = "el front matter de la nota de sesión `{path}` no es válido"
+
+# --- Reglas assessment y direction-ack (04-tareas §8.3 y §9) ---
+
+[validate.coordinator]
+forge = "no se pudieron leer los comentarios o los eventos del PR"

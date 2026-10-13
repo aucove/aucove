@@ -1,0 +1,133 @@
+# Catalog of the tasks area: texts the task operations write to the forge (in the project
+# language) and the effects of their `--dry-run` (05-operaciones §6.5). Same keys,
+# placeholders and code spans as es/tasks.toml (REQ-ARCH-72..74).
+
+[tasks.claim]
+comment = "**Claim of #{task}** by @{login}. Parts: {sections}."
+
+[tasks.release]
+comment = "**Release of #{task}** by @{login}."
+reason = "Reason: {reason}"
+handoff = "Handoff to @{login}: they can claim it and continue from the archive."
+
+[tasks.escalation]
+comment = "**Escalation of #{task}** to @{lead}: the update from the base needs the lead. Reason: {reason}"
+
+[tasks.save.auto]
+update = "Save changes before updating from the base"
+switch = "Save changes before switching tasks"
+release = "Save changes before releasing the task"
+submit = "Record the session before submitting"
+
+[tasks.note]
+heading = "## Session {n} · {date} · @{login}"
+done = "Done"
+next = "Next"
+decisions = "Decisions"
+questions = "Open questions"
+
+[tasks.submit]
+comment = "**Submission {round} of #{task}.**"
+seal = "The seal of this submission will appear as a PR comment in a few minutes. Each new round is sealed again, and `aucove status` keeps a copy in `.aucove/evidence/`."
+done = "Submission {round} of #{task}: {url}"
+
+[tasks.pr]
+summary = "Summary"
+task = "Task"
+parts = "Changes by part"
+part = "`{section}`: {files}"
+more = " and {n} more"
+no_parts = "No part: only the note and the decisions."
+ai = "AI use"
+ai_none = "No AI use."
+ai_uses = "Uses: {uses}. Tools: {tools}."
+decisions = "Decisions"
+no_decisions = "None."
+verification = "Verification"
+check_scope = "The PR only touches the parts of the task, its note and new decisions."
+check_note = "The note `memory/notes/task-{n}.md` summarizes the work."
+check_ai = "I reviewed the text produced with AI and I take responsibility for it."
+replaces = "Replaces #{pr}."
+
+[tasks.assessment]
+overlap_possible = "**Possible overlap (advisory).**"
+overlap_clear = "**Clear overlap (advisory).**"
+overlap_item = "With {target}: {reason}"
+direction = "**Possible change of direction (advisory).** It affects {ids}."
+none = "No overlap and no change of direction."
+footer = "Assessment made by the session of @{login}; it can be wrong. The lead decides."
+mention_claim = "{mentions}: the claim assessment of #{task} added {labels} (advisory). The details are in the claim comment."
+mention_submission = "{mentions}: the submission assessment of #{task} added {labels} (advisory). The details are in the submission comment."
+
+[tasks.accept]
+summary = "You are about to accept task #{task} “{title}”: the `state:proposed` label will be removed and the task will be open to claim."
+
+[tasks.cancel]
+summary = "You are about to cancel task #{task} “{title}”. This will:"
+pr_comment = "Task #{task} was cancelled by @{login}; this PR is closed without merging."
+reason = "Reason: {reason}"
+
+[tasks.decision]
+commit = "Decision: {title}"
+
+[tasks.direction]
+kind_line = "**Kind of change:** {kind}"
+change = "## Proposed change"
+rationale = "## Rationale"
+ids = "## `plan.md` IDs"
+no_ids = "None."
+
+[tasks.direction.kind]
+add = "add"
+modify = "modify"
+retire = "retire"
+
+[tasks.expiry]
+warning = "{mentions}: task #{task} has had no activity for {idle} days; if this continues, it expires in {left} days. To renew it, save your work with `{name} save` or claim it again with `{name} claim {task}`."
+expired = "{mentions}: task #{task} expired after {idle} days without activity (`state:expired`). The `task/{task}` branch is still on the forge: its claimant renews it with `{name} save` or `{name} claim {task}`, and the lead decides whether to release it."
+activity = "There was activity on task #{task}; the {days}-day period starts again now."
+
+[tasks.effect]
+claim_ref = "Create the claim commit and the `task/{task}` branch."
+assign = "Assign Issue #{task} to @{login}."
+claim_comment = "Create or update the claim comment."
+renew = "Remove the `state:expired` label."
+checkout = "Switch to the `task/{task}` branch."
+cache = "Write the task cache."
+save_commit = "Commit {n} changed files."
+push = "Push the work to `task/{task}`."
+merge_remote = "Merge `origin/task/{task}` into the local branch."
+merge_base = "Merge `origin/{base}` into the task branch."
+merge_abort = "Abort the merge in progress."
+merge_commit = "Commit the merge."
+blocked = "Add the `flag:blocked` label."
+escalation = "Post the escalation comment for the lead."
+close_pr = "Close PR #{pr}."
+archive = "Archive the work of #{task} in an `archive/task-{task}-*` tag."
+delete_ref = "Delete the `task/{task}` branch from the forge."
+unassign = "Remove the assignment and the `state:expired` label from Issue #{task}."
+release_comment = "Post the release comment."
+cleanup = "Switch to the base branch and delete the local `task/{task}` branch."
+assessment = "Record the {phase}-phase assessment."
+flags = "Add the labels {labels}."
+note = "Add a block to the note of #{task}."
+submit_commit = "Commit the note and the pending changes."
+create_pr = "Open the PR of `task/{task}`."
+pr_body = "Write the PR body."
+submission_comment = "Create or update the submission comment."
+add_proposed = "Add the `state:proposed` label to Issue #{task}, so that the acceptance is recorded."
+accept = "Remove the `state:proposed` label from Issue #{task}."
+remove_labels = "Remove {labels} from Issue #{task}."
+unassign_only = "Remove the assignees of Issue #{task}."
+close_issue = "Close Issue #{task} as not planned."
+decision_file = "Write the record `{path}`."
+decision_commit = "Commit the decision record."
+warn = "Warn on task #{task} that it is about to expire."
+expire = "Add `state:expired` to task #{task} and say so in its expiry comment."
+unexpire = "Remove `state:expired` from task #{task}: there was activity."
+
+[tasks.effect.repair]
+assign_owner = "Assign Issue #{task} to its claimant."
+clear_assignees = "Remove the assignees of Issue #{task}: it no longer has a branch."
+remove_stale_expired = "Remove the stale `state:expired` label from Issue #{task}."
+close_merged_issue = "Close Issue #{task}: its PR was already merged."

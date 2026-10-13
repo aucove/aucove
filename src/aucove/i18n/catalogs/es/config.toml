@@ -1,0 +1,127 @@
+# Catálogo del área config: textos de config/* y finding.<código>.* de
+# CONFIG_FINDING_CODES (config.schemas). Mismas claves, marcadores y fragmentos
+# entre acentos graves que en en/config.toml (REQ-ARCH-72..74).
+
+[config.yaml]
+syntax = "error de sintaxis ({problem})"
+alias = "no se admiten alias de YAML (`*`)"
+anchor = "no se admiten anclas de YAML (`&{name}`)"
+duplicate_key = "la clave {key} está repetida"
+non_string_key = "la clave {key} no es texto"
+merge = "no se admiten claves de fusión (`<<`)"
+tag = "la etiqueta YAML {tag} no está admitida"
+tag_value = "el valor {value} no es válido con la etiqueta YAML {tag}: solo se admiten `true`, `false` y números decimales"
+character = "el archivo tiene un carácter de control no admitido"
+not_utf8 = "el archivo no está en UTF-8"
+too_deep = "el documento está anidado demasiado hondo"
+
+[config.front_matter]
+missing = "el archivo debe empezar con una línea `---`"
+unterminated = "falta la línea `---` que cierra el front matter"
+not_mapping = "el front matter debe ser un mapa YAML"
+
+[config.type]
+string = "texto"
+integer = "un entero"
+number = "un número"
+boolean = "un booleano"
+object = "un mapa"
+array = "una lista"
+null = "nulo"
+
+[config.schema]
+root = "la raíz del documento"
+type = "debe ser {expected}, pero es {actual}"
+type_or = "{first} o {second}"
+required = "falta la clave obligatoria '{key}'"
+additional = "la clave '{key}' no está admitida"
+enum = "el valor {value} no está admitido; valores posibles: {allowed}"
+const = "debe valer {expected}"
+pattern = "el valor {value} no tiene el formato esperado"
+min_length = "debe tener al menos {limit} caracteres"
+max_length = "debe tener como máximo {limit} caracteres"
+minimum = "debe ser mayor o igual que {limit}"
+maximum = "debe ser menor o igual que {limit}"
+exclusive_minimum = "debe ser mayor que {limit}"
+exclusive_maximum = "debe ser menor que {limit}"
+min_items = "debe tener al menos {limit} elementos"
+max_items = "debe tener como máximo {limit} elementos"
+min_properties = "debe tener al menos {limit} claves"
+max_properties = "debe tener como máximo {limit} claves"
+unique_items = "tiene elementos repetidos"
+format = "{value} no es un valor válido con formato {format}"
+not = "el valor {value} no está permitido"
+any_of = "no cumple ninguna de las formas admitidas"
+one_of = "debe cumplir exactamente una de las formas admitidas"
+min_contains = "le faltan elementos que cumplan la condición del esquema (mínimo: {limit})"
+max_contains = "hay demasiados elementos que cumplen la condición del esquema (máximo: {limit})"
+min_contains_const = "debe haber al menos {limit} elemento con `{field}: {value}`"
+max_contains_const = "puede haber como máximo {limit} elemento con `{field}: {value}`"
+other = "no cumple la regla `{keyword}` del esquema"
+
+[config.hint]
+quote = "Escríbelo entre comillas, por ejemplo: \"0.1\". Sin comillas, YAML lo lee como otro tipo de valor."
+
+[config.project]
+core_pin_line = "`core_pin` debe estar en una sola línea de nivel superior con la forma `core_pin: \"X.Y.Z\"` (en una pre-release, `\"X.Y.ZrcN\"`, con `aN` o `bN` en lugar de `rcN`)"
+core_invalid = "`core` ({core}) no es un especificador de versiones PEP 440 válido"
+core_pin_range = "`core_pin` ({pin}) no satisface `core` ({core})"
+expiry_warning = "`limits.expiry_warning_days` ({warning}) debe ser menor que `limits.claim_expiry_days` ({expiry})"
+
+[config.roles]
+lead_mismatch = "`lead` ({login}) no coincide con la persona de `role: lead` ({person})"
+lead_inactive = "la persona de `role: lead` ({login}) tiene `active: false`"
+deputy_unknown = "`deputy` ({login}) no está en `people`"
+deputy_inactive = "`deputy` ({login}) tiene `active: false`"
+deputy_role = "`deputy` ({login}) debe tener `role: researcher`"
+deputy_is_lead = "`deputy` ({login}) no puede ser el responsable"
+ref_owner = "Dueño de la parte '{section}'"
+ref_editor = "Editor del artículo"
+
+[finding.E_CONFIG_YAML]
+message = "YAML inválido: {detail}."
+hint = "Corrige la sintaxis. No se admiten alias, anclas, claves repetidas ni claves que no sean texto."
+
+[finding.E_CONFIG_INVALID]
+message = "Configuración inválida: {detail}."
+hint = "Corrige el valor en el archivo de configuración."
+
+[finding.E_VALIDATION_SCHEMA]
+message = "En {where}: {detail}."
+hint = "Corrige el valor según el esquema del archivo."
+
+[finding.E_VALIDATION_FRONT_MATTER]
+message = "Front matter inválido: {detail}."
+hint = "El archivo debe empezar con `---`, seguir con un mapa YAML y cerrar con otra línea `---`."
+
+[finding.E_VALIDATION_ROLES_LEAD]
+message = "Responsable inválido: {detail}."
+hint = "Pon en `lead` el login de la única persona activa con `role: lead`."
+
+[finding.E_VALIDATION_ROLES_DEPUTY]
+message = "Suplente inválido: {detail}."
+hint = "El suplente debe ser una persona activa de `people`, con `role: researcher` y distinta del responsable, o `null`."
+
+[finding.E_VALIDATION_DUPLICATE_LOGIN]
+message = "El login '{login}' aparece más de una vez en `people` (sin distinguir mayúsculas)."
+hint = "Deja una sola entrada por persona."
+
+[finding.E_VALIDATION_DUPLICATE_ID]
+message = "El id '{id}' está repetido."
+hint = "Cada id debe ser único."
+
+[finding.E_VALIDATION_UNKNOWN_PERSON]
+message = "{ref}: '{login}' no está en `people`."
+hint = "Corrige el login o agrega la persona a `people`."
+
+[finding.E_VALIDATION_INACTIVE_PERSON]
+message = "{ref}: '{login}' tiene `active: false`."
+hint = "Asigna una persona activa."
+
+[finding.E_VALIDATION_ORCID]
+message = "El ORCID '{orcid}' tiene un dígito de control inválido."
+hint = "Copia el ORCID de tu perfil, sin el prefijo `https://orcid.org/`."
+
+[finding.W_VALIDATION_LOGIN_CASE]
+message = "'{written}' difiere de '{login}' (en `people`) solo en mayúsculas."
+hint = "Escribe '{login}' con la misma grafía que en `people`."

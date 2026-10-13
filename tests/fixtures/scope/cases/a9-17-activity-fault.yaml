@@ -1,0 +1,19 @@
+id: a9-17-activity-fault
+description: >
+  La API de actividad de la rama falla (5xx): sin poder listar los pushes, scope falla
+  cerrado (REQ-CI-8).
+covers: [a9:activity-unavailable]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Cambio en alcance.
+faults:
+  - {method: list_ref_activity, kind: http_5xx}
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_INTERNAL_UNEXPECTED]

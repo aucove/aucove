@@ -1,0 +1,296 @@
+# Texts of the CLI generated from the registry (05-operaciones §3.4 and §4).
+# Parity with es/cli.toml: same keys, placeholders and backtick fragments.
+
+[cli.help]
+usage_prefix = "usage: "
+description = "Core operations on a LaTeX and git research project."
+epilog = "Help for each operation: {prog} <operation> --help"
+commands = "operations"
+globals = "global options"
+options = "operation options"
+
+[cli.global]
+json = "Write only the result envelope to stdout, as compact JSON."
+dry_run = "Compute the plan without writing anything."
+lang = "Language of the messages."
+root = "Directory from which the project is searched."
+input = "JSON file (or - for stdin) with the same arguments as the MCP tool; excludes the operation flags."
+version = "Show the installed version and exit."
+help = "Show this help and exit."
+
+[cli.output]
+ok = "{op}: done."
+failed = "{op}: failed."
+dry_run = "{op}: dry run; nothing was written. Plan:"
+hint = "hint"
+details = "details"
+warning = "warning"
+interrupted = "Interrupted."
+see_help = "See `{prog} --help`."
+
+[cli.op.doctor]
+summary = "Diagnose the environment, the project and the connection to the forge."
+
+[cli.op.doctor.param]
+refresh = "Force a refresh of the identity and capabilities cache."
+
+[cli.op.init]
+summary = "Human only: set up the project and its repository (language, format, labels, protections and generated files). Asks you to type `init <owner>/<repo>`."
+
+[cli.op.init.param]
+language = "Project language: es or en (asked if missing)."
+format = "Format: latex (compiled manuscript) or none (each part in Markdown)."
+disclosure = "Disclosure policy: private, milestones or open."
+individual = "Single-person project (mode: individual): PRs are merged without approval."
+regenerate = "Only regenerate the generated files in the working tree, without calling the forge."
+
+[cli.ask.init]
+language = "Idioma del proyecto / Project language (es/en): "
+
+[cli.op.sync-roles]
+summary = "Regenerate CODEOWNERS and the task form from roles.yaml."
+
+[cli.op.sync-roles.param]
+check = "Only check that the generated files are up to date; do not write."
+
+[cli.op.validate]
+summary = "Validate the project against the convention and CI rules."
+
+[cli.op.validate.param]
+mode = "Validation mode: local tree (tree), PR, base branch or build log."
+base = "Reference of the base branch to compare against."
+head = "Reference of the head being validated."
+checks = "Run only this rule; can be repeated."
+changed_only = "Check only the files changed with respect to the base."
+policy = "Checkout of the base branch the policy is read from."
+tree = "Directory of the tree being validated."
+pr = "Number of the PR being validated."
+before = "Previous SHA of the base branch."
+after = "New SHA of the base branch."
+log = "LaTeX build log to analyze."
+report = "Also write the result envelope to this file."
+pin_report = "Validate envelope of the pinned core version, from which its rules are taken."
+format = "Format of the readable output: text or GitHub annotations."
+cursor = "Pagination cursor from a previous response."
+max_chars = "Character cap of the response, between 2000 and 40000."
+
+[cli.op.status]
+summary = "Show the state of the tasks, the base branch and its CI; copy the seals of your submissions."
+
+[cli.op.status.param]
+mine = "Only your tasks: the ones you claim and the ones you proposed that nobody claims."
+task = "Only this task."
+states = "Only the tasks in this state; can be repeated."
+section = "Only the tasks of this part."
+cursor = "Pagination cursor from a previous response."
+max_chars = "Character cap of the response, between 2000 and 40000."
+
+[cli.op.context]
+summary = "Summarize the project context in Markdown: what any agent reads when it starts."
+
+[cli.op.context.param]
+refresh = "Read the forge even if the cache is less than 10 minutes old."
+task = "Add the context package of this task (with `--phase`)."
+phase = "Phase of the context package: claim or submission (with `--task`)."
+
+[cli.group.task]
+summary = "Tasks: propose, accept and cancel."
+
+[cli.op.task.propose]
+summary = "Propose a new task: create its Issue with `task` and `state:proposed`."
+
+[cli.op.task.propose.param]
+title = "Task title (at most 120 characters)."
+sections = "Part the task touches; can be repeated."
+body = "Summary of the task."
+body_file = "File with the summary of the task."
+plan_refs = "`plan.md` ID the task refers to; can be repeated."
+idempotency_key = "Own key so the proposal is not duplicated (16 to 64 hex digits)."
+
+[cli.op.task.accept]
+summary = "Human only: accept a proposed task (removes `state:proposed`). Asks you to type `accept <n>`."
+
+[cli.op.task.accept.param]
+task = "Number of the task Issue."
+
+[cli.op.task.cancel]
+summary = "Human only: cancel a task, archive its work, delete its branch and close the Issue. Asks you to type `cancel <n>`."
+
+[cli.op.task.cancel.param]
+task = "Number of the task Issue."
+reason = "Reason for the cancellation, posted on the PR (at most 500 characters)."
+
+[cli.op.claim]
+summary = "Claim an open task: create its `task/<n>` branch and switch to it."
+
+[cli.op.claim.param]
+task = "Number of the task Issue."
+checkout = "Switch to the task branch (default); `--no-checkout` does not switch."
+fresh = "With a handoff, start from the base instead of the archived work."
+
+[cli.op.release]
+summary = "Release a claimed task: archive the published work and delete its branch."
+
+[cli.op.release.param]
+task = "Number of the task Issue."
+reason = "Reason for the release (at most 500 characters)."
+handoff = "Lead only: hand the task over to this person, who continues from the archive."
+
+[cli.op.save]
+summary = "Save the work of the current task: commit with the AI-use trace, and push."
+
+[cli.op.save.param]
+message = "Commit message (at most 200 characters)."
+ai_use = "AI uses, comma-separated (none, ideation, literature, drafting, editing, translation, code, analysis, figures, review)."
+ai_tool = "AI tool to declare, if it is not detected."
+ai_model = "AI model to declare."
+paths = "Save only this path; can be repeated."
+
+[cli.op.update]
+summary = "Update the task branch from the base with a merge, never a rebase."
+
+[cli.op.update.param]
+continue = "Finish the merge after resolving the conflicts, and push the result."
+abort = "Abort the merge in progress."
+escalate = "With `--abort`: mark the task as blocked and notify the lead with this reason."
+
+[cli.op.switch]
+summary = "Switch to another task of yours: save the current one, fetch the branch and sync it."
+
+[cli.op.switch.param]
+task = "Number of the task Issue."
+
+[cli.op.record-assessment]
+summary = "Record the overlap assessment made by the session; the assessment goes in `--input`."
+
+[cli.op.record-assessment.param]
+task = "Number of the task Issue."
+phase = "Phase of the assessment: claim or submission."
+
+[cli.op.submit]
+summary = "Submit the current task: session note, local checks and the PR."
+
+[cli.op.submit.param]
+summary = "Summary of the submission (at most 4000 characters)."
+summary_file = "File with the summary of the submission."
+title = "PR title; by default, the one of the Issue."
+note_file = "JSON file with the session note: done, next, decisions and questions."
+ai_use = "AI uses, comma-separated."
+ai_tool = "AI tool to declare, if it is not detected."
+ai_model = "AI model to declare."
+ai_note = "Note about the AI use (at most 500 characters)."
+sign_off = "Confirm the `attest-v1` responsibility declaration."
+compile = "Compile the article before submitting; `--no-compile` does not compile."
+
+[cli.op.expire-claims]
+summary = "Expire inactive claims and warn before (the CI runs it daily; the lead can too)."
+
+[cli.op.expire-claims.param]
+policy = "Directory with the base `project.yaml` and `roles.yaml`, when not run in the clone."
+now = "Fake forge only: the date and time taken as now (ISO 8601)."
+
+[cli.group.decision]
+summary = "Project decision records."
+
+[cli.group.direction]
+summary = "Proposals to change the project direction (`plan.md`)."
+
+[cli.op.decision.propose]
+summary = "Record a decision in `memory/decisions/` from the current task and push it."
+
+[cli.op.decision.propose.param]
+title = "Title of the decision (at most 120 characters); the file name comes from it."
+summary = "One-line summary (at most 280 characters)."
+context = "What problem or question led to the decision."
+decision = "What was decided."
+consequences = "What changes with the decision."
+status = "accepted (adopted) or rejected (explicitly discarded)."
+alternatives = "Alternative considered; can be repeated."
+supersedes = "ID of a base decision that this one replaces; can be repeated."
+plan_refs = "`plan.md` ID the decision refers to; can be repeated."
+
+[cli.op.direction.propose]
+summary = "Propose a change of direction: open a `direction` Issue with the affected `plan.md` IDs."
+
+[cli.op.direction.propose.param]
+title = "Title of the proposal (at most 120 characters)."
+kind = "add, modify or retire `plan.md` items."
+change = "The proposed change."
+rationale = "Why the change is worth it."
+plan_refs = "Affected `plan.md` ID, required with modify and retire; can be repeated."
+
+[cli.group.review]
+summary = "Pull request review: the ones waiting for you, their summary, and approving or requesting changes."
+
+[cli.op.review.list]
+summary = "List the open pull requests waiting for your review, with your role in each."
+
+[cli.op.review.list.param]
+all = "Lead or deputy only: every open task pull request."
+cursor = "Cursor of the next page."
+max_chars = "Character limit of the response (2000 to 40000)."
+
+[cli.op.review.show]
+summary = "Summarize a pull request for review: files, scope, CI, assessments and approvals."
+
+[cli.op.review.show.param]
+pr = "Pull request number."
+cursor = "Cursor of the next page of files."
+max_chars = "Character limit of the response (2000 to 40000)."
+
+[cli.op.review.approve]
+summary = "Human only: approve a pull request on its current head. Asks you to type `approve <pr>`."
+
+[cli.op.review.approve.param]
+pr = "Pull request number."
+body = "Comment of the approval (optional)."
+body_file = "File with the comment of the approval."
+
+[cli.op.review.request-changes]
+summary = "Human only: request changes on a pull request. Asks you to type `request-changes <pr>`."
+
+[cli.op.review.request-changes.param]
+pr = "Pull request number."
+body = "The changes you request (required; if missing, you are asked)."
+body_file = "File with the changes you request."
+
+[cli.ask.review.request-changes]
+body = "Write the changes you request (one line): "
+
+[cli.attest]
+text = "I declare that I have personally reviewed the content of this submission, including any parts produced with AI assistance; that the AI-use declaration is accurate and complete; and that I take responsibility for this content before the project team."
+question = "Do you confirm this declaration? Type y to accept: "
+
+[cli.confirm]
+type_exactly = "To confirm, type exactly \"{challenge}\" and press Enter: "
+
+[cli.op.check-path]
+summary = "Tell whether you can write to each path, and why."
+
+[cli.op.check-path.param]
+paths = "Path to check, relative to the project root or absolute; accepts several."
+task = "Task number; by default, the one of the current branch."
+
+[cli.op.metrics]
+summary = "Exports the pilot metrics as CSV (one row per task or per event), with pseudonymized logins."
+
+[cli.op.metrics.param]
+since = "First included day, YYYY-MM-DD (UTC): the tasks created and the events from that day."
+until = "Last included day, YYYY-MM-DD (UTC); by default, up to now."
+table = "CSV table: tasks (one row per task; the default) or events (one row per event)."
+output = "File where the table's CSV is written; without this option no file is written."
+no_pseudonymize = "Exports the logins as they are, without pseudonyms (no salt needed)."
+
+[cli.group.evidence]
+summary = "Verifiable date evidence of submissions and integrations."
+
+[cli.op.evidence.verify]
+summary = "Verify evidence records: manifest, TSA and OTS stamps, openings and actors."
+
+[cli.op.evidence.verify.param]
+path = "Folder of a record or a folder that contains records: an artifact, a package or the local evidence copy."
+repo = "Git repository against which the commit, its tree and the opening blobs are checked."
+content = "Folder with files at their repository paths, compared with what was sealed."
+offline = "Do not use the network. Without this option, and with a network, the OpenTimestamps calendars are queried to complete pending OTS proofs in memory."
+upgrade = "Besides completing pending OTS proofs in memory, rewrite `manifest.json.ots` with the complete proof."
+tz = "Time zone of the local times; by default, America/Mexico_City."

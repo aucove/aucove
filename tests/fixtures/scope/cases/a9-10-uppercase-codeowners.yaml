@@ -1,0 +1,17 @@
+id: a9-10-uppercase-codeowners
+description: >
+  Variante de mayúsculas de un generado: .github/codeowners se clasifica como
+  generated aunque la grafía difiera (REQ-CONV-9), y una investigadora no lo cambia.
+covers: [a9:case-variants]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: .github/codeowners
+    content: |
+      * @carla
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_GENERATED_PATH]
+  paths: [.github/codeowners]

@@ -1,0 +1,30 @@
+id: ci-12-existing-decision-lead
+description: >
+  El responsable edita un registro existente de memory/decisions/: falla también para
+  lead (scope con E_PERM_APPEND_ONLY y decisions-immutable).
+covers: [ci-4.2:existing-decision, a9:existing-decision]
+task: {number: 18, claimant: ana, sections: [introduction]}
+pr: {author: ana}
+changes:
+  - status: modified
+    path: memory/decisions/2026-09-01-3-scope.md
+    content: |
+      ---
+      id: 2026-09-01-3-scope
+      title: "Alcance del estudio"
+      date: "2026-09-01"
+      author: ana
+      origin: human
+      task: 3
+      status: accepted
+      summary: "El estudio cubre solo la ola 2025."
+      ---
+
+      El estudio cubre solo la ola 2025.
+checks: [scope, decisions-immutable]
+expect:
+  valid: false
+  checks: {scope: fail, decisions-immutable: fail}
+  codes: [E_PERM_APPEND_ONLY]
+  paths: [memory/decisions/2026-09-01-3-scope.md]
+  mentions: [supersedes]

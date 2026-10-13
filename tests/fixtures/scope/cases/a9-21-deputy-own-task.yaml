@@ -1,0 +1,22 @@
+id: a9-21-deputy-own-task
+description: >
+  El suplente (bruno) en su tarea 15: su sección declarada y un archivo lead
+  (tex/notation.tex), que el suplente puede cambiar.
+covers: [a9:deputy]
+task: {number: 15, claimant: bruno, sections: [results]}
+pr: {author: bruno}
+changes:
+  - status: modified
+    path: sections/results/results.tex
+    content: |
+      \section{Resultados}
+      Resultados de la ola 2025.
+  - status: modified
+    path: tex/notation.tex
+    content: |
+      % Notación común del documento.
+      \newcommand{\R}{\mathbb{R}}
+      \newcommand{\N}{\mathbb{N}}
+expect:
+  valid: true
+  checks: {scope: pass}

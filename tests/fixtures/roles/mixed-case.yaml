@@ -1,0 +1,33 @@
+# Fixture compartido: logins con mayúsculas (Ana, Carla). El dueño de
+# methods está escrito en minúsculas (carla) y da exactamente un
+# W_VALIDATION_LOGIN_CASE, en /sections/1/owner (REQ-SCHEMA-30).
+version: 1
+lead: Ana
+deputy: bruno
+people:
+  - login: Ana
+    name: "Ana Pérez"
+    role: lead
+    account_type: team
+  - login: bruno
+    name: "Bruno Díaz"
+    role: researcher
+    account_type: team
+  - login: Carla
+    name: "Carla Soto"
+    role: researcher
+    account_type: team
+  - login: dario
+    name: "Darío Luna"
+    role: researcher
+    account_type: none
+sections:
+  - id: introduction
+    title: "Introduction"
+    owner: Ana
+  - id: methods
+    title: "Methods"
+    owner: carla
+  - id: results
+    title: "Results"
+    owner: bruno

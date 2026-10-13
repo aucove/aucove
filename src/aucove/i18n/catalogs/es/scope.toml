@@ -1,0 +1,93 @@
+# Catálogo del área scope, en español (00-marco D-32 f).
+# Textos de la regla scope de validate (09-ci §4.2) y de los hallazgos del cuerpo del
+# Issue de tarea (03-esquemas §8.3). Los marcadores de finding.<código>.message son los
+# de CODES en ops/rules/scope.py.
+
+[scope.reason]
+not_task_branch = "debe tener la forma task/<n>"
+fork = "el PR viene de un fork, y el control de alcance solo admite ramas del mismo repositorio"
+no_task = "no hay un Issue de tarea #{task}"
+
+[scope.claim]
+author = "el PR lo abrió otra persona y el reclamo es de {claimant}"
+author_unclaimed = "la tarea no tiene una persona reclamante identificable"
+push = "empujó a la rama {branch}, que solo puede mover {claimant}"
+unknown_actor = "(actor desconocido)"
+
+[scope.body]
+repeated_field = "el campo {field} está repetido (línea {line})"
+
+[scope.unavailable]
+mode = "la regla solo se aplica en modo pr"
+policy = "falta la política de la rama base"
+pr = "faltan los datos del PR"
+forge = "falta el acceso a la forja"
+forge_error = "la forja no respondió al leer la tarea ({kind})"
+head_mismatch = "el árbol revisado ({tree}) no es la cabeza actual del PR ({head})"
+too_many_files = "el PR cambia {limit} archivos o más y la API no lista más; divide el cambio en varios PR"
+activity = "la API de actividad de la rama {branch} no está disponible"
+missing_mode = "{file} no está en el árbol de la cabeza (git ls-tree)"
+check_failed = "no se pudo evaluar {file}"
+
+[finding.E_PERM_OUTSIDE_REPO]
+message = "La ruta {file} no es válida: queda fuera del repositorio, está bajo .git/, lleva una barra invertida o usa un nombre que Windows no puede extraer (CON, PRN, AUX, NUL, COM1-9, LPT1-9, punto o espacio final, <>:\"|?* o un nombre corto como GIT~1)."
+hint = "Trabaja solo con rutas del proyecto y separa las carpetas con /: en git, una \\ es parte del nombre del archivo. Si el nombre es de los que Windows no admite, cámbialo (por ejemplo, auxiliar.tex en vez de aux.tex): con él, nadie podría extraer el repositorio en Windows."
+
+[finding.E_PERM_SYMLINK]
+message = "{file} es un enlace simbólico, y no se admiten."
+hint = "Usa la ruta real del archivo; los enlaces simbólicos no se admiten."
+
+[finding.E_PERM_LOCAL_PATH]
+message = "{file} es configuración local (clase local) y no se versiona."
+hint = "Esos archivos no se editan desde una tarea."
+
+[finding.E_PERM_GENERATED_PATH]
+message = "{file} es un archivo generado: solo lo cambian el responsable o su suplente, y debe ser idéntico a la regeneración."
+hint = "Cambia la fuente y regenera con `aucove sync-roles`."
+
+[finding.E_PERM_APPEND_ONLY]
+message = "{file} ya existe en la rama base y es de solo agregar: no se modifica ni se borra."
+hint = "Crea una decisión nueva con `supersedes`."
+
+[finding.E_PERM_LEAD_ONLY_PATH]
+message = "{file} es un archivo del responsable (clase lead)."
+hint = "Solo el responsable lo modifica; usa `aucove direction propose`."
+
+[finding.E_PERM_EDITOR_ONLY_PATH]
+message = "{file} es un archivo del editor del artículo (clase editor)."
+hint = "Solo el editor del artículo lo modifica; pídele el cambio en la revisión del PR."
+
+[finding.E_PERM_OUTSIDE_TASK]
+message = "{file} está fuera de lo que declara la tarea #{task}."
+hint = "Pide que se amplíe la tarea o crea otra."
+
+[finding.E_PERM_SECTION_NOT_OWNED]
+message = "{file} está en la parte {section}, cuyo dueño es {owner}."
+hint = "Coordina con el dueño o propón una tarea suya."
+
+[finding.E_PERM_NOT_A_MEMBER]
+message = "{login} no está en el roles.yaml de la rama base."
+hint = "Pide al responsable que te agregue en roles.yaml."
+
+[finding.E_STATE_NOT_ON_TASK_BRANCH]
+message = "La rama cabeza del PR ({branch}) no es una rama de tarea válida: {reason}."
+hint = "Reclama una tarea con `aucove claim <n>` o propón una con `aucove task propose`."
+
+[finding.E_CLAIM_NOT_HELD]
+message = "{login} no tiene el reclamo de la tarea #{task}: {reason}."
+hint = "Solo quien reclamó la tarea abre su PR y empuja a su rama; reclámala con `aucove claim <n>` o trabaja en una tarea tuya."
+
+[finding.E_STATE_INVALID_TRANSITION]
+message = "La tarea #{task} está en el estado {state}, que no admite integrar cambios."
+hint = "Consulta `aucove status --task <n>`: solo se integran tareas reclamadas y vigentes."
+
+[finding.E_VALIDATION_TASK_BODY]
+message = "El cuerpo del Issue #{task} no es válido: {reason}."
+hint = "Corrige el Issue con los campos del formulario de tarea, sin repetir encabezados."
+
+[finding.W_VALIDATION_TASK_UNKNOWN_FIELD]
+message = "El cuerpo del Issue #{task} tiene texto antes del primer campo del formulario, y se ignora."
+
+[finding.W_VALIDATION_TASK_NO_SECTIONS]
+message = "La tarea #{task} no declara partes."
+hint = "Una tarea sin partes no puede modificar ninguna parte."

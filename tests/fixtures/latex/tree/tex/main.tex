@@ -1,0 +1,18 @@
+% tex/main.tex de prueba: un archivo de enlace por cada parte de tests/fixtures/roles/basic.yaml.
+\documentclass[11pt,a4paper]{article}
+\input{preamble}
+\input{notation}  % las definiciones viven aquí
+\addbibresource{../bib/references.bib}
+\addbibresource{../sections/introduction/pending.bib}
+\addbibresource{../sections/methods/pending.bib}
+\addbibresource{../sections/results/pending.bib}
+\begin{document}
+\maketitle
+\tableofcontents
+\input{outline/introduction}
+\input{outline/methods}
+\input{outline/results}
+\appendix
+\input{appendix}
+\printbibliography[heading=bibintoc]
+\end{document}

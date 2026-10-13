@@ -1,0 +1,22 @@
+# Valores por defecto de los marcadores {{var:<nombre>}} de template/.
+# tools/render_template.py los usa para el render de la plantilla; `aucove init` (H3)
+# los reescribe en cada proyecto. Solo estas claves pueden aparecer en template/.
+# core se deriva de core_pin con la fórmula de init (01 REQ-ARCH-44; 00-marco D-66).
+core = ">=0.1.0rc1,<0.2"
+core_pin = "0.1.0rc1"
+# La plantilla publicada va en en (01-arquitectura §2.3); render_template.py --lang la reemplaza.
+language = "en"
+name = "aucove-template"
+title = "Research project template"
+forge_repo = "example-org/aucove-template"
+# Repositorio del framework: URL del requirements-lock.txt de cada versión (09-ci REQ-CI-12),
+# que los workflows y el README aplican a `uv tool install --constraints` (REQ-SEC-45).
+# Es el repositorio público del framework (00-marco D-54): el único dueño que decide qué
+# dependencias instala el CI de cada proyecto. Nunca un dueño de ejemplo (01 §2.3).
+framework_repo = "aucove/aucove"
+# gitleaks (09-ci §4.3, 10-seguridad REQ-SEC-36 y REQ-SEC-47): versión estable y sha256 de
+# gitleaks_<versión>_linux_x64.tar.gz, verificados contra el archivo de checksums oficial de
+# esa versión. Verificados el 2026-10-02: v8.30.1 (publicada el 2026-03-21) contra
+# gitleaks_8.30.1_checksums.txt de la Release oficial y el digest del asset en la API de GitHub.
+gitleaks_version = "8.30.1"
+gitleaks_sha256 = "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"

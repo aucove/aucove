@@ -1,0 +1,7 @@
+# Selector de Issues (clase lead). Las tareas se proponen con el formulario «Tarea» (task.yml),
+# que el núcleo genera desde roles.yaml; por eso se desactivan los Issues en blanco.
+blank_issues_enabled: false
+contact_links:
+  - name: Guía del proyecto
+    url: https://github.com/{{var:forge_repo}}#readme
+    about: Cómo proponer, reclamar y entregar tareas en este repositorio.

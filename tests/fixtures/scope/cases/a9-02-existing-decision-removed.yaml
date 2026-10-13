@@ -1,0 +1,13 @@
+id: a9-02-existing-decision-removed
+description: Una investigadora borra un registro de decisión que ya está en la base.
+covers: [a9:existing-decision]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - {status: removed, path: memory/decisions/2026-09-01-3-scope.md}
+checks: [scope, decisions-immutable]
+expect:
+  valid: false
+  checks: {scope: fail, decisions-immutable: fail}
+  codes: [E_PERM_APPEND_ONLY]
+  paths: [memory/decisions/2026-09-01-3-scope.md]

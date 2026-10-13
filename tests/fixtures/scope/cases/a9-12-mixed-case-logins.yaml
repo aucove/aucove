@@ -1,0 +1,20 @@
+id: a9-12-mixed-case-logins
+description: >
+  Variante de mayúsculas en los logins: roles.yaml escribe Carla y Ana, la forja da
+  carla y ana, y un push llega como CARLA. Los logins se comparan sin distinguir
+  mayúsculas, así que el PR pasa.
+covers: [a9:case-variants]
+base: {roles: mixed-case}
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Texto con logins en otra grafía.
+pushes:
+  - {actor: CARLA, type: push}
+expect:
+  valid: true
+  checks: {scope: pass}

@@ -1,0 +1,21 @@
+id: a9-25-windows-name-own-section
+description: >
+  La dueña de methods agrega sections/methods/aux.tex en su propia tarea. AUX es un
+  nombre de dispositivo de Windows: git para Windows no puede extraer ese archivo, y tras
+  integrarlo ningún miembro en Windows podría hacer pull de main. canonical rechaza el
+  nombre (02 §3.1, is_win32_alias), así que scope da E_PERM_OUTSIDE_REPO, y el mensaje
+  dice que el problema es el nombre.
+covers: []
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: sections/methods/aux.tex
+    content: |
+      Material auxiliar de la sección.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_OUTSIDE_REPO]
+  paths: [sections/methods/aux.tex]
+  mentions: [sections/methods/aux.tex, Windows, AUX, GIT~1]

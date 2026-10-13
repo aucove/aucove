@@ -1,0 +1,56 @@
+id: ci-04-roles-self-grant
+description: >
+  La investigadora cambia roles.yaml en el mismo PR para quedarse con results y edita
+  esa sección. La autorización usa el roles.yaml de la base (REQ-CI-25): roles.yaml es
+  clase lead y results sigue siendo de bruno. CODEOWNERS no se regeneró, así que
+  roles-sync falla.
+covers: [ci-4.2:roles-self-grant, a9:roles-same-pr]
+task: {number: 17, claimant: carla, sections: [methods, results]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: roles.yaml
+    content: |
+      version: 1
+      lead: ana
+      deputy: bruno
+      people:
+        - login: ana
+          name: "Ana Pérez"
+          role: lead
+          account_type: team
+        - login: bruno
+          name: "Bruno Díaz"
+          role: researcher
+          account_type: team
+        - login: carla
+          name: "Carla Soto"
+          role: researcher
+          account_type: team
+        - login: dario
+          name: "Darío Luna"
+          role: researcher
+          account_type: unknown
+      sections:
+        - id: introduction
+          title: "Introduction"
+          owner: ana
+        - id: methods
+          title: "Methods"
+          owner: carla
+        - id: results
+          title: "Results"
+          owner: carla
+  - status: modified
+    path: sections/results/results.tex
+    content: |
+      \section{Resultados}
+      Ahora me asigné esta sección.
+prior: {roles-sync: fail, generated-sync: pass}
+checks: [scope, roles-sync, generated-sync]
+expect:
+  valid: false
+  checks: {scope: fail, roles-sync: fail, generated-sync: pass}
+  codes: [E_PERM_LEAD_ONLY_PATH, E_PERM_SECTION_NOT_OWNED]
+  paths: [roles.yaml, sections/results/results.tex]
+  mentions: [bruno]

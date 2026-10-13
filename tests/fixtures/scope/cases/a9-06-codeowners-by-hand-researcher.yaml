@@ -1,0 +1,18 @@
+id: a9-06-codeowners-by-hand-researcher
+description: Una investigadora edita .github/CODEOWNERS a mano para quedarse con results.
+covers: [a9:codeowners-by-hand]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: .github/CODEOWNERS
+    content: |
+      * @ana @bruno
+      /sections/results/ @carla
+prior: {roles-sync: fail, generated-sync: pass}
+checks: [scope, roles-sync, generated-sync]
+expect:
+  valid: false
+  checks: {scope: fail, roles-sync: fail, generated-sync: pass}
+  codes: [E_PERM_GENERATED_PATH]
+  paths: [.github/CODEOWNERS]

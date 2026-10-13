@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aucove.invalid/schemas/session-note/v1",
+  "title": "Front matter de una nota de sesión",
+  "description": "Front matter YAML de memory/notes/task-<n>.md. Autoridad: 03-esquemas §7. La definición #/$defs/session_block valida el objeto JSON del marcador '<!-- aucove:session {...} -->' que abre cada bloque de sesión.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task",
+    "created",
+    "created_by"
+  ],
+  "properties": {
+    "task": {
+      "description": "Número de la tarea. Igual al <n> del nombre del archivo.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "created": {
+      "description": "Fecha en que se creó la nota (RFC 3339 full-date).",
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "created_by": {
+      "description": "login de quien tenía el reclamo cuando se creó la nota.",
+      "$ref": "#/$defs/login"
+    },
+    "ai_use": {
+      "description": "Copia revisada del AI-Use de la tarea que escribe submit (11-trazabilidad REQ-TRACE-21). Vocabulario de 11-trazabilidad §2.3; si difieren, manda 11.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "none",
+          "ideation",
+          "literature",
+          "drafting",
+          "editing",
+          "translation",
+          "code",
+          "analysis",
+          "figures",
+          "review"
+        ]
+      }
+    },
+    "assisted_by": {
+      "description": "Entradas <herramienta>:<modelo> con la gramática de Assisted-by (11-trazabilidad §2.2).",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "maxLength": 161,
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*:[A-Za-z0-9._:@/+-]{1,128}$"
+      }
+    }
+  },
+  "$defs": {
+    "login": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 39,
+      "pattern": "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*(_[A-Za-z0-9]+)?$"
+    },
+    "session_block": {
+      "description": "Metadatos de un bloque de sesión, serializados como JSON de una línea dentro del marcador HTML.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "n",
+        "date",
+        "login",
+        "door"
+      ],
+      "properties": {
+        "n": {
+          "description": "Número del bloque: 1 para el primero y consecutivo después.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "login": {
+          "$ref": "#/$defs/login"
+        },
+        "door": {
+          "description": "Puerta desde la que se trabajó, en kebab-case (valores recomendados en 03-esquemas §7.2).",
+          "type": "string",
+          "maxLength": 32,
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "model": {
+          "description": "Modelo usado, si la puerta lo informa; null si se desconoce.",
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]*$",
+              "not": {
+                "pattern": "--"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

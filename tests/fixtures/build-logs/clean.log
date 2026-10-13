@@ -1,0 +1,35 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  1 OCT 2026 10:30
+entering extended mode
+ restricted \write18 enabled.
+ file:line:error style messages enabled.
+ %&-line parsing enabled.
+**main.tex
+(./main.tex
+LaTeX2e <2024-11-01> patch level 2
+L3 programming layer <2025-01-18>
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2024/06/29 v1.4n Standard LaTeX document class
+(/usr/local/texlive/2025/texmf-dist/tex/latex/base/size11.clo
+File: size11.clo 2024/06/29 v1.4n Standard LaTeX file (size option)
+))
+(./preamble.tex
+(/usr/local/texlive/2025/texmf-dist/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2024-11-05 v7.01l Hypertext links for LaTeX
+))
+(./notation.tex)
+(./build/main.aux)
+\openout1 = `main.aux'.
+
+(../sections/introduction/introduction.tex) (../sections/methods/methods.tex
+<../sections/methods/figures/pipeline.pdf, id=12, 433.62pt x 216.81pt>
+File: ../sections/methods/figures/pipeline.pdf Graphic file (type pdf)
+<use ../sections/methods/figures/pipeline.pdf>
+) [1
+
+{/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] (./build/main.aux) )
+Here is how much of TeX's memory you used:
+ 7012 strings out of 474222
+ 112345 string characters out of 5743456
+ Output written on build/main.pdf (2 pages, 61234 bytes).
+PDF statistics:
+ 51 PDF objects out of 1000 (max. 8388607)

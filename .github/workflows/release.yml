@@ -1,0 +1,222 @@
+# Release del núcleo (01-arquitectura §2.3; 10-seguridad §6.2, REQ-SEC-40 a REQ-SEC-44;
+# 00-marco D-69). Lo dispara una etiqueta vX.Y.Z (o vX.Y.ZrcN) en el repositorio público.
+# Mismas reglas que ci.yml: permissions: {} arriba y mínimos por job, timeout-minutes, todo
+# uses: fijado por SHA con la versión en un comentario y checkout sin credenciales.
+# - ci y live corren la matriz completa y las pruebas contra GitHub real sobre el commit
+#   etiquetado (08-forja REQ-FORGE-64).
+# - build comprueba que la etiqueta es la versión del paquete, construye la rueda y el sdist
+#   con el hatchling de uv.lock verificado por hash, exporta requirements-lock.txt y el SBOM
+#   con la versión completada y renderiza la plantilla publicada.
+# - pypi publica por Trusted Publishing desde el environment pypi, el único job con
+#   id-token: write (REQ-SEC-41), con las atestaciones PEP 740 de la acción (REQ-SEC-42) y
+#   las de actions/attest: la procedencia de dist/* y el SBOM (REQ-SEC-43).
+# - template actualiza aucove-template solo con una versión final (REQ-ARCH-7 y REQ-ARCH-8),
+#   con un token de la GitHub App del environment template-publish (REQ-SEC-83).
+# - gh-release crea la GitHub Release con las notas de CHANGELOG.md y los dos assets.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  live:
+    uses: ./.github/workflows/nightly.yml
+    permissions:
+      contents: read
+
+  build:
+    needs: [ci, live]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"   # el mismo uv que ci.yml
+          python-version: "3.11"
+          enable-cache: false
+      - name: La etiqueta es la versión del paquete (00-marco D-66)
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: python3 tools/release.py check-tag --tag "$TAG" >> "$GITHUB_OUTPUT"
+      - name: uv.lock al día (REQ-SEC-44)
+        run: uv lock --check
+      - name: Rueda y sdist (hatchling de uv.lock, verificado por hash)
+        run: |
+          uv export --quiet --frozen --only-group dev --no-emit-project --output-file "$RUNNER_TEMP/uv-build-constraints.txt"
+          uv build --build-constraints "$RUNNER_TEMP/uv-build-constraints.txt" --require-hashes
+          ls -l dist
+      - name: requirements-lock.txt y SBOM (REQ-SEC-43 y REQ-SEC-44)
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p assets
+          uv export --quiet --frozen --no-dev --no-emit-project --extra evidence --format requirements.txt --output-file assets/requirements-lock.txt
+          uv export --quiet --frozen --no-dev --no-emit-project --extra evidence --format cyclonedx1.5 --output-file assets/sbom.cdx.json
+          python3 tools/release.py sbom-version --file assets/sbom.cdx.json --version "$VERSION"
+      - name: Render de la plantilla publicada (01-arquitectura §2.3)
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          uv sync --locked --group dev --no-install-project
+          uv sync --locked --group dev --no-build-isolation-package aucove
+          uv run --no-sync python tools/render_template.py --lang en --core-pin "$VERSION" --out build/template
+          tar -C build -cf template.tar template
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: assets
+          path: assets/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: template
+          path: template.tar   # en tar: el render tiene archivos ocultos (.github/, .mcp.json…)
+          if-no-files-found: error
+
+  pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/aucove/${{ needs.build.outputs.version }}/
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: dist/
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: assets
+          path: assets/
+      - name: Atestación de procedencia de dist/* (la que verifica gh attestation verify)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/*
+      - name: Atestación del SBOM (REQ-SEC-43)
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: dist/*
+          sbom-path: assets/sbom.cdx.json
+      # Acción compuesta: corre la imagen ghcr.io/pypa/gh-action-pypi-publish que PyPA construye
+      # para este mismo commit. Sin attestations: false (REQ-SEC-42).
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/
+
+  template:
+    needs: [build, pypi]
+    if: needs.build.outputs.prerelease == 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: template-publish
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: template
+          path: .
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app
+        with:
+          client-id: ${{ vars.TEMPLATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.TEMPLATE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: aucove-template
+          permission-contents: write
+          permission-workflows: write   # el árbol incluye .github/workflows/ (REQ-ARCH-10)
+      - name: Publicar aucove-template (01-arquitectura §2.3)
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          OWNER: ${{ github.repository_owner }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          template="aucove-template"
+          # REQ-ARCH-9: antes de escribir, el repositorio sigue marcado como plantilla.
+          if [ "$(gh api "repos/$OWNER/$template" --jq .is_template)" != "true" ]; then
+            echo "::error::$OWNER/$template no está marcado como plantilla (is_template)"
+            exit 1
+          fi
+          bot_id="$(gh api "users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          tar -xf template.tar
+          git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${OWNER}/${template}.git" published
+          find published -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a template/. published/
+          git -C published config user.name "${APP_SLUG}[bot]"
+          git -C published config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git -C published add -A
+          git -C published commit --quiet -s -m "aucove v${VERSION}"
+          git -C published tag -a "v${VERSION}" -m "aucove v${VERSION}"
+          git -C published push --atomic origin HEAD:refs/heads/main "refs/tags/v${VERSION}"
+          if [ -z "$(git -C published ls-remote --tags origin "v${VERSION}")" ]; then
+            echo "::error::la etiqueta v${VERSION} no llegó a $OWNER/$template"
+            exit 1
+          fi
+
+  gh-release:
+    needs: [build, pypi, template]
+    if: ${{ !cancelled() && needs.pypi.result == 'success' && (needs.template.result == 'success' || needs.template.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0   # las etiquetas, para el enlace a la versión anterior
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: assets
+          path: assets/
+      - name: GitHub Release con las notas de CHANGELOG.md y los assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+        run: |
+          previous="$(git tag --list 'v[0-9]*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -vxF "v$VERSION" | head -n 1 || true)"
+          python3 tools/release.py notes --version "$VERSION" --repo "$REPO" --previous "$previous" > "$RUNNER_TEMP/notes.md"
+          flags=()
+          if [ "$PRERELEASE" = "true" ]; then flags+=(--prerelease); fi
+          gh release create "v$VERSION" --repo "$REPO" --verify-tag --title "aucove $VERSION" \
+            --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}" \
+            assets/requirements-lock.txt assets/sbom.cdx.json

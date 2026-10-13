@@ -1,0 +1,18 @@
+version = 1
+
+[[annotations]]   # texto de ejemplo, notas y `.md` de las partes, y configuración: CC0-1.0 (regla general)
+path = ["**", "sections/*/notes/**", "sections/*/*.md"]
+SPDX-FileCopyrightText = "2026 The aucove Authors"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]   # código: MIT-0 (en REUSE.toml gana la última tabla que coincide)
+path = [".github/**", ".claude/**", ".agents/**", ".devcontainer/**", ".latexmkrc",
+        ".gitignore", ".gitattributes", ".mcp.json", "tex/main.tex", "tex/preamble.tex",
+        "tex/notation.tex", "sections/*/analysis/**"]
+SPDX-FileCopyrightText = "2026 The aucove Authors"
+SPDX-License-Identifier = "MIT-0"
+
+[[annotations]]   # datos derivados del análisis: CC0-1.0
+path = ["sections/*/analysis/derived/**"]
+SPDX-FileCopyrightText = "2026 The aucove Authors"
+SPDX-License-Identifier = "CC0-1.0"

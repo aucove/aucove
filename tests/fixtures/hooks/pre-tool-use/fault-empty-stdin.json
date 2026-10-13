@@ -1,0 +1,14 @@
+{
+  "id": "pre-tool-use/fault-empty-stdin",
+  "description": "stdin vacío: el hook de PreToolUse falla cerrado y el único resultado aceptado es la salida 2 (REQ-MVP-31).",
+  "class": "fault",
+  "os": ["windows", "macos", "linux"],
+  "setup": {
+    "identity": "carla",
+    "branch": "task/12",
+    "roles_base": "roles/basic.yaml",
+    "task_sections": {"12": ["methods"]}
+  },
+  "stdin": "",
+  "expect": {"decision": "deny"}
+}

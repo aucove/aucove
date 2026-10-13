@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aucove.invalid/schemas/evidence-openings/v1",
+  "title": "Aperturas de un manifiesto de evidencia",
+  "description": "PRIVADO. Sales, rutas e identidades que abren los compromisos de un evidence-manifest/v1 (00-marco D-45; 11-trazabilidad §8.3). Con una apertura y el archivo se prueba ese archivo sin revelar los demás. Viaja con el registro (artefacto, comentario ci:evidence del repo privado y copia local) y nunca por MCP; al abrir un hito solo se publican las de los archivos que se abren (D-44). Puede contener un subconjunto de las entradas.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "manifest_sha256",
+    "repository",
+    "entries",
+    "actors"
+  ],
+  "properties": {
+    "schema": {
+      "const": "https://aucove.invalid/schemas/evidence-openings/v1"
+    },
+    "manifest_sha256": {
+      "description": "SHA-256 de los bytes exactos del manifiesto que abre.",
+      "$ref": "#/$defs/hex256"
+    },
+    "repository": {
+      "description": "owner/name del repositorio al sellar.",
+      "type": "string",
+      "maxLength": 140,
+      "pattern": "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*/[A-Za-z0-9._-]{1,100}$"
+    },
+    "entries": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "$ref": "#/$defs/opening"
+      }
+    },
+    "actors": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/actor_opening"
+      }
+    }
+  },
+  "$defs": {
+    "hex256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "opening": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "salt",
+        "blob",
+        "size"
+      ],
+      "properties": {
+        "path": {
+          "description": "Ruta tal como la da git (git diff-tree -z), decodificada como UTF-8 y sin normalizar; p se calcula sobre sus bytes UTF-8, que son 4096 como máximo (11-trazabilidad §8.3; maxLength cuenta caracteres).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "salt": {
+          "description": "32 bytes aleatorios (secrets.token_bytes), en hex.",
+          "$ref": "#/$defs/hex256"
+        },
+        "blob": {
+          "description": "Id del blob de git del contenido sellado; null si el archivo se borró.",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "size": {
+          "description": "Tamaño del blob en bytes; null si se borró.",
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "actor_opening": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "r",
+        "value",
+        "salt"
+      ],
+      "properties": {
+        "r": {
+          "enum": [
+            "pr_author",
+            "merged_by",
+            "author",
+            "committer"
+          ]
+        },
+        "value": {
+          "description": "Login (pr_author, merged_by) o \"Nombre <correo>\" del objeto commit (author, committer).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 320
+        },
+        "salt": {
+          "$ref": "#/$defs/hex256"
+        }
+      }
+    }
+  }
+}

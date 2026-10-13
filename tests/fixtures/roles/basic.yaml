@@ -1,0 +1,31 @@
+# Fixture compartido: política del ejemplo de 06-permisos §2.1 y §4.6.
+version: 1
+lead: ana
+deputy: bruno
+people:
+  - login: ana
+    name: "Ana Pérez"
+    role: lead
+    account_type: team
+  - login: bruno
+    name: "Bruno Díaz"
+    role: researcher
+    account_type: team
+  - login: carla
+    name: "Carla Soto"
+    role: researcher
+    account_type: team
+  - login: dario
+    name: "Darío Luna"
+    role: researcher
+    account_type: none
+sections:
+  - id: introduction
+    title: "Introduction"
+    owner: ana
+  - id: methods
+    title: "Methods"
+    owner: carla
+  - id: results
+    title: "Results"
+    owner: bruno

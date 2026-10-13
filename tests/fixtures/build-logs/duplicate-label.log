@@ -1,0 +1,29 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  1 OCT 2026 10:25
+entering extended mode
+ restricted \write18 enabled.
+ file:line:error style messages enabled.
+ %&-line parsing enabled.
+**main.tex
+(./main.tex
+LaTeX2e <2024-11-01> patch level 2
+(./preamble.tex)
+(./notation.tex)
+(./build/main.aux)
+(../sections/introduction/introduction.tex)
+(../sections/methods/methods.tex
+
+LaTeX Warning: Reference `fig:methods:missing-figure-with-a-rather-long-name' o
+n page 2 undefined on input line 14.
+
+) (./build/main.aux
+
+LaTeX Warning: Label `sec:introduction' multiply defined.
+
+)
+
+LaTeX Warning: There were multiply-defined labels.
+
+LaTeX Warning: There were undefined references.
+
+ )
+Output written on build/main.pdf (3 pages, 51234 bytes).

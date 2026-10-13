@@ -1,0 +1,31 @@
+# Cumple el esquema y rompe REQ-SCHEMA-24 a 29 a la vez: se informan todos.
+version: 1
+lead: ana
+deputy: ana
+people:
+  - login: ana
+    name: "Ana"
+    role: lead
+    account_type: team
+    active: false
+  - login: bruno
+    name: "Bruno"
+    role: researcher
+    account_type: team
+    orcid: "0000-0002-1825-0098"
+  - login: Bruno
+    name: "Bruno otra vez"
+    role: researcher
+    account_type: team
+  - login: carla
+    name: "Carla"
+    role: researcher
+    account_type: none
+    active: false
+sections:
+  - id: introduction
+    title: "Introduction"
+    owner: zoe
+  - id: introduction
+    title: "Otra vez"
+    owner: carla

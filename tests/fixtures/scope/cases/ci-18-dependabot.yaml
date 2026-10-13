@@ -1,0 +1,22 @@
+id: ci-18-dependabot
+description: PR de un bot (Dependabot), sin tarea y sin rol en roles.yaml (Q-CI-3).
+covers: [ci-4.2:bot]
+task: null
+pr: {author: "dependabot[bot]", head_branch: dependabot/github_actions/actions/checkout-7.0.2}
+changes:
+  - status: modified
+    path: .github/workflows/build.yml
+    content: |
+      name: build
+      on: [pull_request]
+      jobs:
+        build:
+          runs-on: ubuntu-latest
+          timeout-minutes: 10
+          steps:
+            - run: echo actualizado por el bot
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_NOT_A_MEMBER, E_STATE_NOT_ON_TASK_BRANCH]
+  mentions: ["dependabot[bot]"]

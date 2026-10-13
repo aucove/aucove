@@ -1,0 +1,357 @@
+# Catálogo núcleo de errores y avisos, en inglés (05-operaciones §12.1 y §12.2).
+# Solo lleva claves error.<CODE>.message, error.<CODE>.hint y warning.<CODE> (00-marco D-32 f).
+# Los textos no llevan marcadores de formato: el dato variable va en details.
+# Es la traducción de es/core.toml. Los fragmentos entre acentos graves son identificadores:
+# no se traducen y deben coincidir, en el mismo orden, con los de es/core.toml (REQ-ARCH-73).
+
+# --- Errores (05-operaciones §12.1) ---
+
+[error.E_CONFIG_NOT_A_PROJECT]
+message = "No project found: there is no `project.yaml` with `.git` from this directory upward."
+hint = "Run the command inside the project repository or use `--root`."
+
+[error.E_CONFIG_INVALID]
+message = "The file `project.yaml` or `roles.yaml` does not match its schema."
+hint = "Fix the indicated file; `aucove validate` shows the details."
+
+[error.E_CONFIG_CONVENTION_UNSUPPORTED]
+message = "The project's convention version is not compatible with the installed core."
+hint = "Update the core or ask the lead to migrate the convention."
+
+[error.E_CONFIG_CORE_MISMATCH]
+message = "The installed core version does not satisfy `project.yaml: core`."
+hint = "Install the version pinned in `project.yaml: core_pin` with `uv tool install \"aucove==<core_pin>\"`."
+
+[error.E_CONFIG_GIT_UNAVAILABLE]
+message = "Git cannot be used: it is missing, its version is too old, or the root is not a repository."
+hint = "Install git or open the cloned project."
+
+[error.E_CONFIG_REMOTE_MISMATCH]
+message = "The `origin` remote is missing or does not match the forge in `project.yaml`."
+hint = "Compare `git remote -v` with `project.yaml`."
+
+[error.E_CONFIG_BASE_NOT_DEFAULT]
+message = "The `forge.base_branch` branch in `project.yaml` is not the repository's default branch."
+hint = "Ask the lead to fix `forge.base_branch` or the default branch."
+
+[error.E_CONFIG_POLICY_UNAVAILABLE]
+message = "There is no valid policy from the base branch, not even a fallback one, or the task cache is missing."
+hint = "Run `git fetch` or `aucove switch <n>` and try again."
+
+[error.E_CONFIG_DOCTOR_FAILED]
+message = "At least one `doctor` check failed."
+hint = "Follow the `fix` of each check in `fail`."
+
+[error.E_AUTH_NOT_AUTHENTICATED]
+message = "There is no forge credential."
+hint = "Sign in to the forge."
+
+[error.E_AUTH_TOKEN_INVALID]
+message = "The forge rejected the credential (401)."
+hint = "Sign in again."
+
+[error.E_AUTH_INSUFFICIENT_SCOPE]
+message = "The forge denied access (403) because a permission is missing; this is not a rate limit."
+hint = "Ask the lead for write access to the repository."
+
+[error.E_AUTH_LOGIN_CHANGED]
+message = "Your login changed and `roles.yaml` still has the old one."
+hint = "Ask the lead to update `roles.yaml` and run `sync-roles`."
+
+[error.E_FORGE_NOT_FOUND]
+message = "The resource does not exist or is not visible to you (404)."
+hint = "Check the number and your access to the repository."
+
+[error.E_FORGE_RATE_LIMITED]
+message = "The forge applied a rate limit (403/429)."
+hint = "Wait `details.retry_after_s` seconds and try again."
+
+[error.E_FORGE_UNAVAILABLE]
+message = "The forge returned a server error (5xx)."
+hint = "The forge is not responding; try again in a few minutes."
+
+[error.E_FORGE_CONFLICT]
+message = "The forge reported a conflict (409) or a persistent concurrent change."
+hint = "Another process changed the same resource; try again."
+
+[error.E_FORGE_UNEXPECTED]
+message = "The forge gave an unexpected response."
+hint = "Report the error with `details`."
+
+[error.E_FORGE_CAPABILITY_MISSING]
+message = "The profile or the forge does not allow this action."
+hint = "Check `aucove doctor` (capability profile)."
+
+[error.E_FORGE_PUSH_REJECTED]
+message = "The forge rejected the push because of a protection, a proxy or a hook; it is not a non-fast-forward."
+hint = "Check `details.reason`; if it is `workflow_permission` (common in cloud sessions), try again with a token that includes the Workflows permission."
+
+[error.E_NET_OFFLINE]
+message = "There is no connection to the forge (DNS, connection refused or connection timeout), or `AUCOVE_OFFLINE=1` is set."
+hint = "Your local work was kept; try again when the network is back."
+
+[error.E_NET_TIMEOUT]
+message = "The operation exceeded its time limit."
+hint = "Run the operation again; it resumes where it stopped."
+
+[error.E_NET_TLS]
+message = "TLS certificate verification failed."
+hint = "If you use a corporate proxy, point `SSL_CERT_FILE` to its certificate."
+
+[error.E_CLAIM_ALREADY_CLAIMED]
+message = "Someone else holds the claim on this task."
+hint = "Choose another task or coordinate with that person."
+
+[error.E_CLAIM_NOT_HELD]
+message = "You do not hold the claim on this task."
+hint = "Claim it with `aucove claim <n>` or switch to one of your tasks."
+
+[error.E_CLAIM_LIMIT_REACHED]
+message = "You reached the maximum number of active claims."
+hint = "Submit or release one of your tasks."
+
+[error.E_CLAIM_NO_SECTIONS]
+message = "The task does not declare any parts."
+hint = "Ask for parts to be added to the task's Issue."
+
+[error.E_CLAIM_SECTION_BUSY]
+message = "Another active task declares the same part and `exclusive_sections` is enabled."
+hint = "Wait until that task is submitted or coordinate with its owner."
+
+[error.E_CLAIM_RESERVED]
+message = "The task has an active handoff to another person."
+hint = "Only the named person or the lead can claim it."
+
+[error.E_PERM_NOT_A_MEMBER]
+message = "The login is not in `roles.yaml` on the base branch."
+hint = "Ask the lead to add you to `roles.yaml`."
+
+[error.E_PERM_ROLE_REQUIRED]
+message = "Your role does not allow this operation."
+hint = "Another role performs this operation."
+
+[error.E_PERM_SECTION_NOT_OWNED]
+message = "The part belongs to someone else."
+hint = "Coordinate with the owner or propose a task for them."
+
+[error.E_PERM_OUTSIDE_TASK]
+message = "The path is not among those the task declares."
+hint = "Ask for the task to be extended or create another one."
+
+[error.E_PERM_LEAD_ONLY_PATH]
+message = "The path is of class `lead`."
+hint = "Only the lead modifies it; use `aucove direction propose`."
+
+[error.E_PERM_EDITOR_ONLY_PATH]
+message = "The path is of class `editor`."
+hint = "Only the article editor modifies it; ask them in the PR review."
+
+[error.E_PERM_APPEND_ONLY]
+message = "The change modifies or deletes an existing file of class `append`."
+hint = "Create a new decision with `supersedes`."
+
+[error.E_PERM_GENERATED_PATH]
+message = "The path is of class `generated`."
+hint = "Change the source and regenerate (`aucove sync-roles`)."
+
+[error.E_PERM_LOCAL_PATH]
+message = "The path is of class `local` (protected local configuration)."
+hint = "Those files are not edited from a task."
+
+[error.E_PERM_OUTSIDE_REPO]
+message = "The path is outside the repository root or under `.git/`."
+hint = "Work only with project paths."
+
+[error.E_PERM_SYMLINK]
+message = "The path is or goes through a symbolic link."
+hint = "Use the file's real path; symbolic links are not supported."
+
+[error.E_PERM_PATH_DENIED]
+message = "One or more paths are denied."
+hint = "Undo those changes or move them to a task that allows them."
+
+[error.E_PERM_NOT_REVIEWER]
+message = "You are not a reviewer of this PR according to the approval matrix."
+hint = "See `approval.required_from` in `review show`."
+
+[error.E_PERM_SELF_REVIEW]
+message = "The author cannot review their own PR."
+hint = "Ask for a review from whoever `approval.required_from` lists."
+
+[error.E_PERM_COMMAND_DENIED]
+message = "The command is a denied intent (merge, approve, change protections, and so on)."
+hint = "Do it yourself on the forge website or with the matching core operation."
+
+[error.E_PERM_SHELL_UNPARSEABLE]
+message = "The command cannot be parsed safely."
+hint = "Rewrite the command without unclosed quotes or substitutions in the refspec."
+
+[error.E_PERM_GUARD_TAMPER]
+message = "The command tries to touch the local controls."
+hint = "Those controls are not modified from a session."
+
+[error.E_PERM_OUT_OF_SCOPE_RESTORED]
+message = "The command modified paths outside the scope and they were restored."
+hint = "If the change is needed, propose it with a task or `direction propose`."
+
+[error.E_PERM_OUT_OF_SCOPE_COMMITTED]
+message = "There are commits with paths outside the scope that cannot be restored."
+hint = "Revert those changes before submitting; CI will reject them."
+
+[error.E_STATE_NOT_A_TASK]
+message = "The Issue does not have the `task` label or is a PR."
+hint = "Use the number of a task Issue (`aucove status`)."
+
+[error.E_STATE_INVALID_TRANSITION]
+message = "The task's state does not allow this operation."
+hint = "Check `aucove status --task <n>`."
+
+[error.E_STATE_NOT_ON_TASK_BRANCH]
+message = "The current branch is not `task/<n>`."
+hint = "Switch to your task with `aucove switch <n>`."
+
+[error.E_STATE_DIRTY_WORKTREE]
+message = "There are unsaved changes that prevent the operation."
+hint = "Save with `aucove save` and try again."
+
+[error.E_STATE_MERGE_CONFLICT]
+message = "There were conflicts while merging."
+hint = "If it is resolvable: resolve them and run `aucove update --continue`. If not: run `aucove update --abort --escalate` with the reason in quotes."
+
+[error.E_STATE_MERGE_IN_PROGRESS]
+message = "There is an unfinished merge."
+hint = "Finish with `aucove update --continue` or cancel with `aucove update --abort`."
+
+[error.E_STATE_BASE_REWRITTEN]
+message = "The base branch history was rewritten: the previous commit is not an ancestor of the new one."
+hint = "Do not merge or push; clone the repository again."
+
+[error.E_STATE_UNSUPPORTED_DOOR]
+message = "This door does not support the operation."
+hint = "Do it from the terminal or the Code tab of Claude Desktop; to switch tasks on the web, open a new session from the `task/<n>` branch."
+
+[error.E_STATE_PR_DRAFT]
+message = "The task's PR is a draft."
+hint = "Mark it as ready on the forge website and try again."
+
+[error.E_STATE_PR_NOT_OPEN]
+message = "The PR is closed or merged."
+hint = "There is nothing to review."
+
+[error.E_STATE_PR_HEAD_CHANGED]
+message = "The PR head changed between the summary and the confirmation."
+hint = "The PR changed: review it again."
+
+[error.E_STATE_BUSY]
+message = "Another process holds the local lock."
+hint = "Wait a few seconds and try again."
+
+[error.E_VALIDATION_INPUT]
+message = "The arguments are not valid."
+hint = "Fix the indicated arguments."
+
+[error.E_VALIDATION_FAILED]
+message = "One or more checks failed."
+hint = "Fix the findings and try again."
+
+[error.E_VALIDATION_UNKNOWN_SECTION]
+message = "The part does not exist in `roles.yaml` on the base branch."
+hint = "Use an id from `aucove context`."
+
+[error.E_VALIDATION_UNKNOWN_PLAN_ID]
+message = "The ID does not exist or is retired in `plan.md`."
+hint = "Check the current IDs in `plan.md`."
+
+[error.E_VALIDATION_ROLES_OUT_OF_SYNC]
+message = "The generated files do not match `roles.yaml`."
+hint = "Run `aucove sync-roles` and add the result to your PR."
+
+[error.E_VALIDATION_NOTE_MISSING]
+message = "The session note is missing or is not valid."
+hint = "Run `submit` again with `note` (structured session block)."
+
+[error.E_VALIDATION_DECISION_EXISTS]
+message = "The decision path already exists with different content."
+hint = "Change the title or use `supersedes`."
+
+[error.E_VALIDATION_CURSOR_STALE]
+message = "The cursor is no longer valid."
+hint = "Repeat the query without a cursor."
+
+[error.E_VALIDATION_ASSESSMENT]
+message = "The `submission` phase assessment does not match the current head of the PR."
+hint = "Assess again with the current `head_sha`."
+
+[error.E_VALIDATION_AI_USE_UNDECLARED]
+message = "There are commits without an AI use declaration and the submission does not include one."
+hint = "Declare `ai_use` in the submission."
+
+[error.E_VALIDATION_AI_USE_CONFLICT]
+message = "The declaration omits an AI use that a commit already records."
+hint = "Include in `ai_use` all the recorded uses."
+
+[error.E_VALIDATION_SIGNOFF_MISSING]
+message = "The `attest-v1` declaration was not confirmed."
+hint = "Read the declaration and confirm with `--sign-off` or `sign_off: true`."
+
+[error.E_VALIDATION_ASSISTED_BY_MISSING]
+message = "AI use is declared without any associated tool."
+hint = "Provide `ai_tool` (and `ai_model` if you know it)."
+
+[error.E_VALIDATION_EVIDENCE_FAILED]
+message = "Some proof, opening or actor of the evidence does not verify."
+hint = "Check `data.records[].checks[]`; repeating does not fix it."
+
+[error.E_HUMAN_ONLY_NO_TTY]
+message = "This operation is human-only and there is no interactive terminal."
+hint = "Do it yourself in an interactive terminal or on the forge website."
+
+[error.E_HUMAN_ONLY_AGENT_ENV]
+message = "This operation is human-only and an agent was detected launching it."
+hint = "Run it yourself in your own terminal."
+
+[error.E_HUMAN_ONLY_NOT_CONFIRMED]
+message = "The confirmation does not match."
+hint = "No change was made."
+
+[error.E_INTERNAL_UNEXPECTED]
+message = "Unexpected internal error."
+hint = "Report the `trace_id` together with the log `.aucove/log/events.jsonl`."
+
+[error.E_INTERNAL_HOOK_DEADLINE]
+message = "The hook exceeded its time limit and blocked the action."
+hint = "Repeat the action; if it persists, run `aucove doctor`."
+
+# --- Avisos (05-operaciones §12.2) ---
+
+[warning]
+W_NET_OFFLINE = "No network: the cache was used or only local work was done."
+W_NET_STALE_CACHE = "The cache or the local base is more than 1 h old."
+W_OUTPUT_TRUNCATED = "The response was truncated."
+W_FORGE_REFLECTION_FAILED = "A reflection step failed; repeat the operation to complete it."
+W_FORGE_PROFILE_ADVISORY = "Profile `advisory`: approval is not enforced."
+W_FORGE_CAPABILITY_UNKNOWN = "Capability detection was inconclusive; `advisory` is assumed."
+W_FORGE_RULES_NOT_APPLIED = "The forge can enforce approval, but the base branch does not have the rule applied."
+W_FORGE_CHECKS_SPOOFABLE = "Without push rulesets, a workflow pushed to a branch can publish a check with the name of a required one."
+W_FORGE_ACTIONS_RESTRICTED = "The Actions policy of the organization or the repository does not allow actions that the template workflows use, or it could not be read; the required checks cannot pass. Allow the missing actions, pinned by SHA."
+W_AUTH_BROAD_TOKEN = "The token has a broader scope than the project repository, or some people in `people` are outside collaborators who can only use a broad token."
+W_AUTH_WORKFLOW_SCOPE = "The token has the `workflow` scope: the agent can modify the workflows."
+W_AUTH_LOGIN_CHANGED = "Your login changed: you were identified by `forge_id`, or the operation is read-only."
+W_CONFIG_POLICY_FALLBACK = "The policy at the tip of the base branch is not valid; the previous valid version was used."
+W_PERM_DEPUTY_MISSING = "There is no deputy; the lead's PRs need a recorded bypass."
+W_STATE_CHECKOUT_SKIPPED = "The branch was not switched (dirty worktree or `checkout=false`)."
+W_STATE_INIT_FILES_PENDING = "There are generated files that require a PR."
+W_STATE_ANOMALY = "Anomalies were detected in the task state."
+W_STATE_OUT_OF_SCOPE_DROPPED = "An `auto_base` resolution dropped changes outside the scope; your diff was saved in `.aucove/`."
+W_STATE_MAIN_BROKEN = "There is an open `main-broken` Issue: the base branch is broken."
+W_CLAIM_EXPIRING = "The claim expires in less than 24 h."
+W_CLAIM_LIMIT_EXCEEDED = "A race between your own operations exceeded the claim limit by one."
+W_CLAIM_SECTION_SHARED = "Another active task of the same owner declares the same part."
+W_VALIDATION_UNTRUSTED_SANITIZED = "Text marked as untrusted was sanitized."
+W_VALIDATION_CI_FAILING = "The PR's CI is not green."
+W_VALIDATION_UNCITED_OVERLAP = "The assessment does not cite any valid object; the effective verdict becomes `none`."
+W_VALIDATION_UNKNOWN_PLAN_IDS = "Nonexistent or retired plan IDs were discarded."
+W_VALIDATION_MODEL_MISMATCH = "The declared model differs from the one the session recorded."
+W_VALIDATION_NONE_WITH_AGENT = "The declaration says `ai_use: none`, but an agent was detected."
+W_CONFIG_TOOL_MISSING = "The `evidence` extra is missing: the TSA and OTS proofs are left as `skip`."
+W_VALIDATION_EVIDENCE_WEAK = "Verified with less confidence: OTS not checked against a node, or TSA without OCSP or CRL."

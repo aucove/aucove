@@ -1,0 +1,3 @@
+description = "el frontmatter no empieza en la primera línea (REQ-ARCH-77)"
+lang = "es"
+expect = ["frontmatter"]

@@ -1,0 +1,94 @@
+# Catálogo del subcomando `ci base-report` (09-ci §7.1-7.3).
+# Los fragmentos entre acentos graves y los marcadores deben coincidir con es/base_report.toml.
+
+[base_report]
+title = "Base branch {branch} fails build or validation"
+title_nobranch = "Base branch fails build or validation"
+heading = "Base branch `{branch}` fails build or validation"
+heading_nobranch = "Base branch fails build or validation"
+still_broken = "The base is still broken at `{sha}`."
+resolved = "Resolved by `{sha}`."
+duplicate = "Duplicate of #{number}: only one `{label}` Issue stays open."
+policy_fallback = "The current base `project.yaml` or `roles.yaml` does not validate; the assignees come from the last valid version, `{sha}`. Fix those files first."
+build_not_run = "The build did not run: an earlier step of the build job failed (the build plan, the image download or the core installation), so there are no LaTeX diagnostics. Check the run log."
+policy_unreadable = "No valid version of the base `project.yaml` and `roles.yaml` could be read, so this Issue has no assignees. Fix those files first."
+
+[base_report.arg]
+policy = "Base checkout with `project.yaml` and `roles.yaml`."
+sha = "Commit SHA of the base."
+build = "Build result (Actions outcome)."
+build_reason = "Reason for a skipped build (`skip_reason` of `compile.yml`); `format-none` counts as success."
+validate = "Validation result (Actions result)."
+pdf_url = "PDF URL, if any."
+run_url = "Run URL."
+reports = "Directory with `base-validate.json` and `diagnostics.json`."
+summary = "Step summary file (`GITHUB_STEP_SUMMARY`)."
+
+[base_report.field]
+commit = "Commit"
+run = "Run"
+checks = "Failed checks"
+pdf = "PDF"
+
+[base_report.value]
+unavailable = "not available"
+none = "none"
+
+[base_report.severity]
+error = "error"
+warning = "warning"
+
+[base_report.findings]
+heading = "Findings (first {n})"
+none = "No findings available; check the run logs."
+
+[base_report.findings.more]
+one = "…and {n} more finding in the run reports."
+other = "…and {n} more findings in the run reports."
+
+[base_report.suspects]
+heading = "Suspect PRs"
+range = "PRs of the commits between the last green SHA, `{green}`, and `{sha}`."
+no_green = "There is no previous successful run of `{workflow}` on `{branch}`; listing the PRs of commit `{sha}`."
+same = "The last green run is for this same commit, so there are no new commits to review; the failure may be intermittent."
+compare_failed = "Could not compare with the last green SHA, `{green}`; listing the PRs of commit `{sha}`."
+no_branch = "The base branch is unknown, so the list could not be computed."
+unavailable = "The forge did not respond, so the list could not be computed."
+truncated = "Only the {n} most recent commits were reviewed."
+none = "No PR is associated with those commits."
+author = "author: {author}"
+
+[base_report.suspects.more]
+one = "…and {n} more PR."
+other = "…and {n} more PRs."
+
+[base_report.guide]
+heading = "Revert guide"
+freeze = "**Freeze:** do not merge other PRs until the base is green again, except the one that fixes it. Two green PRs can break the base when combined, and this Issue is the safeguard."
+identify = "**Identify:** review the suspect PRs and the findings. Locally, `{name} update` on the affected branch reproduces the conflict."
+revert = "**Revert** (preferred when the fix is not immediate): the lead or the deputy creates and claims a revert task. On `task/<n>`, run `git revert --no-edit <sha>` with the squash SHA, restore with `git checkout <sha> -- memory/decisions/` any decision the revert would delete, add a new decision that cites the reverted PR and this Issue, and submit with `{name} submit`. Do not use the Revert button: its branch does not pass `scope`."
+forward = "**Fix forward** (alternative): create a new task that fixes the problem and follow the normal flow."
+record = "**Record:** register the revert as a decision in `memory/decisions/`, with its traceability."
+
+[base_report.summary]
+created = "Base broken at `{sha}`: opened Issue #{number}."
+commented = "Base still broken at `{sha}`: commented on Issue #{number}."
+unchanged = "Base still broken at `{sha}`; Issue #{number} already had this report."
+closed = "Base green at `{sha}`: closed {numbers}."
+green = "Base green at `{sha}`; no Issue was open."
+inconclusive = "Inconclusive result at `{sha}` (build `{build}`, validation `{validate}`); no Issue was changed."
+
+[base_report.error]
+missing = "Missing required arguments: {args}."
+sha = "--sha must be a full lowercase hexadecimal commit SHA."
+outcome = "{arg} accepts success, failure, cancelled, skipped or an empty value."
+reason = "{arg} accepts format-none, no-changes or an empty value."
+url = "{arg} must be an http or https URL without spaces or special characters."
+dir = "{arg} is not a directory."
+forge_missing = "No forge adapter is available ({code})."
+forge = "The forge failed in {method} ({kind}); the `{label}` Issue was not guaranteed."
+internal = "Unexpected internal error in base-report."
+
+[base_report.warning]
+assign = "Warning: Issue #{number} was not assigned to {logins}."
+summary = "Warning: could not write the step summary to {path}."

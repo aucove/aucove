@@ -1,0 +1,3 @@
+description = "un skill de .agents/skills lleva un campo propio de Claude Code en el frontmatter"
+lang = "es"
+expect = ["frontmatter"]

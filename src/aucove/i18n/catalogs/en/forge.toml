@@ -1,0 +1,11 @@
+# Forge adapter catalog: texts of the `hint` of its errors (08-forja §2.1).
+# Code spans and placeholders must match es/forge.toml.
+
+[forge.hint]
+no_token = "Set `GH_TOKEN` to a fine-grained token limited to the project repository, or run `gh auth login`."
+permission = "The token lacks a permission that GitHub requires: {permissions}."
+permission_unknown = "The token has no permission for this operation on the repository."
+token_approval = "If the organization requires approving fine-grained tokens, an owner must approve it in Settings → Personal access tokens → Pending requests."
+rate_limited = "The GitHub API rate limit was reached; try again after {reset_at}."
+base_not_default = "The project base branch must be the repository default branch, which is `{default_branch}`."
+mark_ready = "Mark the pull request as ready for review on GitHub: {url}"

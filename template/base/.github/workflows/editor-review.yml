@@ -1,0 +1,47 @@
+name: editor-review
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_run:
+    workflows: [editor-review-trigger]
+    types: [completed]
+permissions: {}
+concurrency:
+  group: editor-review-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number }}
+  cancel-in-progress: true
+jobs:
+  evaluate:
+    # En workflow_run, el PR sale de la lista que arma GitHub; si está vacía (PR desde un fork),
+    # no hay qué reevaluar y el check se queda como estaba (REQ-CI-60).
+    if: github.event_name == 'pull_request_target' || github.event.workflow_run.pull_requests[0] != null
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions: { contents: read, pull-requests: read, checks: write }
+    steps:
+      - name: Política = rama por defecto
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # 100 commits de primer padre: el respaldo de una política inválida (06 REQ-PERM-4)
+        with: { path: base, persist-credentials: false, fetch-depth: 100 }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        # uv fijado (REQ-SEC-47): con version, setup-uv verifica el binario con el sha256 de su
+        # known-checksums.json (el mismo uv que el CI del framework; se cambia junto con la
+        # acción). Fuera del workspace, ningún uv.toml ni pyproject.toml lo elige (REQ-CI-2).
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo (core_pin de la base, REQ-CI-12)
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ github.workspace }}/base/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove==${PIN}" --constraints lock.txt
+      - name: Aprobación del editor (check por la API sobre la cabeza del PR, REQ-CI-58 y REQ-CI-59)
+        working-directory: ${{ runner.temp }}          # el PR y sus revisiones se leen por la API
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number }}
+        run: >-
+          aucove ci editor-review --pr "$PR_NUMBER"
+          --policy "$GITHUB_WORKSPACE/base" --summary "$GITHUB_STEP_SUMMARY"

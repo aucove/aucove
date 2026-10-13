@@ -1,0 +1,147 @@
+name: validate
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
+permissions: {}
+concurrency:
+  group: validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  pin:
+    name: aucove/validate-pin
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions: { contents: read }          # ningún paso recibe GITHUB_TOKEN
+    outputs:
+      ran: ${{ steps.plan.outputs.run }}
+    steps:
+      - name: Política = rama por defecto
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # 100 commits de primer padre: el respaldo de una política inválida (06 REQ-PERM-4)
+        with: { path: base, persist-credentials: false, fetch-depth: 100 }
+      - name: Árbol del PR como datos (solo mismo repositorio)
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        # uv fijado (REQ-SEC-47): con version, setup-uv verifica el binario con el sha256 de su
+        # known-checksums.json (el mismo uv que el CI del framework; se cambia junto con la
+        # acción). Fuera del workspace, ningún uv.toml ni pyproject.toml del PR lo elige (REQ-CI-2).
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo (core_pin de la base, REQ-CI-12)
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ github.workspace }}/base/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove==${PIN}" --constraints lock.txt
+      - name: ¿Cambia core_pin? (determinista, con el núcleo de la base)
+        id: plan   # escribe run=true|false y pin=<core_pin> (REQ-CI-45)
+        working-directory: ${{ runner.temp }}
+        run: |
+          TREE=(); [ -d "$GITHUB_WORKSPACE/pr" ] && TREE=(--tree "$GITHUB_WORKSPACE/pr")
+          aucove ci pin-plan --policy "$GITHUB_WORKSPACE/base" "${TREE[@]}" >> "$GITHUB_OUTPUT"
+      - name: Instalar el core_pin del PR (con su lock)
+        if: steps.plan.outputs.run == 'true'
+        working-directory: ${{ runner.temp }}
+        env: { PIN: "${{ steps.plan.outputs.pin }}", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          curl -fsSL --proto '=https' -o lock-pr.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install --force "aucove==${PIN}" --constraints lock-pr.txt
+      - name: Reglas que dependen de la versión del núcleo
+        if: steps.plan.outputs.run == 'true'
+        run: |
+          aucove validate --mode tree --check generated-sync --check roles-sync \
+            --check schemas --tree pr --report pin.json || true
+          test -s pin.json
+      - if: steps.plan.outputs.run == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with: { name: validate-pin, path: pin.json, retention-days: 14 }
+  validate:
+    name: aucove/validate
+    needs: pin
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions: { contents: read, pull-requests: write, issues: read }
+    steps:
+      - name: Política = rama por defecto
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        # 100 commits de primer padre: el respaldo de una política inválida (06 REQ-PERM-4)
+        with: { path: base, persist-credentials: false, fetch-depth: 100 }
+      - name: Árbol del PR como datos (solo mismo repositorio)
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        # uv fijado (REQ-SEC-47): con version, setup-uv verifica el binario con el sha256 de su
+        # known-checksums.json (el mismo uv que el CI del framework; se cambia junto con la
+        # acción). Fuera del workspace, ningún uv.toml ni pyproject.toml del PR lo elige (REQ-CI-2).
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo (core_pin de la base, REQ-CI-12)
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ github.workspace }}/base/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove==${PIN}" --constraints lock.txt
+      - name: gitleaks (binario verificado por sha256, REQ-SEC-36)
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          curl -fsSL --proto '=https' -o gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v{{var:gitleaks_version}}/gitleaks_{{var:gitleaks_version}}_linux_x64.tar.gz"
+          echo "{{var:gitleaks_sha256}}  gitleaks.tgz" | sha256sum -c -
+          mkdir -p bin && tar -xzf gitleaks.tgz -C bin gitleaks
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Reporte de pin (dato)
+        if: needs.pin.outputs.ran == 'true'
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: { name: validate-pin, path: "${{ runner.temp }}/pin" }
+      - name: Validar
+        id: v
+        working-directory: ${{ runner.temp }}          # nunca dentro del árbol del PR
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PIN_RAN: ${{ needs.pin.outputs.ran }}
+        run: |
+          set +e
+          TREE=(); [ -d "$GITHUB_WORKSPACE/pr" ] && TREE=(--tree "$GITHUB_WORKSPACE/pr")
+          PINREP=(); [ "$PIN_RAN" = true ] && PINREP=(--pin-report "$RUNNER_TEMP/pin/pin.json")
+          aucove validate --mode pr --pr "$PR_NUMBER" --policy "$GITHUB_WORKSPACE/base" \
+            "${TREE[@]}" "${PINREP[@]}" --report "$RUNNER_TEMP/validate.json" --format github
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+      - name: Comentario localizado
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: >-
+          aucove ci comment --kind validate --pr "$PR_NUMBER"
+          --policy "$GITHUB_WORKSPACE/base" --report "$RUNNER_TEMP/validate.json"
+          --summary "$GITHUB_STEP_SUMMARY"
+      - name: Veredicto
+        if: always()
+        env: { EXIT: "${{ steps.v.outputs.exit }}", PIN_RESULT: "${{ needs.pin.result }}" }
+        # REQ-CI-11 y REQ-CI-8: si pin no terminó bien, sus reglas no se evaluaron con el core_pin del PR.
+        run: |
+          test "$PIN_RESULT" = success
+          test "$EXIT" = "0"

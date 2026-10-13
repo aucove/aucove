@@ -1,0 +1,26 @@
+id: a9-20-base-advanced-merge
+description: >
+  La base avanzó (el responsable cambió plan.md en main) y la investigadora fusionó main
+  en su rama con un commit de fusión. Los archivos del PR son el diff de tres puntos:
+  solo su sección.
+covers: [a9:merge-commit]
+base:
+  advance:
+    plan.md: |
+      # Plan
+
+      ## Preguntas de investigación
+
+      - RQ-1: ¿Cómo cambian los viajes entre las dos olas de la encuesta?
+      - RQ-2: ¿Qué grupos cambian más?
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla, merge_base: true}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Texto actualizado después de fusionar main.
+expect:
+  valid: true
+  checks: {scope: pass}

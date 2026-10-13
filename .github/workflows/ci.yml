@@ -1,0 +1,304 @@
+# CI del repositorio del framework (01-arquitectura REQ-ARCH-6 y REQ-ARCH-25; 12-mvp §3.1,
+# REQ-MVP-21..23; 11-trazabilidad REQ-TRACE-58 y REQ-TRACE-66; 10-seguridad REQ-SEC-47).
+# Reglas de 09-ci REQ-CI-4..7: permissions: {} arriba y mínimos por job, timeout-minutes
+# en cada job, todo uses: fijado por SHA con la versión en un comentario, checkout sin
+# credenciales persistidas y ningún dato del autor del PR interpolado en run:.
+# Ningún job usa secretos ni credenciales (REQ-MVP-22). Las fijaciones se verifican con
+# `python tools/verify_action_pins.py` (red) y Dependabot las mantiene (REQ-SEC-51).
+# Nada se prueba con versiones sin fijar (REQ-SEC-44 y REQ-SEC-47): uv va fijado en
+# setup-uv (`version`, a mano junto con la acción: Dependabot no lo cambia), el build usa el
+# hatchling de uv.lock con hashes, el lanzador se instala con las versiones de uv.lock y
+# REUSE corre en una imagen fijada por digest.
+# release.yml lo llama con workflow_call sobre el commit etiquetado (01-arquitectura §2.3).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash   # bash -eo pipefail también en windows-latest (glob dist/*.whl)
+
+jobs:
+  # T1, T2 (fake), T4, T5 (contrato) y T6 en la matriz (REQ-MVP-21): la matriz completa de
+  # REQ-ARCH-6 (3 SO x 3.11 y la última estable) en cada PR, push y disparo manual
+  # (00-marco D-38 p; T1 y T4 de 12-mvp §3.1).
+  test:
+    name: test (${{ matrix.os }}, ${{ matrix.python }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.14"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    env:
+      # Mismos valores que tools/template_vars.toml; test_framework_workflows lo exige.
+      GITLEAKS_VERSION: "8.30.1"
+      GITLEAKS_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          # uv fijado (REQ-SEC-47). 0.12.17 es la última versión cuyo sha256 trae esta
+          # versión de setup-uv (src/download/checksum/known-checksums.json), así que el
+          # binario se verifica contra un valor fijado por el SHA de la acción, y no solo
+          # contra el manifiesto remoto. Lee el uv.lock actual (revisión 3).
+          version: "0.12.17"
+          python-version: ${{ matrix.python }}
+          enable-cache: false
+      - name: uv.lock al día (REQ-SEC-44)
+        run: uv lock --check
+      - name: Dependencias de desarrollo y del extra evidence del lock
+        # Sin instalar el proyecto en .venv: las pruebas importan src/ (pythonpath de
+        # pyproject) y el lanzador del PATH es el de la rueda, no uno editable. Con el
+        # extra evidence corren las pruebas de los clientes RFC 3161 y OTS (REQ-ARCH-99).
+        run: uv sync --locked --group dev --extra evidence --no-install-project
+      - name: Restricciones del lock para el build y el lanzador (REQ-SEC-44)
+        # Build: el grupo dev, que bloquea hatchling y sus dependencias, con hashes.
+        # Lanzador: las dependencias de ejecución del lock, con el extra evidence y las mismas
+        # versiones.
+        run: |
+          uv export --quiet --frozen --only-group dev --no-emit-project --output-file "$RUNNER_TEMP/uv-build-constraints.txt"
+          uv export --quiet --frozen --no-dev --no-emit-project --extra evidence --output-file "$RUNNER_TEMP/uv-runtime-constraints.txt"
+      - name: Rueda (hatchling de uv.lock, verificado por hash)
+        run: uv build --wheel --build-constraints "$RUNNER_TEMP/uv-build-constraints.txt" --require-hashes
+      - name: Lanzador real en el PATH (uv tool install de la rueda con las versiones del lock)
+        # uv tool install no verifica los hashes de --constraints, pero fija cada versión a
+        # la de uv.lock: nada fuera del lock entra sin pasar por Dependabot (REQ-SEC-51).
+        # Con el extra evidence, como en seal.yml: la autoprueba sella y verifica (D-37).
+        run: |
+          shopt -s nullglob
+          wheels=(dist/*.whl)
+          if [ "${#wheels[@]}" -ne 1 ]; then
+            echo "se esperaba exactamente una rueda en dist/ (hay ${#wheels[@]})" >&2
+            exit 1
+          fi
+          uv tool install --from "${wheels[0]}[evidence]" --constraints "$RUNNER_TEMP/uv-runtime-constraints.txt" aucove
+          uv tool dir --bin >> "$GITHUB_PATH"
+      - name: Comprobar el lanzador
+        run: |
+          command -v aucove
+          aucove --version
+      - name: gitleaks (binario verificado por sha256, solo en Linux; REQ-SEC-47)
+        if: runner.os == 'Linux'
+        run: |
+          # Bloquea mientras tools/template_vars.toml tenga los marcadores provisionales de gitleaks.
+          if ! [[ "$GITLEAKS_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || ! [[ "$GITLEAKS_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "::error::gitleaks sin fijar: falta la versión y el sha256 verificados en tools/template_vars.toml y en ci.yml"
+            exit 1
+          fi
+          dir="$RUNNER_TEMP/gitleaks"
+          mkdir -p "$dir"
+          curl -fsSL --proto '=https' -o "$dir/gitleaks.tgz" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  $dir/gitleaks.tgz" | sha256sum -c -
+          tar -xzf "$dir/gitleaks.tgz" -C "$dir" gitleaks
+          "$dir/gitleaks" version
+          echo "$dir" >> "$GITHUB_PATH"
+      - name: Pruebas y cobertura del dominio (REQ-MVP-23)
+        # La compilación TeX (marcador docker) corre en template-ci, no en los PR (D-38).
+        run: >-
+          uv run --no-sync pytest -n auto -m "not live and not model and not docker"
+          --cov=aucove.domain --cov-branch --cov-report=term-missing --cov-fail-under=90
+      - name: Cobertura de ramas de derive_state al 100 % (REQ-MVP-23)
+        run: uv run --no-sync coverage report --include='*/aucove/domain/tasks.py' --fail-under=100
+
+  # Contratos de importación (REQ-ARCH-25) y actionlint sobre los workflows del framework y
+  # sobre el render de la plantilla, no sobre las fuentes con {{var:...}} (D-37).
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      ACTIONLINT_VERSION: "1.7.12"
+      # sha256 de actionlint_1.7.12_linux_amd64.tar.gz según actionlint_1.7.12_checksums.txt
+      ACTIONLINT_SHA256: "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"   # el mismo uv que el job test
+          python-version: "3.11"
+          enable-cache: false
+      - name: Dependencias de desarrollo del lock
+        # El proyecto editable se construye sin aislamiento, con el hatchling que el lock
+        # acaba de instalar con hashes, y no con uno resuelto en PyPI (REQ-SEC-44).
+        run: |
+          uv sync --locked --group dev --no-install-project
+          uv sync --locked --group dev --no-build-isolation-package aucove
+      - name: Contratos de import-linter (REQ-ARCH-25)
+        run: uv run --no-sync lint-imports --no-cache
+      - name: actionlint (binario verificado por sha256; REQ-SEC-47)
+        run: |
+          dir="$RUNNER_TEMP/actionlint"
+          mkdir -p "$dir"
+          curl -fsSL --proto '=https' -o "$dir/actionlint.tgz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "${ACTIONLINT_SHA256}  $dir/actionlint.tgz" | sha256sum -c -
+          tar -xzf "$dir/actionlint.tgz" -C "$dir" actionlint
+          "$dir/actionlint" -version
+          echo "$dir" >> "$GITHUB_PATH"
+      - name: Render de la plantilla en en y es, y render --check (01-arquitectura §10.5)
+        run: |
+          for lang in en es; do
+            out="$RUNNER_TEMP/render/$lang"
+            uv run --no-sync python tools/render_template.py --lang "$lang" --out "$out"
+            uv run --no-sync python tools/render_template.py --lang "$lang" --out "$out" --check
+            # actionlint solo resuelve el workflow reutilizable local dentro de un repo git
+            git init -q -b main "$out"
+          done
+      - name: actionlint sobre los workflows del framework
+        run: actionlint -color .github/workflows/*.yml
+      - name: actionlint sobre el render de la plantilla (D-37)
+        # Los scripts de la plantilla son los normativos de 09-ci: shellcheck va aparte.
+        run: |
+          for lang in en es; do
+            echo "render $lang"
+            (cd "$RUNNER_TEMP/render/$lang" && actionlint -color -shellcheck= -pyflakes= .github/workflows/*.yml)
+          done
+      - name: shellcheck sobre los scripts del render (informativo)
+        continue-on-error: true
+        run: |
+          for lang in en es; do
+            (cd "$RUNNER_TEMP/render/$lang" && actionlint -color -pyflakes= .github/workflows/*.yml)
+          done
+
+  # REUSE 3.3 sobre el repo y sobre el render en en y es (REQ-TRACE-58). REUSE es una
+  # herramienta externa con versión fijada (REQ-TRACE-59) y corre en la imagen oficial
+  # fijada por digest (REQ-SEC-47). No se usa fsfe/reuse-action: es una acción Docker que
+  # construye su imagen con `FROM fsfe/reuse:6`, una etiqueta mutable, y fijar el SHA de la
+  # acción no fija esa imagen (verify_action_pins.py lo rechaza). El contenedor solo ve el
+  # workspace, así que el render va dentro de él (_render/), después del lint del repo.
+  reuse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      # fsfe/reuse 6.2.0 (la misma versión que .venv-tools); la etiqueta es informativa,
+      # rige el digest del índice multiplataforma. Se actualiza a mano y se verifica con
+      # tools/verify_action_pins.py: Dependabot no lo cambia.
+      REUSE_IMAGE: "fsfe/reuse:6.2.0@sha256:85462a75c0f8efda09ddd190b92816b70e7662577c8427429e11e1b9f25a992e"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Imagen de REUSE fijada por digest (REQ-SEC-47)
+        run: |
+          if ! [[ "$REUSE_IMAGE" =~ ^[A-Za-z0-9][A-Za-z0-9./_:-]*@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::REUSE_IMAGE del job reuse no está fijada por @sha256:"
+            exit 1
+          fi
+          docker pull "$REUSE_IMAGE"
+      # Con el uid y el gid del runner, dueño del checkout, git no rechaza el repo por
+      # «dubious ownership» (lo que la acción resolvía con safe.directory). Sin red.
+      - name: reuse lint del repo
+        run: docker run --rm --network none --user "$(id -u):$(id -g)" -v "$GITHUB_WORKSPACE:/data" -w /data "$REUSE_IMAGE" lint
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"   # el mismo uv que el job test
+          python-version: "3.11"
+          enable-cache: false
+      - name: Render de la plantilla en en y es
+        run: |
+          uv sync --locked --group dev --no-install-project
+          uv sync --locked --group dev --no-build-isolation-package aucove
+          for lang in en es; do
+            uv run --no-sync python tools/render_template.py --lang "$lang" --out "_render/$lang"
+          done
+      - name: reuse lint del render en
+        run: docker run --rm --network none --user "$(id -u):$(id -g)" -v "$GITHUB_WORKSPACE:/data" -w /data "$REUSE_IMAGE" --root _render/en lint
+      - name: reuse lint del render es
+        run: docker run --rm --network none --user "$(id -u):$(id -g)" -v "$GITHUB_WORKSPACE:/data" -w /data "$REUSE_IMAGE" --root _render/es lint
+
+  # Autoprueba del CI de la plantilla (D-37) con la compilación en la imagen TL fijada.
+  # Solo en push a main y a mano (D-38): la imagen pesa varios GB.
+  template-ci:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      AUCOVE_REQUIRE_DOCKER: "1"   # las pruebas con docker fallan en vez de omitirse
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"   # el mismo uv que el job test
+          python-version: "3.11"
+          enable-cache: false
+      - name: Dependencias de desarrollo y del extra evidence del lock
+        run: uv sync --locked --group dev --extra evidence --no-install-project
+      - name: Rueda y lanzador real en el PATH (hatchling y dependencias de uv.lock)
+        # Como en el job test: build con hashes del grupo dev y lanzador con el extra evidence
+        # y las versiones de ejecución del lock (REQ-SEC-44).
+        run: |
+          shopt -s nullglob
+          uv export --quiet --frozen --only-group dev --no-emit-project --output-file "$RUNNER_TEMP/uv-build-constraints.txt"
+          uv export --quiet --frozen --no-dev --no-emit-project --extra evidence --output-file "$RUNNER_TEMP/uv-runtime-constraints.txt"
+          uv build --wheel --build-constraints "$RUNNER_TEMP/uv-build-constraints.txt" --require-hashes
+          wheels=(dist/*.whl)
+          if [ "${#wheels[@]}" -ne 1 ]; then
+            echo "se esperaba exactamente una rueda en dist/ (hay ${#wheels[@]})" >&2
+            exit 1
+          fi
+          uv tool install --from "${wheels[0]}[evidence]" --constraints "$RUNNER_TEMP/uv-runtime-constraints.txt" aucove
+          uv tool dir --bin >> "$GITHUB_PATH"
+      - name: Imagen TL fijada por digest (build.image de la plantilla; REQ-SEC-47)
+        run: |
+          image="$(sed -n 's/^  image: *//p' template/base/project.yaml)"
+          if ! [[ "$image" =~ ^[A-Za-z0-9][A-Za-z0-9./_:-]*@sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::build.image de template/base/project.yaml no está fijada por @sha256:"
+            exit 1
+          fi
+          docker version
+          docker pull "$image"
+      - name: Autoprueba de la plantilla (tests/e2e)
+        run: uv run --no-sync pytest tests/e2e -n auto -m "not live and not model" -rs
+
+  # DCO de cada commit del PR (REQ-TRACE-66). Exime el PR que la API atribuye a
+  # dependabot[bot] (00-marco D-07 c): cuenta quien abre el PR, no el correo del commit.
+  dco:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Signed-off-by en cada commit de base..head
+        env:
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # HEAD es el commit de fusión de prueba del PR: su primer padre es la base actual.
+          base="$(git rev-parse HEAD^1)"
+          python3 tools/check_dco.py --base "$base" --head "$PR_HEAD" --pr-author "$PR_AUTHOR"

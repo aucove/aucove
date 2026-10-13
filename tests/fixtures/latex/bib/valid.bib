@@ -1,0 +1,21 @@
+Texto libre antes de la primera entrada: es comentario.
+% Un @book{commented, title = {x}} en una línea de comentario se ignora.
+
+@String{jt = "Journal of Tests"}
+@preamble{ "\newcommand{\noop}[1]{}" }
+@comment{ cualquier cosa @misc{falsa, } }
+
+@Article{alpha2020,
+  Title     = {Nested {Braces} and \{escaped\} ones},
+  author    = "Alpha, Ann and Beta, Bob",
+  journal   = jt # " (special issue)",
+  year      = 2020,
+  title     = {Second title is ignored},
+}
+
+@book(beta:2019-b,
+  title = "Quoted {with "inner" quote} value",
+  publisher = {Test Press}
+)
+
+@misc{gamma_3, note = {single line}}

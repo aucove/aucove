@@ -1,0 +1,13 @@
+{
+  "bitcoin_block": 900000,
+  "calendar": "https://alice.btc.calendar.opentimestamps.org",
+  "commitment": "a1681e7108bbbf9e31d1bee376c54f9f2cdb1a7c14ad3e90d9f85f7d859a1752",
+  "data": "evidence ots test vector",
+  "digest_sha256": "fca2d012e3298e75a9aaab37be48d5464b3a40cd1da7b42bb4b7cde69b8e482d",
+  "files": {
+    "calendar-reply.bin": "8eafe80afc922f8dd0cfb992db5bd25f84b39ed48daeb11425a37ae190ac53ae",
+    "complete.ots": "a0f02d048e35c8d75ca616be477ed9d1ac432d8904e30139a0fdec4efe323a9c",
+    "pending.ots": "1ae3d934b56ac683fc8a44ab8a0db0b4906f145b961228fe348a4f26bfe6dd50"
+  },
+  "merkle_root": "9180d9517b44368639837ce85552dbac9ae69fab3e8e1b6ce6f003152da6a635"
+}

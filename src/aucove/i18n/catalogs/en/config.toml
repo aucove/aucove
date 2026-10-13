@@ -1,0 +1,127 @@
+# Catalog of the config area: texts of config/* and finding.<code>.* of
+# CONFIG_FINDING_CODES (config.schemas). Same keys, placeholders and code spans
+# as es/config.toml (REQ-ARCH-72..74).
+
+[config.yaml]
+syntax = "syntax error ({problem})"
+alias = "YAML aliases are not allowed (`*`)"
+anchor = "YAML anchors are not allowed (`&{name}`)"
+duplicate_key = "the key {key} is repeated"
+non_string_key = "the key {key} is not text"
+merge = "merge keys are not allowed (`<<`)"
+tag = "the YAML tag {tag} is not allowed"
+tag_value = "the value {value} is not valid with the YAML tag {tag}: only `true`, `false` and decimal numbers are allowed"
+character = "the file has a control character that is not allowed"
+not_utf8 = "the file is not UTF-8"
+too_deep = "the document is nested too deeply"
+
+[config.front_matter]
+missing = "the file must start with a `---` line"
+unterminated = "the `---` line that closes the front matter is missing"
+not_mapping = "the front matter must be a YAML mapping"
+
+[config.type]
+string = "text"
+integer = "an integer"
+number = "a number"
+boolean = "a boolean"
+object = "a mapping"
+array = "a list"
+null = "null"
+
+[config.schema]
+root = "the document root"
+type = "must be {expected}, but it is {actual}"
+type_or = "{first} or {second}"
+required = "the required key '{key}' is missing"
+additional = "the key '{key}' is not allowed"
+enum = "the value {value} is not allowed; allowed values: {allowed}"
+const = "must be {expected}"
+pattern = "the value {value} does not have the expected format"
+min_length = "must have at least {limit} characters"
+max_length = "must have at most {limit} characters"
+minimum = "must be greater than or equal to {limit}"
+maximum = "must be less than or equal to {limit}"
+exclusive_minimum = "must be greater than {limit}"
+exclusive_maximum = "must be less than {limit}"
+min_items = "must have at least {limit} items"
+max_items = "must have at most {limit} items"
+min_properties = "must have at least {limit} keys"
+max_properties = "must have at most {limit} keys"
+unique_items = "has repeated items"
+format = "{value} is not a valid value of format {format}"
+not = "the value {value} is not allowed"
+any_of = "does not match any of the allowed forms"
+one_of = "must match exactly one of the allowed forms"
+min_contains = "too few items meet the schema condition (minimum: {limit})"
+max_contains = "too many items meet the schema condition (maximum: {limit})"
+min_contains_const = "there must be at least {limit} item with `{field}: {value}`"
+max_contains_const = "there can be at most {limit} item with `{field}: {value}`"
+other = "does not meet the schema rule `{keyword}`"
+
+[config.hint]
+quote = "Write it in quotes, for example: \"0.1\". Without quotes, YAML reads it as another kind of value."
+
+[config.project]
+core_pin_line = "`core_pin` must be on a single top-level line of the form `core_pin: \"X.Y.Z\"` (for a pre-release, `\"X.Y.ZrcN\"`, with `aN` or `bN` instead of `rcN`)"
+core_invalid = "`core` ({core}) is not a valid PEP 440 version specifier"
+core_pin_range = "`core_pin` ({pin}) does not satisfy `core` ({core})"
+expiry_warning = "`limits.expiry_warning_days` ({warning}) must be less than `limits.claim_expiry_days` ({expiry})"
+
+[config.roles]
+lead_mismatch = "`lead` ({login}) does not match the person with `role: lead` ({person})"
+lead_inactive = "the person with `role: lead` ({login}) has `active: false`"
+deputy_unknown = "`deputy` ({login}) is not in `people`"
+deputy_inactive = "`deputy` ({login}) has `active: false`"
+deputy_role = "`deputy` ({login}) must have `role: researcher`"
+deputy_is_lead = "`deputy` ({login}) cannot be the lead"
+ref_owner = "Owner of part '{section}'"
+ref_editor = "Article editor"
+
+[finding.E_CONFIG_YAML]
+message = "Invalid YAML: {detail}."
+hint = "Fix the syntax. Aliases, anchors, repeated keys and keys that are not text are not allowed."
+
+[finding.E_CONFIG_INVALID]
+message = "Invalid configuration: {detail}."
+hint = "Fix the value in the configuration file."
+
+[finding.E_VALIDATION_SCHEMA]
+message = "At {where}: {detail}."
+hint = "Fix the value according to the file's schema."
+
+[finding.E_VALIDATION_FRONT_MATTER]
+message = "Invalid front matter: {detail}."
+hint = "The file must start with `---`, continue with a YAML mapping and close with another `---` line."
+
+[finding.E_VALIDATION_ROLES_LEAD]
+message = "Invalid lead: {detail}."
+hint = "Set `lead` to the login of the only active person with `role: lead`."
+
+[finding.E_VALIDATION_ROLES_DEPUTY]
+message = "Invalid deputy: {detail}."
+hint = "The deputy must be an active person in `people`, with `role: researcher` and other than the lead, or `null`."
+
+[finding.E_VALIDATION_DUPLICATE_LOGIN]
+message = "The login '{login}' appears more than once in `people` (case-insensitive)."
+hint = "Keep a single entry per person."
+
+[finding.E_VALIDATION_DUPLICATE_ID]
+message = "The id '{id}' is repeated."
+hint = "Each id must be unique."
+
+[finding.E_VALIDATION_UNKNOWN_PERSON]
+message = "{ref}: '{login}' is not in `people`."
+hint = "Fix the login or add the person to `people`."
+
+[finding.E_VALIDATION_INACTIVE_PERSON]
+message = "{ref}: '{login}' has `active: false`."
+hint = "Assign an active person."
+
+[finding.E_VALIDATION_ORCID]
+message = "The ORCID '{orcid}' has an invalid check digit."
+hint = "Copy the ORCID from your profile, without the `https://orcid.org/` prefix."
+
+[finding.W_VALIDATION_LOGIN_CASE]
+message = "'{written}' differs from '{login}' (in `people`) only in letter case."
+hint = "Write '{login}' with the same spelling as in `people`."

@@ -1,0 +1,44 @@
+# Catalog of the review area: the readable view of `review list` and `review show`
+# (05-operaciones §9.22 and §9.23). Same keys, placeholders and backtick fragments as
+# es/review.toml (REQ-ARCH-72..74).
+
+[review.role]
+approver = "approver"
+owner = "part owner"
+none = "no role"
+
+[review.list]
+line = "PR #{pr} [{role}] CI {ci} · {age} h ago · @{author} · {title}"
+none = "No pull requests are waiting for your review."
+more = "There are more pull requests: repeat with `--cursor {cursor}`."
+
+[review.show]
+header = "PR #{pr}: {title} (by @{author})"
+head = "Head {sha} · CI {ci}"
+approval_ok = "Approval: satisfied."
+approval_missing = "Approval: still needed from {logins}."
+control = "Attention: the pull request touches control paths: {paths}."
+plan_without_decision = "The pull request changes `plan.md` and adds no decision."
+violation = "Outside the task scope: {path} ({code})."
+pdf = "PDF: {url}"
+more = "There are more files: repeat with `--cursor {cursor}`."
+
+[review.show.action]
+approve = "To approve, review the files on the web: {url} (or in the terminal: `{cli}`)."
+request_changes = "To request changes, comment on the web: {url} (or in the terminal: `{cli}`)."
+
+[review.confirm]
+approve = "You are about to approve pull request #{pr} “{title}” by @{author}."
+request_changes = "You are about to request changes on pull request #{pr} “{title}” by @{author}."
+files = "Changed files: {n}."
+ci_failing = "Attention: the CI of this head is red."
+merge_on_web = "The core does not merge: afterwards, merge on the web ({url})."
+
+[review.effect]
+approve = "Approve pull request #{pr} on head {sha}."
+request_changes = "Request changes on pull request #{pr} on head {sha}."
+
+[review.done]
+approve = "You approved pull request #{pr} on {sha}. To merge it, use the web: {url}"
+request_changes = "You requested changes on pull request #{pr} on {sha}."
+exists = "You had already left that review on pull request #{pr} on {sha}: no new one was created."

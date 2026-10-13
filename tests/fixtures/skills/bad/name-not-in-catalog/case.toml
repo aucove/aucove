@@ -1,0 +1,3 @@
+description = "nombre de 00-marco §5.8, pero de otro idioma: start no es un nombre en es"
+lang = "es"
+expect = ["name-catalog"]

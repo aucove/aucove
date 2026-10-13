@@ -1,0 +1,3 @@
+description = "description de 1.025 caracteres (máximo 1.024)"
+lang = "es"
+expect = ["description"]

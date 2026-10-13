@@ -1,0 +1,72 @@
+name: build
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions: {}
+concurrency:
+  group: build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  compile:
+    if: github.event.pull_request.draft == false
+    uses: ./.github/workflows/compile.yml
+    with: { mode: pr }
+    permissions: { contents: read }
+  report:
+    name: aucove/build
+    needs: compile
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions: { contents: read, pull-requests: write }
+    steps:
+      - name: Merge commit, solo para leer HEAD^1:project.yaml (nada del PR se ejecuta)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false, fetch-depth: 2 }
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: needs.compile.result == 'success' && needs.compile.outputs.skipped != 'true'
+        with: { pattern: "build-report-*", path: "${{ runner.temp }}/reports", merge-multiple: true }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        # uv fijado (REQ-SEC-47): con version, setup-uv verifica el binario con el sha256 de su
+        # known-checksums.json (el mismo uv que el CI del framework; se cambia junto con la
+        # acción). Fuera del workspace, ningún uv.toml ni pyproject.toml del PR lo elige (REQ-CI-2).
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo (core_pin de la base, REQ-CI-12)
+        working-directory: ${{ runner.temp }}
+        env: { UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          git -C "$GITHUB_WORKSPACE" show HEAD^1:project.yaml > policy-project.yaml
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' policy-project.yaml)"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove==${PIN}" --constraints lock.txt
+      - name: Comentario localizado (en un fork, solo el resumen del job)
+        # También en forks: ci comment escribe el resumen antes de publicar y, con el token
+        # de solo lectura, termina en 0 sin comentar (REQ-CI-20).
+        if: needs.compile.result != 'skipped'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          OUTCOME: ${{ needs.compile.outputs.outcome }}
+          PDF_URL: ${{ needs.compile.outputs.pdf_url }}
+          DIFF_URL: ${{ needs.compile.outputs.diff_url }}
+          LANG_CODE: ${{ needs.compile.outputs.language }}
+          SKIP_REASON: ${{ needs.compile.outputs.skip_reason }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: >-
+          aucove ci comment --kind build --pr "$PR_NUMBER" --language "$LANG_CODE"
+          --outcome "$OUTCOME" --pdf-url "$PDF_URL" --diff-url "$DIFF_URL" --skip-reason "$SKIP_REASON"
+          --run-url "$RUN_URL" --report-dir "$RUNNER_TEMP/reports" --summary "$GITHUB_STEP_SUMMARY"
+      - name: Veredicto
+        env:
+          DRAFT: ${{ github.event.pull_request.draft }}
+          RESULT: ${{ needs.compile.result }}
+          SKIPPED: ${{ needs.compile.outputs.skipped }}
+          OUTCOME: ${{ needs.compile.outputs.outcome }}
+        run: |
+          if [ "$DRAFT" = true ]; then echo "omitido (borrador)"; exit 0; fi
+          [ "$RESULT" = success ] || exit 1
+          [ "$SKIPPED" = true ] && exit 0
+          [ "$OUTCOME" = success ]

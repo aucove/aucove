@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://aucove.invalid/schemas/project/v1
+convention: "0.1"
+core: ">=0.1.3,<0.2"
+core_pin: "0.1.3"
+name: movilidad-teletrabajo
+title: "Movilidad urbana y teletrabajo en ciudades intermedias"
+language: es
+format: latex
+disclosure: milestones
+forge:
+  type: github
+  repo: lab-movilidad/movilidad-teletrabajo
+  base_branch: main
+build:
+  engine: pdflatex
+  main: tex/main.tex
+  image: registry.gitlab.com/islandoftex/images/texlive:TL2026-2026-09-20-full@sha256:7334b00bf8e7a0996f7ddd65482363aaf7711d372e569f3ea78509619e3083ff
+  bibliography: biber
+  bib_files:
+    - bib/references.bib
+  shell_escape: disabled
+  compile_on_submit: if_available
+  timeout_minutes: 10
+limits:
+  max_active_claims: 3
+  claim_expiry_days: 14
+  expiry_warning_days: 3
+  handoff_hold_days: 7
+  exclusive_sections: false
+context:
+  max_chars: 8000
+  recent_decisions: 5
+coordinator:
+  require_direction_ack: false
+review:
+  sla_hours: 72
+data_policy:
+  level: internal
+  require_commercial: true     # es el valor por defecto si disclosure no es open (D-48)
+  human_subjects: true
+  ethics_ref: "CEC-2026-114"
+licenses:
+  holder: "Los autores de movilidad-teletrabajo"
+  text: LicenseRef-AllRightsReserved
+  code: MIT
+  data: LicenseRef-AllRightsReserved
+ci:
+  pdf_retention_days: 14
+  latexdiff: false
+  model_review:
+    enabled: false

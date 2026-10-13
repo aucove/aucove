@@ -1,0 +1,213 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aucove"
+dynamic = ["version"]
+description = "Núcleo de un framework para equipos de investigación que trabajan con IA en git, con evidencia verificable de autoría y LaTeX opcional."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0 AND MIT-0 AND CC0-1.0"
+license-files = ["LICENSE", "NOTICE", "LICENSES/Apache-2.0.txt", "LICENSES/MIT-0.txt", "LICENSES/CC0-1.0.txt"]
+authors = [{ name = "The aucove Authors" }]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Natural Language :: English",
+  "Natural Language :: Spanish",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Text Processing :: Markup :: LaTeX",
+]
+dependencies = [
+  "PyYAML>=6.0.2,<7", "jsonschema[format-nongpl]>=4.23,<5", "packaging>=24",
+  "httpx2>=2.13,<3", "truststore>=0.10,<1", "mcp>=2.2,<3",
+]
+
+# Sellado y verificación de evidencia (01-arquitectura §4, REQ-ARCH-99): solo con
+# importación perezosa desde aucove.evidence y nunca en la ruta caliente.
+[project.optional-dependencies]
+evidence = ["rfc3161-client>=1.0,<2", "opentimestamps>=0.4.5,<0.5", "tzdata>=2025.2; sys_platform == 'win32'"]
+
+[project.scripts]
+aucove = "aucove.entry:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "hypothesis>=6",
+  "pytest-cov>=5",
+  "pytest-xdist>=3.6",
+  "import-linter>=2.1",
+  "hatchling>=1.26",
+  "editables>=0.5",
+]
+
+[tool.hatch.version]
+path = "src/aucove/_meta.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aucove"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "aucove/_data/skills"
+"template" = "aucove/_data/template"
+"schemas" = "aucove/_data/schemas"
+
+# El sdist lleva el código, sus pruebas y las fuentes que van en la rueda, sin la
+# especificación (CC-BY-4.0) ni los archivos de gobierno del repositorio (01 §5.1).
+[tool.hatch.build.targets.sdist]
+only-include = [
+  "src", "tests", "schemas", "skills", "template", "tools",
+  "LICENSE", "NOTICE", "LICENSES/Apache-2.0.txt", "LICENSES/MIT-0.txt", "LICENSES/CC0-1.0.txt",
+  "REUSE.toml", "README.md", "pyproject.toml", "uv.lock",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+pythonpath = ["src", "."]
+testpaths = ["tests"]
+addopts = "-ra --import-mode=importlib"
+xfail_strict = true
+markers = [
+  "live: usa la forja real (08-forja); requiere red y credenciales",
+  "model: llama a un modelo (12-mvp); requiere credenciales",
+  "docker: requiere Docker (compilación LaTeX en la imagen fijada)",
+]
+
+# Contratos de importación de 01-arquitectura §3.1 (REQ-ARCH-15, REQ-ARCH-25).
+# mcp y hooks son capas opcionales hasta H3 y H4.
+[tool.importlinter]
+root_package = "aucove"
+include_external_packages = true
+exclude_type_checking_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Capas del núcleo (01 §3.1)"
+type = "layers"
+containers = ["aucove"]
+layers = [
+  "entry",
+  "cli | (mcp) | (hooks)",
+  "ops",
+  "render | forge | evidence",
+  "config",
+  "vcs | obs",
+  "localstore | i18n",
+  "domain",
+  "_meta",
+]
+
+[[tool.importlinter.contracts]]
+name = "ops no importa forge.github ni forge.fake salvo en ops.context (REQ-ARCH-15)"
+type = "forbidden"
+source_modules = ["aucove.ops"]
+forbidden_modules = ["aucove.forge.github", "aucove.forge.fake"]
+ignore_imports = [
+  "aucove.ops.context -> aucove.forge.fake",
+  "aucove.ops.context -> aucove.forge.github",
+]
+unmatched_ignore_imports_alerting = "none"
+
+[[tool.importlinter.contracts]]
+name = "config solo importa domain, vcs e i18n (01 §3.1)"
+type = "forbidden"
+source_modules = ["aucove.config"]
+forbidden_modules = ["aucove.localstore", "aucove.obs"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "vcs solo importa domain (01 §3.1)"
+type = "forbidden"
+source_modules = ["aucove.vcs"]
+forbidden_modules = ["aucove.localstore", "aucove.i18n"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "obs solo importa localstore (01 §3.1)"
+type = "forbidden"
+source_modules = ["aucove.obs"]
+forbidden_modules = ["aucove.i18n"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "i18n solo usa la biblioteca estándar (01 §3.1)"
+type = "forbidden"
+source_modules = ["aucove.i18n"]
+forbidden_modules = ["aucove.domain"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "forge solo importa domain (01 §3.1)"
+type = "forbidden"
+source_modules = ["aucove.forge"]
+forbidden_modules = ["aucove.config", "aucove.vcs", "aucove.obs", "aucove.localstore", "aucove.i18n"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "render solo importa domain, config e i18n (01 §3.1)"
+type = "forbidden"
+source_modules = ["aucove.render"]
+forbidden_modules = ["aucove.vcs", "aucove.obs", "aucove.localstore"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "evidence solo importa domain, vcs e i18n (01 §3.1)"
+type = "forbidden"
+source_modules = ["aucove.evidence"]
+forbidden_modules = ["aucove.config", "aucove.obs", "aucove.localstore"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "cli solo importa ops, config, i18n y obs (01 §3.1)"
+type = "forbidden"
+source_modules = ["aucove.cli"]
+forbidden_modules = ["aucove.vcs", "aucove.localstore", "aucove.forge", "aucove.render", "aucove.evidence"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "El extra evidence solo desde aucove.evidence (REQ-ARCH-99)"
+type = "forbidden"
+source_modules = [
+  "aucove._meta", "aucove.entry", "aucove.domain", "aucove.config", "aucove.vcs",
+  "aucove.localstore", "aucove.obs", "aucove.i18n", "aucove.forge", "aucove.render",
+  "aucove.ops", "aucove.cli",
+]
+forbidden_modules = ["rfc3161_client", "opentimestamps", "bitcoin", "cryptography"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "httpx2 y truststore solo desde forge.github y evidence (01 §3.1, §4)"
+type = "forbidden"
+source_modules = [
+  "aucove._meta", "aucove.entry", "aucove.domain", "aucove.config", "aucove.vcs",
+  "aucove.localstore", "aucove.obs", "aucove.i18n", "aucove.render", "aucove.ops", "aucove.cli",
+]
+forbidden_modules = ["httpx2", "httpx", "truststore"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "El SDK MCP solo desde aucove.mcp (REQ-ARCH-16)"
+type = "forbidden"
+source_modules = [
+  "aucove._meta", "aucove.entry", "aucove.domain", "aucove.config", "aucove.vcs",
+  "aucove.localstore", "aucove.obs", "aucove.i18n", "aucove.forge", "aucove.render",
+  "aucove.evidence", "aucove.ops", "aucove.cli",
+]
+forbidden_modules = ["mcp", "pydantic"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Dependencias pesadas fuera de la ruta caliente (01 §3.1, §4)"
+type = "forbidden"
+source_modules = [
+  "aucove._meta", "aucove.entry", "aucove.domain", "aucove.vcs", "aucove.localstore",
+  "aucove.obs", "aucove.i18n", "aucove.forge", "aucove.evidence",
+]
+forbidden_modules = ["yaml", "jsonschema", "referencing"]
+allow_indirect_imports = true

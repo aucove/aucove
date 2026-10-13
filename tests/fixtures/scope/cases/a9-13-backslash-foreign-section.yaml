@@ -1,0 +1,19 @@
+id: a9-13-backslash-foreign-section
+description: >
+  Variante de barras: un archivo llamado 'sections\results\notes.tex' (válido en git
+  y en Linux) es, en git, un nombre de la raíz y no una ruta bajo la sección de bruno. En
+  las rutas de git '/' es el único separador, así que scope rechaza la '\' como ruta
+  inválida (02 §3.1, REQ-CONV-7) en lugar de leerla como sections/results/notes.tex.
+covers: [a9:backslash-variants]
+task: {number: 17, claimant: carla, sections: [methods, results]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: 'sections\results\notes.tex'
+    content: |
+      Notas con barras invertidas.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_OUTSIDE_REPO]
+  mentions: ['sections\results\notes.tex']

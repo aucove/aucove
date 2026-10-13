@@ -1,0 +1,33 @@
+# Catálogo del área render, en inglés (00-marco D-32 f).
+# Textos del formulario de tarea .github/ISSUE_TEMPLATE/task.yml (03-esquemas §8.1).
+# Las etiquetas de los campos son las canónicas de la tabla de 03 §8.1: el analizador
+# del cuerpo del Issue las reconoce, así que no se cambian sin cambiar la spec.
+# CODEOWNERS no se localiza (00-marco D-35 j): su cabecera no está aquí.
+
+[render.task_form]
+header = "Class `generated`: `init` and `sync-roles` generate it from roles.yaml; do not edit it by hand."
+name = "Task"
+description = "Propose a project task. The lead accepts it before anyone claims it."
+intro = """
+A task declares the parts it may modify (one task, one branch, one PR).
+The core reads this form: do not change the field titles."""
+
+[render.task_form.summary]
+label = "Summary"
+description = "What will be done and why, in 1 to 5 sentences."
+
+[render.task_form.sections]
+label = "Parts"
+description = "Parts the task may modify."
+# REQ-SCHEMA-63: sin partes en roles.yaml, el campo es un input.
+description_empty = "Parts the task may modify. `roles.yaml` does not declare any yet, so leave it empty."
+
+[render.task_form.plan_refs]
+label = "Plan references"
+description = "Comma-separated IDs from plan.md. Leave it empty if it does not apply."
+placeholder = "RQ-1, METH-1"
+
+[render.task_form.done]
+label = "Definition of done"
+description = "Verifiable conditions, one per line, each starting with \"- \"."
+placeholder = "- Subsection 3.2 describes the cleaning of the 2025 wave."

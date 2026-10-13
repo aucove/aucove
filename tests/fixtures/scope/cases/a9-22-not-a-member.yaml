@@ -1,0 +1,23 @@
+id: a9-22-not-a-member
+description: >
+  Una persona que no está en el roles.yaml de la base (eva) reclamó y abrió el PR: se
+  informa una sola vez para el PR, no por archivo.
+covers: [a9:not-a-member]
+task: {number: 17, claimant: eva, sections: [methods]}
+pr: {author: eva}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Cambio de una persona ajena al proyecto.
+  - status: modified
+    path: sections/methods/sampling.tex
+    content: |
+      \subsection{Muestreo}
+      Otro cambio.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_NOT_A_MEMBER]
+  mentions: [eva]

@@ -1,0 +1,11 @@
+# Skill de ejemplo bueno (formato de 01-arquitectura §10.2); no es un skill real del núcleo.
+key = "status"
+cli = ["status"]
+
+[name]
+es = "estado"
+en = "project-status"
+
+[description]
+es = "Muestra el estado del trabajo: tareas abiertas, reclamos activos y revisiones pendientes."
+en = "Show where the work stands: open tasks, active claims and pending reviews."

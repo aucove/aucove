@@ -1,0 +1,21 @@
+id: ci-14-fork
+description: >
+  PR desde un fork: sin checkout de la cabeza (el job no ejecuta ni lee su árbol), así
+  que scope falla y las reglas de contenido, roles-sync y generated-sync incluidas, no
+  pueden evaluarse.
+covers: [ci-4.2:fork]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla, same_repo: false}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Cambio desde un fork.
+prior: {roles-sync: fail, generated-sync: fail}
+checks: [scope, roles-sync, generated-sync]
+expect:
+  valid: false
+  checks: {scope: fail, roles-sync: fail, generated-sync: fail}
+  codes: [E_STATE_NOT_ON_TASK_BRANCH]
+  mentions: [fork]

@@ -1,0 +1,94 @@
+# Catálogo del subcomando `ci base-report` (09-ci §7.1-7.3).
+# Los fragmentos entre acentos graves y los marcadores deben coincidir con en/base_report.toml.
+
+[base_report]
+title = "La rama base {branch} no compila o no valida"
+title_nobranch = "La rama base no compila o no valida"
+heading = "La rama base `{branch}` no compila o no valida"
+heading_nobranch = "La rama base no compila o no valida"
+still_broken = "La base sigue rota en `{sha}`."
+resolved = "Resuelto por `{sha}`."
+duplicate = "Duplicado de #{number}: solo queda abierto un Issue `{label}`."
+policy_fallback = "El `project.yaml` o el `roles.yaml` actual de la base no valida; los asignados salen de la última versión válida, `{sha}`. Corrige primero esos archivos."
+build_not_run = "La compilación no llegó a ejecutarse: falló un paso anterior del job de compilación (el plan de compilación, la descarga de la imagen o la instalación del núcleo), así que no hay diagnóstico de LaTeX. Revisa el registro de la ejecución."
+policy_unreadable = "No se pudo leer una versión válida de `project.yaml` y `roles.yaml` de la base, así que este Issue no tiene asignados. Corrige primero esos archivos."
+
+[base_report.arg]
+policy = "Checkout de la base con `project.yaml` y `roles.yaml`."
+sha = "SHA del commit de la base."
+build = "Resultado de la compilación (outcome de Actions)."
+build_reason = "Motivo de una compilación omitida (`skip_reason` de `compile.yml`); con `format-none` cuenta como éxito."
+validate = "Resultado de la validación (result de Actions)."
+pdf_url = "URL del PDF, si existe."
+run_url = "URL de la ejecución."
+reports = "Directorio con `base-validate.json` y `diagnostics.json`."
+summary = "Archivo del resumen del paso (`GITHUB_STEP_SUMMARY`)."
+
+[base_report.field]
+commit = "Commit"
+run = "Ejecución"
+checks = "Checks fallidos"
+pdf = "PDF"
+
+[base_report.value]
+unavailable = "no disponible"
+none = "ninguno"
+
+[base_report.severity]
+error = "error"
+warning = "aviso"
+
+[base_report.findings]
+heading = "Hallazgos (primeros {n})"
+none = "No hay hallazgos disponibles; revisa los registros de la ejecución."
+
+[base_report.findings.more]
+one = "…y {n} hallazgo más en los reportes de la ejecución."
+other = "…y {n} hallazgos más en los reportes de la ejecución."
+
+[base_report.suspects]
+heading = "PR sospechosos"
+range = "PR de los commits entre el último SHA en verde, `{green}`, y `{sha}`."
+no_green = "No hay una ejecución exitosa previa de `{workflow}` en `{branch}`; se listan los PR del commit `{sha}`."
+same = "La última ejecución en verde es de este mismo commit, así que no hay commits nuevos que revisar; puede ser una falla intermitente."
+compare_failed = "No se pudo comparar con el último SHA en verde, `{green}`; se listan los PR del commit `{sha}`."
+no_branch = "No se conoce la rama base, así que no se pudo calcular la lista."
+unavailable = "La forja no respondió, así que no se pudo calcular la lista."
+truncated = "Solo se revisaron los {n} commits más recientes."
+none = "Ningún PR asociado a esos commits."
+author = "autor: {author}"
+
+[base_report.suspects.more]
+one = "…y {n} PR más."
+other = "…y {n} PR más."
+
+[base_report.guide]
+heading = "Guía de reversión"
+freeze = "**Congelar:** no integres otros PR hasta que la base vuelva a estar en verde, salvo el que la corrige. Dos PR en verde pueden romper la base al combinarse, y este Issue es la defensa."
+identify = "**Identificar:** revisa los PR sospechosos y los hallazgos. En local, `{name} update` en la rama afectada reproduce el conflicto."
+revert = "**Revertir** (preferido cuando el arreglo no es inmediato): el responsable o el suplente crea y reclama una tarea de reversión. En `task/<n>` ejecuta `git revert --no-edit <sha>` con el SHA del squash, restaura con `git checkout <sha> -- memory/decisions/` toda decisión que la reversión borraría, agrega una decisión nueva que cite el PR revertido y este Issue, y entrega con `{name} submit`. No uses el botón Revert: su rama no pasa `scope`."
+forward = "**Arreglar hacia adelante** (alternativa): crea una tarea nueva que corrija el problema y sigue el flujo normal."
+record = "**Registrar:** deja la reversión como una decisión en `memory/decisions/`, con su trazabilidad."
+
+[base_report.summary]
+created = "Base rota en `{sha}`: se abrió el Issue #{number}."
+commented = "La base sigue rota en `{sha}`: se comentó en el Issue #{number}."
+unchanged = "La base sigue rota en `{sha}`; el Issue #{number} ya tenía este reporte."
+closed = "Base en verde en `{sha}`: se cerró {numbers}."
+green = "Base en verde en `{sha}`; no había ningún Issue abierto."
+inconclusive = "Resultado no concluyente en `{sha}` (compilación `{build}`, validación `{validate}`); no se tocó ningún Issue."
+
+[base_report.error]
+missing = "Faltan argumentos obligatorios: {args}."
+sha = "--sha debe ser un SHA de commit completo en hexadecimal minúsculo."
+outcome = "{arg} admite success, failure, cancelled, skipped o un valor vacío."
+reason = "{arg} admite format-none, no-changes o un valor vacío."
+url = "{arg} debe ser una URL http o https sin espacios ni caracteres especiales."
+dir = "{arg} no es un directorio."
+forge_missing = "No hay un adaptador de la forja disponible ({code})."
+forge = "La forja falló en {method} ({kind}); no se garantizó el Issue `{label}`."
+internal = "Error interno inesperado en base-report."
+
+[base_report.warning]
+assign = "Aviso: el Issue #{number} no quedó asignado a {logins}."
+summary = "Aviso: no se pudo escribir el resumen del paso en {path}."

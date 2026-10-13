@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aucove.invalid/schemas/decision/v1",
+  "title": "Front matter de un registro de decisión",
+  "description": "Front matter YAML de memory/decisions/<YYYY-MM-DD>-<n>-<slug>.md. Autoridad: 03-esquemas §6. El registro es inmutable una vez integrado; la aprobación NO se escribe: se deriva del merge del PR que agregó el archivo (REQ-SCHEMA-50).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "date",
+    "author",
+    "origin",
+    "task",
+    "status",
+    "summary"
+  ],
+  "properties": {
+    "id": {
+      "description": "Igual al nombre del archivo sin la extensión .md.",
+      "$ref": "#/$defs/decision_id"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "\\S"
+    },
+    "date": {
+      "description": "Fecha de creación (RFC 3339 full-date). Igual a la fecha del nombre del archivo.",
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "author": {
+      "description": "login de quien propone el registro; persona activa de roles.yaml (rama base).",
+      "$ref": "#/$defs/login"
+    },
+    "origin": {
+      "description": "human solo si lo creó la CLI con TTY y sin CLAUDE_CODE_CHILD_SESSION definida, o una persona a mano; en cualquier otro caso, agent (10-seguridad REQ-SEC-14).",
+      "enum": [
+        "agent",
+        "human"
+      ]
+    },
+    "task": {
+      "description": "Número de la tarea de la rama task/<n> desde la que se agrega el registro (REQ-SCHEMA-46). Igual al <n> del nombre del archivo.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "status": {
+      "description": "Sentido del registro al integrarse: accepted (se adopta) o rejected (se descarta de forma explícita). El estado efectivo (pending, superseded) se calcula, no se escribe.",
+      "enum": [
+        "accepted",
+        "rejected"
+      ]
+    },
+    "summary": {
+      "description": "Resumen de una o dos oraciones que usa el paquete de contexto.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280,
+      "pattern": "\\S"
+    },
+    "supersedes": {
+      "description": "IDs de registros ya integrados que este registro deja sin efecto.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/decision_id"
+      },
+      "uniqueItems": true,
+      "maxItems": 20,
+      "default": []
+    },
+    "plan_refs": {
+      "description": "IDs de plan.md a los que se refiere la decisión.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/plan_id"
+      },
+      "uniqueItems": true,
+      "maxItems": 20,
+      "default": []
+    }
+  },
+  "if": {
+    "properties": {
+      "status": {
+        "const": "rejected"
+      }
+    },
+    "required": [
+      "status"
+    ]
+  },
+  "then": {
+    "properties": {
+      "supersedes": {
+        "maxItems": 0
+      }
+    }
+  },
+  "$defs": {
+    "login": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 39,
+      "pattern": "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*(_[A-Za-z0-9]+)?$"
+    },
+    "decision_id": {
+      "description": "<YYYY-MM-DD>-<n>-<slug>, con slug en kebab-case ASCII de hasta 48 caracteres.",
+      "type": "string",
+      "maxLength": 72,
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}-[1-9][0-9]*-[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "plan_id": {
+      "type": "string",
+      "pattern": "^(RQ|HYP|IN|OUT|METH)-[1-9][0-9]{0,3}$"
+    }
+  }
+}

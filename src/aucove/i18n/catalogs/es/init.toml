@@ -1,0 +1,165 @@
+# Catálogo del área init: lo que escribe `init` en el árbol de trabajo y sus mensajes
+# (05-operaciones §9.3; 02-convencion REQ-CONV-2). Mismas claves, marcadores y fragmentos
+# entre acentos graves que en en/init.toml (REQ-ARCH-72..74).
+
+# Archivos mínimos de una parte que no viene en la plantilla (REQ-CONV-2).
+[init.file]
+part_tex = '''
+% Parte «{id}» (clase section): la edita solo su dueño, declarado en roles.yaml.
+% Escribe una oración por línea y separa los párrafos con una línea en blanco (02-convencion §4.3).
+% El título de la sección y su etiqueta están en su archivo de enlace de tex/outline/, del editor del artículo:
+% aquí no van \section ni \chapter; usa \subsection y niveles menores (02-convencion REQ-CONV-94).
+'''
+outline = '''
+% Archivo de enlace de la sección «{title}» del artículo (clase editor; 02-convencion §4.1.1).
+% Lo escribe el editor del artículo: el título, la entrada, el orden de las partes y las transiciones.
+% Si la sección se divide en subpartes, agrega un \input por cada una, cada uno solo en su línea.
+'''
+
+# Resumen de la fase 2 (05 §10): qué hará init y sobre qué.
+[init.summary]
+head = "init configurará {repo} (perfil {profile}):"
+config = "- Proyecto: idioma {language}, formato {format}, apertura {disclosure}, modo {mode}."
+roles = "- roles.yaml: quedas ({lead}) como responsable, única persona y dueño de todas las partes; agrega a tu equipo después."
+files = "- Archivos: {created} nuevos, {updated} cambiados y {deleted} borrados; {where}."
+where_push = "se suben a `{base}` en un commit"
+where_pending = "la base ya está protegida: quedan en tu árbol de trabajo para entregarlos desde una tarea"
+no_files = "- Archivos: no cambia ninguno."
+kept = "- Se dejan como están porque ya tenían cambios: {paths}."
+settings = "- GitHub: ajustes del repositorio (solo squash, con el título y el cuerpo del PR), Actions, colaboradores y etiquetas."
+rulesets = "- Protecciones: los rulesets de la base, de las ramas de tarea y de los workflows, y su verificación."
+no_rulesets = "- Perfil advisory: la forja no permite exigir reglas; no habrá protecciones que bloqueen."
+token = "Después te pediré un token de administración de GitHub de vida corta; no se muestra ni se guarda."
+setup_task = "- Tarea de preparación: crea y acepta «{title}», tuya y con todas las partes, para completar con el agente el plan, las personas y las partes."
+
+# Perfil advisory: las garantías que se pierden y la frase de aceptación (06-permisos §5, REQ-PERM-40).
+[init.advisory]
+table = '''
+Perfil advisory: GitHub no permite exigir reglas en este repositorio (Free y privado). Con este perfil:
+- quien tenga escritura, o su agente, puede empujar directo a la base o editar en la web;
+- un PR se puede integrar sin aprobación, también sin la del editor del artículo;
+- los checks corren y se ven en rojo, pero no bloquean;
+- nada impide el force push ni el borrado de la base.
+Se mantienen: solo squash y sin auto-merge, Actions no aprueba PR, las capas locales y la auditoría, que marca con flag:bypass cada integración sin revisión.
+'''
+phrase = "acepto el perfil advisory"
+
+[init.bypass]
+text = "No hay suplente en roles.yaml: tus PR no tienen quién los apruebe. Si confirmas, quedarás ({login}) como actor de bypass del ruleset de la base, solo para PR, y la auditoría marcará con flag:bypass cada integración sin aprobación (06-permisos §3.4). Si no, tus PR quedarán bloqueados hasta que declares un suplente."
+
+# Descripciones de las etiquetas (06-permisos §4.5), en el idioma del proyecto (D-02).
+[init.label]
+task = "Tarea del proyecto"
+direction = "Propuesta de cambio de dirección"
+state_proposed = "Propuesta; falta que la acepte el responsable"
+state_expired = "Reclamo vencido por inactividad"
+flag_overlap = "Posible traslape (consultivo)"
+flag_direction-change = "Posible cambio de dirección (consultivo)"
+flag_blocked = "Bloqueada por otra tarea o decisión"
+flag_instructions = "Posibles instrucciones ocultas (consultivo)"
+ack_direction = "El responsable reconoció el cambio de dirección"
+ack_overlap = "El responsable o el suplente confirmó el traslape"
+main-broken = "La rama base no compila o no valida"
+flag_bypass = "Integrado sin cumplir la matriz de aprobación"
+
+[init.token]
+prompt = "Token de administración de GitHub (permiso Administration de lectura y escritura; no se muestra ni se guarda): "
+
+[init]
+commit = "Configura el proyecto con init"
+
+# Efectos de --dry-run (REQ-OPS-30).
+[init.effect]
+created = "Crear `{path}`."
+updated = "Actualizar `{path}`."
+deleted = "Borrar `{path}`."
+commit = "Commit de los archivos en `{base}`."
+push = "Push a `origin/{base}`."
+settings = "Ajustes del repositorio, Actions y colaboradores."
+labels = "Etiquetas del proyecto."
+rulesets = "Rulesets de la base, de las ramas de tarea y de los workflows."
+setup_task = "Crear y aceptar la tarea «{title}»."
+
+[init.regenerate]
+summary = "init --regenerate escribirá en tu árbol de trabajo de {repo}: {paths}."
+
+# Lo que falta hacer a mano (data.pending_steps).
+[init.pending]
+regenerate = "Entrega estos archivos desde una tarea del responsable (`task/<n>`)."
+files = "Crea y reclama una tarea del responsable y entrega desde `task/<n>` los archivos que init dejó en tu árbol de trabajo."
+modified = "`{path}` no se tradujo ni se actualizó porque ya tenía cambios: revísalo a mano."
+license_unused = "`{path}` no lo usa ningún archivo según REUSE.toml, y REUSE falla con los textos sin uso: bórralo si ningún archivo lo declara en su cabecera."
+part_modified = "La parte `{path}` no está en roles.yaml pero tiene cambios: bórrala o declárala."
+unknown_value = "No se pudo crear `{path}` porque falta un valor de la plantilla: cópialo de la plantilla publicada."
+retention = "Fija en la web la retención de artefactos y registros de Actions en {days} días (Settings → Actions → General)."
+pull_request_target = "Repositorio público: permite `pull_request_target` en la política de Actions del repositorio, desde la web, para que corra la validación de los PR."
+advisory_decision = "Registra la aceptación del perfil advisory en una decisión de `memory/decisions/` desde tu primera tarea (06-permisos REQ-PERM-41)."
+bypass_declined = "Sin suplente ni bypass, tus PR quedan bloqueados hasta que declares un suplente en roles.yaml y vuelvas a ejecutar init."
+invited = "`{login}` recibió una invitación como colaborador externo: lo correcto es invitarlo a la organización (06-permisos REQ-PERM-55)."
+org = "Ajustes de la organización que conviene que cambie un owner (06-permisos §4.10): {changes}."
+setup_task = "Prepara el proyecto en la tarea #{task}, «{title}»: abre tu agente en la carpeta del proyecto y pídele que te guíe para completar el plan, las personas y las partes."
+
+# Vista legible del resultado.
+[init.render]
+head = "init en {repo} (perfil {profile}):"
+files = "Archivos ({count}):"
+labels = "Etiquetas creadas o actualizadas: {names}."
+pushed = "Los archivos se subieron a la rama base."
+pending = "Pendiente:"
+reminders = "Antes de trabajar: cada persona activa el correo noreply de GitHub y firma el acuerdo de autoría y de apertura (00-marco D-44 y D-49)."
+
+# La tarea de preparación del responsable (00-marco D-70; 05-operaciones §9.3).
+[init.setup_task]
+title = "Preparar el proyecto"
+summary = "Completar lo que init deja de ejemplo: el plan (`plan.md`), las personas y sus partes (`roles.yaml`), la constitución (`memory/constitution.md`), la descripción de los datos (`data/README.md`) y, si hacen falta, las reglas propias para los agentes (sección 7 de `AGENTS.md`). El agente guía esta tarea con preguntas."
+done_plan = "`plan.md` tiene el objetivo, las preguntas, las hipótesis, el alcance y los métodos del proyecto."
+done_roles = "`roles.yaml` tiene a todas las personas, el dueño de cada parte y, en un grupo, el suplente."
+done_data = "`data/README.md` describe los datos crudos y dónde viven."
+done_validate = "`{name} validate` pasa."
+
+# Licencias del proyecto (11-trazabilidad §7.3; 00-marco D-64): las preguntas, LICENSE y REUSE.toml.
+[init.license]
+holder = "Titular del copyright (persona, grupo o institución) [{default}]: "
+ask = "Licencia de {category} [{default}]. Opciones: {options}; o cualquier identificador vigente de SPDX o un `LicenseRef-*`: "
+invalid = "«{value}» no es un identificador vigente de la lista de SPDX {version} ni un `LicenseRef-*`."
+text_path = "El paquete no trae el texto de {id}. Ruta del archivo con su texto (vacío para cancelar): "
+text_bad = "No se pudo leer {path} como un archivo de texto UTF-8 de hasta 1 MiB."
+default_holder = "Los autores de {name}"
+summary = "- Licencias: texto {text}, código {code} y datos {data}; titular: {holder}. Van en project.yaml, LICENSE, LICENSES/ y REUSE.toml."
+open_text = "Antes de publicar el texto con {id}, revisa la política de licencias y de preprints de la revista de destino (11-trazabilidad REQ-TRACE-63)."
+
+[init.license.category]
+text = "texto (manuscrito, plan.md, memoria y lo demás)"
+code = "código"
+data = "datos"
+
+# LICENSE: el resumen en texto plano de las tres licencias (REQ-TRACE-61), en el idioma del proyecto.
+[init.license.file]
+head = "Licencias de {title}"
+generated = "Este archivo lo genera `{name} init` a partir de `licenses` de project.yaml. REUSE.toml dice qué licencia tiene cada archivo."
+holder = "Titular del copyright: {holder}."
+line = "- {label} ({paths}): {id}, en {file}."
+unused = "- {label} ({paths}): {id}. Todavía no hay archivos de esta categoría; su texto irá en {file} cuando los haya."
+template = "Los archivos de código que vienen de la plantilla de {name} son también de «The {name} Authors», y los skills generados (.claude/skills/ y .agents/skills/) quedan bajo MIT-0, en LICENSES/MIT-0.txt."
+all_rights_reserved = '''
+Copyright (c) {year} {holder}. Todos los derechos reservados.
+
+Nadie puede copiar, modificar, distribuir ni publicar este material sin el permiso por escrito del titular.
+'''
+
+[init.license.label]
+text = "Texto"
+code = "Código"
+data = "Datos"
+
+[init.license.paths]
+text = "el manuscrito, plan.md, la memoria y todo lo demás"
+
+# Comentarios del REUSE.toml que genera init.
+[init.reuse]
+head = "Generado por `{name} init` a partir de `licenses` de project.yaml (11-trazabilidad §7.3). Si cambias las licencias, vuelve a ejecutar init."
+text = "texto: la regla general"
+code = "código (02-convencion S-8)"
+template = "código que viene de la plantilla: también de The {name} Authors"
+data = "datos"
+generated = "skills generados: MIT-0"

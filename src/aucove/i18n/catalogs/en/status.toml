@@ -1,0 +1,42 @@
+# Catalog of the status area: the readable view of `status` (05-operaciones §9.6) and the
+# home screen (REQ-OPS-68). The screen is drawn with ASCII only: accents are removed when
+# rendering. Same keys, placeholders and code spans as es/status.toml (REQ-ARCH-72..74).
+
+[status.state]
+proposed = "proposed"
+open = "open"
+claimed = "claimed"
+in_review = "in review"
+changes_requested = "changes requested"
+merged = "merged"
+expired = "expired"
+cancelled = "cancelled"
+
+[status.render]
+me = "Identity: {login} ({role})."
+base = "Base {branch}: CI {ci}, commit {sha}."
+main_broken = "The base branch is broken: Issue #{number} with `main-broken`."
+cache = "Offline: forge data from {minutes} min ago."
+none = "There are no tasks to show."
+task = "#{number} [{state}] {owner} · parts: {sections} · {title} {pr}"
+pr = "(PR #{number}: CI {ci}, review {review})"
+anomalies = "anomalies: {anomalies}"
+more = "There are more tasks: repeat with `--cursor {cursor}`."
+
+[home]
+header = "{name} {version}"
+outside = "You are not inside a project: there is no `project.yaml` with `.git` from here upwards."
+outside_start = "To start, clone your group's repository and run `{name}` inside it. If you lead a new project, create it from the template and run `{name} init`."
+project = "Project: {project}"
+no_board = "The board could not be read ({code}). Try `{name} doctor`."
+me = "Identity: {login} ({role})"
+cache = "Offline: forge data from {minutes} min ago."
+main_broken = "The base branch is broken: Issue #{number}."
+open_title = "Open tasks ({n}):"
+active_title = "Who works on what ({n}; * = yours):"
+task = "#{number} [{state}] {title} (parts: {sections})"
+task_owner = "#{number} [{state}] {owner}: {title} (parts: {sections})"
+parts_title = "Parts and owners:"
+part = "{id} ({title}): {owner}"
+evidence_title = "Seals of your submissions in `{dir}/evidence/` ({n}):"
+next = "Next step: open your agent in this folder and use the `{skill}` skill, or claim a task with `{name} claim <n>`."

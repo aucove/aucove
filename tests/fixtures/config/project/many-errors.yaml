@@ -1,0 +1,17 @@
+# Varios errores de esquema en un mismo archivo (REQ-SCHEMA-8): se informan todos.
+convention: 0.1
+core: ">=0.1.0,<0.2"
+core_pin: "0.1.0"
+name: Demo_Proyecto
+title: "Proyecto de prueba"
+language: fr
+format: latex
+forge:
+  type: gitlab
+  repo: example-org/demo
+  host: gitlab.example
+build:
+  timeout_minutes: 0
+  engine: tectonic
+data_policy:
+  human_subjects: true

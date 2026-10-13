@@ -1,0 +1,326 @@
+# Texts of the internal `ci` subcommands (09-ci; area ci).
+# Code spans and {x} placeholders must match es/ci.toml.
+
+[ci]
+description = "Internal subcommands of the template CI. They do not emit the result envelope."
+commands = "subcommands"
+unavailable = "`ci {name}`: not available in this version ({version})."
+unknown = "Unknown subcommand: {name}."
+missing = "Missing subcommand."
+usage = "Usage error: {message}"
+internal = "Internal error (trace {trace_id})."
+
+[ci.command]
+build-plan = "Build plan for `compile.yml`, from the policy of the base."
+pin-plan = "Decides whether the `pin` job installs the `core_pin` of the PR."
+comment = "Posts or updates the single CI comment on the PR and writes the job summary."
+base-report = "Report after integration into the base."
+seal = "Seals the head of a task PR or a push to the base and leaves the evidence record."
+editor-review = "Decides whether the PR has the approval of the article editor and publishes the check on its head."
+audit = "Audits how each commit of a push to the base got in and marks with `flag:bypass` what does not meet the matrix."
+
+[ci.plan]
+finding = "{where}: {code}: {message}"
+invalid_value = "Invalid value for `{key}`; nothing is emitted."
+
+[ci.build_plan]
+arg_mode = "`pr` (merge commit of a PR) or `base` (push to the base)."
+arg_policy = "Directory with the `project.yaml` of the policy (the base one)."
+arg_changed = "File with the changed paths, one per line, as given by `git diff --name-only`."
+changed_required = "`--changed` is required with `--mode pr`."
+policy_unreadable = "Cannot read the `project.yaml` of the policy: {path}"
+policy_invalid = "The `project.yaml` of the policy is not valid; no plan is emitted."
+changed_unreadable = "Cannot read the list of changed files: {path}"
+changed_too_large = "The list of changed files is too large; the build runs anyway."
+no_sha = "Cannot determine the commit: `GITHUB_SHA` is not valid or `git rev-parse HEAD` did not answer."
+format_none = "No manuscript (`format: none`): nothing to compile."
+
+[ci.pin_plan]
+arg_policy = "Checkout of the default branch, which is the policy."
+arg_tree = "Checkout of the PR head (only for PRs from the same repository)."
+base_unreadable = "Cannot read the `project.yaml` of the base: {path}"
+base_invalid = "The `project.yaml` of the base is not valid."
+base_pin_invalid = "The base has no valid `core_pin` line."
+fork = "No PR tree: the rules are evaluated with the core of the base."
+pr_pin_missing = "The PR has no valid `core_pin` line: the rules are evaluated with the core of the base."
+same = "The PR does not change `core_pin`: the rules are evaluated with the core of the base."
+unsatisfied = "The `core_pin` of the PR ({pin}) does not satisfy `core` of the base ({core}): that version is not installed."
+run = "The PR changes `core_pin` to {pin}: the rules that depend on the core are evaluated with that version."
+
+[ci.comment]
+arg_kind = "Comment kind: `build`, `validate` or `expire-claims`."
+arg_pr = "Pull request number (with `build` and `validate`)."
+arg_language = "Language of the comment (`es` or `en`); by default, that of the policy."
+arg_outcome = "Outcome of the build step, as given by Actions."
+arg_pdf_url = "URL of the artifact with the PDF."
+arg_diff_url = "URL of the artifact with the diff PDF, if any."
+arg_run_url = "URL of the workflow run."
+arg_report_dir = "Directory with the downloaded `diagnostics.json`."
+arg_policy = "Checkout of the base, where the language comes from."
+arg_report = "Report of `validate` or `expire-claims` (result envelope)."
+arg_summary = "Job summary file (`GITHUB_STEP_SUMMARY`)."
+arg_skip_reason = "Reason for the skipped build (`skip_reason` of `compile.yml`): `format-none` or `no-changes`."
+skip_reason_build_only = "`--skip-reason` is only accepted with `--kind build`."
+no_manuscript = "No manuscript: the result stays in the job summary and nothing is posted on the PR."
+report_required = "`--report` is required with `--kind {kind}`."
+pr_required = "`--pr` is required with `--kind {kind}`."
+pr_not_allowed = "`--kind {kind}` is not about a PR: it does not take `--pr`."
+summary_failed = "Cannot write the job summary: {path}"
+forge_failed = "Cannot post the comment: {code}."
+forge_error = "Cannot post the comment (forge error: {kind})."
+no_permission = "The token cannot comment on the PR (for example, a PR from a fork); the result stays in the job summary."
+created = "Comment created."
+updated = "Comment updated."
+unchanged = "The comment was already up to date."
+labeled = "Label added to the PR: {label}."
+unavailable_value = "not available"
+artifact_note = "Artifact links require a GitHub session."
+shown = "Showing {shown} of {total}."
+hint = "Hint: {hint}"
+
+# Summary of expire-claims (09-ci §6; 05 §9.19): only the job summary, no comment on a PR.
+[ci.comment.expire]
+title = "{check}"
+head = "{tasks} evaluated; a claim expires after {days} days without activity."
+nothing = "No changes: no claim was warned, expired, renewed or repaired."
+unavailable = "Report of `expire-claims` not available: the verdict is that of the previous step."
+incomplete = "`expire-claims` did not finish: {code}"
+nobody = "no claimant"
+
+[ci.comment.expire.tasks]
+one = "1 task"
+other = "{n} tasks"
+
+[ci.comment.expire.list]
+warned = "Warned"
+expired = "Expired"
+unexpired = "Renewed (`state:expired` removed)"
+repaired = "Repaired"
+skipped = "Skipped"
+
+[ci.comment.expire.action]
+assign_owner = "assigned to the owner"
+clear_assignees = "assignees removed"
+remove_stale_expired = "a stale `state:expired` removed"
+close_merged_issue = "the Issue of a merged PR closed"
+
+[ci.comment.expire.reason]
+blocked = "`flag:blocked`"
+no_owner = "no owner"
+
+[ci.comment.severity]
+error = "error"
+warning = "warning"
+
+[ci.comment.build]
+title = "{check}: {result}"
+pdf = "PDF"
+diff = "Diff PDF against the base"
+run = "Workflow run"
+diagnostics = "Diagnostics"
+diagnostics_unavailable = "Diagnostics not available."
+no_diagnostics = "No diagnostics."
+
+[ci.comment.build.outcome]
+success = "the build succeeded"
+failure = "the build failed"
+cancelled = "build cancelled"
+skipped = "build skipped (the PR does not change files that are compiled, or an earlier step failed: see the run)"
+unknown = "no build result"
+format-none = "no manuscript"
+no-changes = "build skipped"
+
+[ci.comment.build.reason]
+format-none = "No manuscript (`format: none`): nothing to compile."
+no-changes = "The PR changes no files that are compiled: `tex/`, `sections/`, `bib/`, `project.yaml` or the build workflows."
+
+[ci.comment.validate]
+title = "{check}: {result}"
+unavailable = "Validation not available: there is no readable report. The check gives the verdict."
+incomplete = "The validation did not finish: {code}"
+rules = "Rules"
+findings = "Findings"
+all_pass = "All rules pass."
+counts = "{errors} and {warnings}."
+head = "Head: {ref} ({sha})"
+more = "Showing {shown} of {total} findings; the full list is in the job annotations."
+
+[ci.comment.validate.result]
+pass = "passed"
+fail = "failed"
+unavailable = "not available"
+incomplete = "did not finish"
+
+[ci.comment.validate.status]
+pass = "pass"
+fail = "fail"
+skip = "skipped"
+
+[ci.comment.validate.errors]
+one = "1 error"
+other = "{n} errors"
+
+[ci.comment.validate.warnings]
+one = "1 warning"
+other = "{n} warnings"
+
+# --- ci seal (09-ci §7.4, REQ-CI-50..56; 11-trazabilidad §8). Each reason of the summary goes with
+# its text and its code in backticks: ci.seal.reason, ci.seal.proof_reason and, from evidence.toml,
+# evidence.manifest_error, evidence.skipped and evidence.check.tsa. The dates of the proofs are a
+# "verifiable date" (REQ-TRACE-75).
+
+[ci.seal]
+arg_kind = "What is sealed: `submission` (the head of a task PR) or `integration` (a push to the base)."
+arg_policy = "Directory with the `project.yaml` of the policy: language and base branch."
+arg_repo_dir = "Checkout with the git history; only its objects are read and nothing in it is executed."
+arg_commit = "Commit to seal (40 hexadecimal digits)."
+arg_base_sha = "Tip of the base branch of the PR; only with `submission`."
+arg_pr = "Number of the PR; only with `submission`."
+arg_out = "Directory where the folder of the record is left, the one the artifact uploads."
+arg_summary = "Job summary file (`GITHUB_STEP_SUMMARY`)."
+submission_args = "`--pr` and `--base-sha` are required with `--kind submission`."
+integration_args = "`--pr` and `--base-sha` are only used with `--kind submission`."
+summary_failed = "Could not write the job summary: {path}"
+done = "{check}: records={records}, status `{status}`."
+
+[ci.seal.kind]
+submission = "submission record"
+integration = "integration record"
+
+[ci.seal.title]
+submission = "Submission record"
+integration = "Integration record"
+
+[ci.seal.comment]
+line = "**{check}**: {record} of commit `{sha}` (attempt {attempt}), `{status}` with {ok} of {total} proofs. Sealing time (runner clock): {utc} (UTC), {local} in Central Mexico time. The JSON of this comment is the record; the full folder is in artifact `{artifact}`."
+line_utc = "**{check}**: {record} of commit `{sha}` (attempt {attempt}), `{status}` with {ok} of {total} proofs. Sealing time (runner clock): {utc} (UTC). The JSON of this comment is the record; the full folder is in artifact `{artifact}`."
+
+[ci.seal.summary]
+headline = "**{record}** of commit `{sha}` (attempt {attempt}): `{status}`, {ok} of {total} proofs obtained."
+sealed_at = "Sealing time (runner clock): {utc} (UTC); {local} (Central Mexico time). The verifiable date is the one of the proofs."
+sealed_at_utc = "Sealing time (runner clock): {utc} (UTC); Central Mexico time is not available on this machine. The verifiable date is the one of the proofs."
+no_pr = "No PR: the record stays only in the artifact and in this summary."
+pr = "PR #{pr}."
+pr_task = "PR #{pr}, of task #{task}."
+base_merge_base = "Entries: the diff from merge-base `{base}`, with {commits} and {entries}."
+base_sealed = "Entries: from `{base}`, the last commit already sealed, with {commits} and {entries}."
+base_empty = "Entries: from the empty tree, because no commit was sealed before (first record), with {commits} and {entries}."
+base_unknown = "Entries: from the empty tree, because the commit sealed before could not be found out, with {commits} and {entries}."
+plan_yes = "Plan sealed: yes (the range touches `plan.md`, `roles.yaml` or `memory/constitution.md`, or it is the first record)."
+plan_no = "Plan sealed: no."
+manifest = "SHA-256 hash of `manifest.json`: `{sha256}`."
+artifact = "Artifact `{artifact}`, with folder `{folder}`."
+out_failed = "Could not write the folder of the record: artifact `{artifact}` will be empty."
+skipped = "Left out of the manifest ({n}, `{reason}`): {text}"
+comment_created = "`ci:evidence` comment posted on PR #{pr}."
+comment_unchanged = "The `ci:evidence` comment of this attempt was already on PR #{pr}."
+comment_failed = "Could not comment on PR #{pr} (`{kind}`): the record stays in the artifact and in this summary."
+comment_no_forge = "No access to the forge: no comment on PR #{pr}; the record stays in the artifact and in this summary."
+proofs = "Proofs"
+table = "| Proof | Source | Result | Verifiable date (UTC) | Central Mexico time |"
+proof_ok = "obtained, with {revocation}"
+proof_no_revocation = "obtained, without OCSP or CRL (`{reason}`)"
+proof_pending = "obtained, pending on Bitcoin"
+proof_error = "not obtained (`{reason}`): {text}"
+skip_not_task = "PR #{pr} is not from a task (its branch is not `task/<n>`): it is not sealed."
+skip_fork = "PR #{pr} comes from a fork: it is not sealed."
+not_built = "Could not build the record of commit `{sha}` (`{reason}`): {text}"
+
+[ci.seal.summary.commits]
+one = "1 commit"
+other = "{n} commits"
+
+[ci.seal.summary.entries]
+one = "1 file"
+other = "{n} files"
+
+# Why the record was not built (besides those of evidence.manifest_error).
+[ci.seal.reason]
+pr_unavailable = "Could not read the PR, and `GITHUB_HEAD_REF` is missing or empty: its task is unknown."
+pr_not_found = "The forge answers that the PR does not exist."
+env = "Actions variables of the run are missing or invalid."
+git_unavailable = "git was not found on this machine."
+git_error = "git could not read the objects of the repository of `--repo-dir`."
+internal = "Internal error while sealing."
+
+# Why a proof was not obtained (besides those of evidence.check.tsa, if the stamp did not verify).
+[ci.seal.proof_reason]
+http = "It answered with an HTTP error."
+timeout = "It did not answer in time."
+offline = "No network connection."
+tls = "The secure connection (TLS) failed."
+calendars = "Fewer OpenTimestamps calendars than the minimum answered."
+missing_extra = "The `evidence` extra is missing: the proof was not requested."
+internal = "Internal error of the proof client."
+
+[ci.seal.note]
+policy_unreadable = "Could not read the `project.yaml` of the policy: the default language and branch are used."
+forge_unavailable = "No access to the forge (`{code}`)."
+forge_error = "The forge answered with an error in `{method}` (`{kind}`)."
+head_ref = "Could not read the PR: the task comes from `GITHUB_HEAD_REF` and the record does not carry the PR author."
+env_invalid = "These Actions variables are missing or invalid: {names}."
+no_branch = "The base branch is unknown: sealing from the empty tree."
+internal = "Internal error while sealing ({type})."
+
+# ci editor-review (09-ci §4.5; 00-marco D-56): the text of the check run and of the job summary.
+[ci.editor_review]
+arg_pr = "Number of the PR to evaluate."
+arg_policy = "Checkout of the default branch with the policy (`project.yaml` and `roles.yaml`)."
+arg_summary = "Job summary file (`GITHUB_STEP_SUMMARY`)."
+headline = "**{check}** on head `{sha}`: {verdict}"
+not_open = "PR #{pr} is not open: it is not evaluated."
+pr_unavailable = "Could not read PR #{pr} (`{code}`): the check was not published."
+publish_failed = "Could not publish the check `{check}` (`{code}`)."
+summary_failed = "Could not write the job summary: {path}"
+done = "{check} on `{sha}`: `{conclusion}` (`{reason}`)."
+
+[ci.editor_review.reason]
+individual = "individual project (`mode: individual`), no approvals."
+format_none = "no manuscript (`format: none`), there is no article editor."
+no_editor = "`roles.yaml` declares no article editor; the approval of the lead or the deputy is enough."
+author_is_editor = "the PR author is the article editor, @{editor}."
+no_latex = "the PR does not touch the LaTeX."
+approved = "@{editor}, the article editor, approved this head."
+changes_requested = "@{editor}, the article editor, requested changes."
+missing = "the approval of @{editor}, the article editor, on this head is missing."
+policy_unavailable = "could not read the policy of the base (`{code}`); the check fails closed."
+forge_error = "the forge answered with an error (`{code}`); the check fails closed."
+internal = "internal error (`{code}`); the check fails closed."
+
+[ci.editor_review.hint]
+missing = "The editor approves on the PR page or with `{cli}`. A new push needs a new approval."
+changes_requested = "Address the changes @{editor} requested and ask them for another review."
+
+# ci audit (09-ci §7.1, REQ-CI-46; 06-permisos §3.5 and REQ-PERM-23)
+[ci.audit]
+arg_before = "Commit of the base before the push (`github.event.before`); its policy decides."
+arg_after = "Commit of the base after the push (`GITHUB_SHA`)."
+arg_forced = "Whether the push was forced (`github.event.forced`): `true` or `false`."
+arg_summary = "Job summary file (`GITHUB_STEP_SUMMARY`)."
+no_repo = "The current directory is not the checkout of a git repository: nothing can be audited."
+new_branch = "The base is new (no previous commit): there is nothing to audit."
+policy_unavailable = "The policy of commit `{sha}` could not be read (`{code}`): nothing was audited."
+failed = "The audit did not finish (`{code}`)."
+summary_failed = "The job summary could not be written: {path}"
+marked = "`{sha}`: `{verdict}` ({action})."
+nothing = "No new commits on the base."
+missing = "Missing approval from: {logins}."
+scope = "The scope was not met: {codes}."
+checks_red = "Required checks without success on the PR head: {checks}."
+mention = "To review: {mentions}."
+trace_ok = "squash trace in order"
+trace_counts = "squash trace: {errors} errors and {warnings} warnings"
+
+[ci.audit.headline]
+bypass = "**Merge audit:** PR #{pr} got into `{base}` (`{sha}`) without meeting the approval matrix or the scope."
+bypass_no_deputy = "**Merge audit:** the lead's PR #{pr} got into `{base}` (`{sha}`) without approval, because there is no deputy who could give it."
+direct_push = "**Merge audit:** commit `{sha}` got into `{base}` without a PR."
+force_push = "**Merge audit:** `{base}` received a force push; its tip is `{sha}`."
+compliant = "**Merge audit:** `{sha}` meets the matrix."
+
+[ci.audit.title]
+direct_push = "Commit without a PR on {base} ({sha})"
+force_push = "Force push on {base} ({sha})"
+bypass = "Merge that does not meet the matrix on {base} ({sha})"
+bypass_no_deputy = "Merge without a deputy on {base} ({sha})"
+compliant = "Audit of {base} ({sha})"

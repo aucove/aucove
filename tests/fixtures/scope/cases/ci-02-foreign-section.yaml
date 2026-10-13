@@ -1,0 +1,19 @@
+id: ci-02-foreign-section
+description: >
+  La misma investigadora toca una sección de otro dueño (results, de bruno) que la tarea
+  sí declara: el dueño de la sección manda.
+covers: [ci-4.2:foreign-section, a9:foreign-section]
+task: {number: 17, claimant: carla, sections: [methods, results]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/results/results.tex
+    content: |
+      \section{Resultados}
+      Resultados reescritos por otra persona.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_SECTION_NOT_OWNED]
+  paths: [sections/results/results.tex]
+  mentions: [bruno, sections/results/results.tex]

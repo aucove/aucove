@@ -1,0 +1,22 @@
+# Configuración de gitleaks empaquetada en el núcleo (10-seguridad REQ-SEC-36; 09-ci §4.1).
+#
+# La regla `secrets` de `validate` la pasa siempre con `--config`, así que un
+# `.gitleaks.toml` del PR no la reemplaza ni la amplía, y un PR no puede excluir rutas
+# ni hallazgos. Extiende las reglas por defecto de la versión de gitleaks verificada
+# por sha256, sin copiarlas. Este archivo no declara listas de permitidos propias,
+# pero `[extend] useDefault = true` hereda también la lista de permitidos global de la
+# configuración por defecto de gitleaks: rutas de imágenes (png, jpg, gif, svg...),
+# fuentes, documentos (pdf, docx, xlsx...), lockfiles y dependencias copiadas
+# (node_modules, vendor...), además de sus `stopwords`. Un secreto en esas rutas no se
+# informa. En gitleaks 8.30.1 (`config/config.go`, `extend()`) la herencia no se puede
+# desactivar, y la lista cubre todas las figuras que admite la convención (pdf, png, jpg,
+# jpeg) y toda ruta que contenga `gitleaks.toml` o `verification-metadata.xml`, porque
+# esos patrones no están anclados. Quitar esa herencia exige copiar aquí las reglas por
+# defecto (licencia MIT de gitleaks) sin la lista global, con su aviso de licencia en
+# LICENSES/ y REUSE.toml. Queda como pregunta abierta para la spec
+# (09-ci §4.1, REQ-SEC-36).
+
+title = "validate: secrets"
+
+[extend]
+useDefault = true

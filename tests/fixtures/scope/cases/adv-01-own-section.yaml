@@ -1,0 +1,17 @@
+id: adv-01-own-section
+description: >
+  Humo en el perfil advisory: el mismo PR en alcance pasa. En H2 scope no depende del
+  perfil; «no se puede integrar» solo se mide contra GitHub (H3).
+covers: [advisory:pass]
+profile: advisory
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Cambio en alcance en un repositorio advisory.
+expect:
+  valid: true
+  checks: {scope: pass}

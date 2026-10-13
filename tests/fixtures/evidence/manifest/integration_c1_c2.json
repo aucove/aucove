@@ -1,0 +1,55 @@
+{
+  "manifest": "{\"actors\":[{\"a\":\"75323238c21c8aa146e4ef2195bd556fcfb6de221c54ee14387728570d0dc5d1\",\"r\":\"pr_author\"},{\"a\":\"5f2a42e28c7b8de341516f8c155f9dd514851b2e943b0db4a2977acb9b784467\",\"r\":\"merged_by\"},{\"a\":\"18b80d8f61704c84e64e9dce102aedd0d48968c93fe3a1a63e8bf1e3deaf7020\",\"r\":\"author\"},{\"a\":\"f3a77ff5bf67893293703e33d9930f0a20bb9f5458bacab4e0046eb1cd950529\",\"r\":\"committer\"}],\"base\":\"5e26e90a16b0cb994551b1076d3af58e050a0e93\",\"commit\":\"869ea61cf00dc768175d9bfbd79be7888236b9f1\",\"commitment\":\"sha256-salted-v1\",\"commits\":[\"869ea61cf00dc768175d9bfbd79be7888236b9f1\"],\"created_at\":\"2026-10-06T18:00:00Z\",\"entries\":[{\"c\":\"58fad92c31fc84058893bb75c96a450dcdf7045be58495fc4551d010449b46ba\",\"p\":\"7302f3928811ce3562cde612a54591d5ae9cb7b5cb41892a889a74b128f4960f\"},{\"c\":\"e9798de91de59fbfffa1c403ed72adb1e4f7edce04a916607d0659d00bd3f25a\",\"p\":\"92f2265e1312f8321bc7c7f14233a0944ae3deaff51ad2e202505d57a260b014\"},{\"c\":null,\"p\":\"f99c47c2ebaf0b7b3e53da639ebea51abc3073ee07ee0d82550b7f2c380fa205\"}],\"forge\":\"github\",\"generator\":\"core/0.1.0\",\"kind\":\"integration\",\"pr\":4,\"repository_id\":987654321,\"schema\":\"https://aucove.invalid/schemas/evidence-manifest/v1\",\"task\":2,\"tree\":\"45a78ee237a2fc31673c9983c7e5c25958524093\"}",
+  "manifest_sha256": "5b5ea9c535ad1d8be467c6f18f85d5921b816985dd344c0891455890343db16a",
+  "openings": {
+    "schema": "https://aucove.invalid/schemas/evidence-openings/v1",
+    "manifest_sha256": "5b5ea9c535ad1d8be467c6f18f85d5921b816985dd344c0891455890343db16a",
+    "repository": "org-x/aucove-ana",
+    "entries": [
+      {
+        "path": "café.txt",
+        "salt": "2442ffeede6ab0781f47fb14845f2683237ccb5e6cd26af1d2be97f972d24b9e",
+        "blob": "60800a56cbd66a5b8ee8e1d373a9646949aa8d32",
+        "size": 4
+      },
+      {
+        "path": "a.txt",
+        "salt": "77abc86d5c37fe261ce84966b29ddcc90a2ced0dc4ff460df01f852a98327ff8",
+        "blob": "1ec88691564af61ec63750825e7a5afbce168653",
+        "size": 8
+      },
+      {
+        "path": "data/x.bin",
+        "salt": "7fc3c2c1eb9394af89bee45c15f85978439e1a17e71a3562f1706b10ea641b04",
+        "blob": null,
+        "size": null
+      }
+    ],
+    "actors": [
+      {
+        "r": "pr_author",
+        "value": "ana-p",
+        "salt": "336e4be6f30cfa46f61ef5b3323991e17906cfee427513c00fef059ed4a9addd"
+      },
+      {
+        "r": "merged_by",
+        "value": "lead-x",
+        "salt": "899495bbab1c65f7145b3cd960010db25dda42adcb41885e3a375d011b8e2e90"
+      },
+      {
+        "r": "author",
+        "value": "Ana Pérez <ana@example.invalid>",
+        "salt": "d7837a735e63d4506ca548bc37308f3702329c20cdba0312a75ea7e971faccb4"
+      },
+      {
+        "r": "committer",
+        "value": "GitHub <noreply@example.invalid>",
+        "salt": "9b531443d9d646ce4b32263a74ea384c0d1f871f1b8db9fb8849380e75d233ae"
+      }
+    ]
+  },
+  "contents": {
+    "a.txt": "uno\ndos\n",
+    "café.txt": "nfd\n"
+  }
+}

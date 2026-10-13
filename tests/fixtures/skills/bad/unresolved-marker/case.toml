@@ -1,0 +1,3 @@
+description = "queda un marcador sin resolver en el render (REQ-ARCH-80)"
+lang = "es"
+expect = ["marker"]

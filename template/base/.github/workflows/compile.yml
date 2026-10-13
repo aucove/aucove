@@ -1,0 +1,193 @@
+# .github/workflows/compile.yml — clase `lead`; lo genera `aucove init`.
+name: compile
+on:
+  workflow_call:
+    inputs:
+      mode: { type: string, required: true }        # "pr" | "base"
+    outputs:
+      outcome:  { value: "${{ jobs.compile.outputs.outcome }}" }
+      skipped:  { value: "${{ jobs.compile.outputs.skipped }}" }
+      skip_reason: { value: "${{ jobs.compile.outputs.skip_reason }}" }
+      pdf_url:  { value: "${{ jobs.compile.outputs.pdf_url }}" }
+      diff_url: { value: "${{ jobs.compile.outputs.diff_url }}" }
+      language: { value: "${{ jobs.compile.outputs.language }}" }
+permissions: {}
+jobs:
+  compile:
+    name: aucove/build-compile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      outcome:  ${{ steps.tex.outcome }}
+      skipped:  ${{ steps.plan.outputs.run != 'true' }}
+      skip_reason: ${{ steps.plan.outputs.reason }}
+      pdf_url:  ${{ steps.pdf.outputs.artifact-url }}
+      diff_url: ${{ steps.diffpdf.outputs.artifact-url }}
+      language: ${{ steps.plan.outputs.language }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: ${{ inputs.mode == 'pr' && 2 || 1 }}
+      - name: Política de la base (nunca del PR)
+        id: policy   # start = inicio del job, para el presupuesto de latexdiff
+        env: { MODE: "${{ inputs.mode }}" }
+        # --no-renames: un renombre también lista su origen; si sale de tex/ o bib/, se compila.
+        run: |
+          set -euo pipefail
+          echo "start=$(date +%s)" >> "$GITHUB_OUTPUT"
+          REV=HEAD; [ "$MODE" = pr ] && REV=HEAD^1      # HEAD^1 del merge commit = base
+          mkdir -p "$RUNNER_TEMP/policy" "$RUNNER_TEMP/out"
+          git show "$REV:project.yaml" > "$RUNNER_TEMP/policy/project.yaml"
+          if [ "$MODE" = pr ]; then git diff --name-only --no-renames HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
+          else : > "$RUNNER_TEMP/changed.txt"; fi
+      - name: Salidas de TeX vacías (nada de tex/build ni de tex/diff.tex viene del PR)
+        # Los pasos del host leen después tex/build y tex/build-diff, y el sh de latexdiff escribe
+        # tex/diff.tex: si el PR los trae (archivos o enlaces simbólicos), se borran antes de
+        # compilar. rm -rf quita el enlace y no su destino; si tex/ o sections/ es un enlace, el job falla (09 §3.1).
+        run: |
+          set -euo pipefail
+          test ! -L tex
+          test ! -L sections
+          rm -rf tex/build tex/build-diff tex/diff.tex
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        # uv fijado (REQ-SEC-47): con version, setup-uv verifica el binario con el sha256 de su
+        # known-checksums.json (el mismo uv que el CI del framework; se cambia junto con la
+        # acción). Fuera del workspace, ningún uv.toml ni pyproject.toml del PR lo elige (REQ-CI-2).
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo (core_pin de la política, REQ-CI-12)
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ runner.temp }}/policy/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove==${PIN}" --constraints lock.txt
+      - name: Plan de compilación
+        id: plan   # escribe run, image, engine_flag, shell, timeout, main, main_base, sha7, retention, latexdiff, language, reason
+        env: { MODE: "${{ inputs.mode }}" }
+        run: aucove ci build-plan --mode "$MODE" --policy "$RUNNER_TEMP/policy" --changed "$RUNNER_TEMP/changed.txt" >> "$GITHUB_OUTPUT"
+      - name: Imagen fijada
+        if: steps.plan.outputs.run == 'true'
+        env: { IMAGE: "${{ steps.plan.outputs.image }}" }
+        run: docker pull "$IMAGE"
+      - name: Base para latexdiff (antes de compilar; tras el sandbox, el host no corre git)
+        id: old
+        if: steps.plan.outputs.latexdiff == 'true' && inputs.mode == 'pr'
+        continue-on-error: true   # latexdiff no cambia el veredicto (REQ-CI-23)
+        run: git worktree add --detach "$RUNNER_TEMP/old" HEAD^1
+      - name: Compilar en sandbox
+        id: tex
+        if: steps.plan.outputs.run == 'true'
+        continue-on-error: true
+        timeout-minutes: ${{ fromJSON(steps.plan.outputs.timeout) }}   # build.timeout_minutes
+        env:
+          IMAGE: ${{ steps.plan.outputs.image }}
+          ENGINE_FLAG: ${{ steps.plan.outputs.engine_flag }}   # -pdf | -pdflua | -pdfxe
+          SHELL_FLAG: ${{ steps.plan.outputs.shell }}          # -no-shell-escape | -shell-restricted
+          MAIN: ${{ steps.plan.outputs.main }}                 # tex/main.tex
+        run: |
+          set -euo pipefail
+          case "$SHELL_FLAG" in -no-shell-escape) SE=f ;; -shell-restricted) SE=p ;; *) exit 1 ;; esac
+          mkdir -p tex/build tex/build-diff
+          docker run --rm --network none --read-only \
+            --tmpfs /tmp:rw,exec,size=1g --cap-drop ALL --security-opt no-new-privileges \
+            --pids-limit 1024 --memory 4g --user "$(id -u):$(id -g)" \
+            -e HOME=/tmp -e TEXMFVAR=/tmp/texmf-var \
+            -e shell_escape="$SE" -e openout_any=p \
+            -v "$GITHUB_WORKSPACE:/work" -w /work \
+            "$IMAGE" latexmk -norc -cd "$ENGINE_FLAG" "$SHELL_FLAG" \
+              -interaction=nonstopmode -halt-on-error -file-line-error -Werror \
+              -outdir=build "$MAIN"
+      - name: Diagnóstico estructurado (el log es datos)
+        id: diag
+        if: always() && steps.plan.outputs.run == 'true'
+        env:
+          MAIN_BASE: ${{ steps.plan.outputs.main_base }}
+          SHA7: ${{ steps.plan.outputs.sha7 }}
+        # El host no sigue enlaces del checkout (09 §3.1): ni el log ni el PDF pueden serlo.
+        run: |
+          set -euo pipefail
+          if [ -L tex ] || [ -L tex/build ] || [ -L "tex/build/${MAIN_BASE}.log" ]; then
+            echo "tex/build contiene enlaces simbólicos: no se lee" >&2; exit 1
+          fi
+          aucove validate --mode build-log --log "tex/build/${MAIN_BASE}.log" \
+            --report "$RUNNER_TEMP/out/diagnostics.json" --format github || true
+          if [ -f "tex/build/${MAIN_BASE}.pdf" ] && [ ! -L "tex/build/${MAIN_BASE}.pdf" ]; then
+            cp "tex/build/${MAIN_BASE}.pdf" "$RUNNER_TEMP/out/pdf-${SHA7}.pdf"
+            echo "has_pdf=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Subir PDF
+        id: pdf
+        if: always() && steps.diag.outputs.has_pdf == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: ${{ runner.temp }}/out/pdf-${{ steps.plan.outputs.sha7 }}.pdf
+          archive: false
+          retention-days: ${{ steps.plan.outputs.retention }}
+      - name: Subir diagnóstico
+        if: always() && steps.plan.outputs.run == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-report-${{ steps.plan.outputs.sha7 }}
+          path: ${{ runner.temp }}/out/diagnostics.json
+          retention-days: 14
+      - name: Presupuesto de latexdiff (lo que queda del timeout del job)
+        id: budget   # run=true y minutes=N solo si queda al menos un minuto (REQ-CI-23)
+        if: steps.plan.outputs.latexdiff == 'true' && inputs.mode == 'pr'
+        continue-on-error: true
+        env:
+          START: ${{ steps.policy.outputs.start }}
+          JOB_MINUTES: "15"       # timeout-minutes de este job
+          RESERVE_MINUTES: "2"    # preparación del job y checkout, subida del diff y cierre
+          MAX_MINUTES: "8"
+        run: |
+          set -euo pipefail
+          LEFT=$(( (START + (JOB_MINUTES - RESERVE_MINUTES) * 60 - $(date +%s)) / 60 ))
+          if [ "$LEFT" -gt "$MAX_MINUTES" ]; then LEFT="$MAX_MINUTES"; fi
+          if [ "$LEFT" -ge 1 ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "minutes=$LEFT" >> "$GITHUB_OUTPUT"
+          else
+            echo "latexdiff omitido: no queda tiempo dentro del timeout del job"
+          fi
+      - name: latexdiff contra la base (opcional; no bloquea)
+        id: diff
+        if: steps.budget.outputs.run == 'true'
+        continue-on-error: true
+        timeout-minutes: ${{ fromJSON(steps.budget.outputs.minutes || '1') }}   # nunca pasa del timeout del job
+        env:
+          IMAGE: ${{ steps.plan.outputs.image }}
+          ENGINE_FLAG: ${{ steps.plan.outputs.engine_flag }}
+          SHELL_FLAG: ${{ steps.plan.outputs.shell }}
+          MAIN: ${{ steps.plan.outputs.main }}
+          SHA7: ${{ steps.plan.outputs.sha7 }}
+        run: |
+          set -euo pipefail
+          case "$SHELL_FLAG" in -no-shell-escape) SE=f ;; -shell-restricted) SE=p ;; *) exit 1 ;; esac
+          test -f "$RUNNER_TEMP/old/$MAIN"   # la base la preparó el paso old, antes de compilar
+          docker run --rm --network none --read-only --tmpfs /tmp:rw,exec,size=1g \
+            --cap-drop ALL --security-opt no-new-privileges --pids-limit 1024 --memory 4g \
+            --user "$(id -u):$(id -g)" -e HOME=/tmp -e TEXMFVAR=/tmp/texmf-var \
+            -e shell_escape="$SE" -e openout_any=p \
+            -e MAIN -e ENGINE_FLAG -e SHELL_FLAG -v "$GITHUB_WORKSPACE:/work" -w /work \
+            -v "$RUNNER_TEMP/old:/old:ro" \
+            "$IMAGE" sh -c 'latexdiff --flatten "/old/$MAIN" "$MAIN" > tex/diff.tex &&
+              latexmk -norc -cd "$ENGINE_FLAG" "$SHELL_FLAG" -interaction=nonstopmode \
+                -outdir=build-diff tex/diff.tex'
+          if [ -L tex ] || [ -L tex/build-diff ] || [ -L tex/build-diff/diff.pdf ]; then
+            echo "tex/build-diff contiene enlaces simbólicos: no se lee" >&2; exit 1
+          fi
+          cp tex/build-diff/diff.pdf "$RUNNER_TEMP/out/diff-${SHA7}.pdf"   # tex/diff.tex es efímero
+      - name: Subir diff
+        id: diffpdf
+        if: steps.diff.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: ${{ runner.temp }}/out/diff-${{ steps.plan.outputs.sha7 }}.pdf
+          archive: false
+          retention-days: ${{ steps.plan.outputs.retention }}

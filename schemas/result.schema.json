@@ -1,0 +1,4679 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aucove.invalid/schemas/result/v1",
+  "title": "aucove.result/v1",
+  "description": "Sobre de resultado de las operaciones del núcleo. Normativo según 05-operaciones §3 (sobre), §7 (presupuesto), §8 (texto marcado), §9 (forma de 'data' por operación) y §12 (catálogo de errores y avisos). El nombre 'aucove' es provisional (00-marco §5.1).",
+  "type": "object",
+  "required": [
+    "schema",
+    "ok",
+    "op",
+    "data",
+    "warnings",
+    "error"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "aucove.result/v1"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "op": {
+      "$ref": "#/$defs/op"
+    },
+    "data": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/warning"
+      }
+    },
+    "error": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/error"
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": true
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "type": "null"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "failed_step"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ok": {
+            "const": false
+          }
+        },
+        "required": [
+          "ok"
+        ]
+      },
+      "then": {
+        "properties": {
+          "error": {
+            "$ref": "#/$defs/error"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "dry_run"
+            ]
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "$ref": "#/$defs/dry_run_data"
+          }
+        }
+      }
+    },
+    {
+      "$ref": "#/$defs/rule_doctor"
+    },
+    {
+      "$ref": "#/$defs/rule_init"
+    },
+    {
+      "$ref": "#/$defs/rule_sync_roles"
+    },
+    {
+      "$ref": "#/$defs/rule_validate"
+    },
+    {
+      "$ref": "#/$defs/rule_status"
+    },
+    {
+      "$ref": "#/$defs/rule_context"
+    },
+    {
+      "$ref": "#/$defs/rule_check_path"
+    },
+    {
+      "$ref": "#/$defs/rule_metrics"
+    },
+    {
+      "$ref": "#/$defs/rule_evidence_verify"
+    },
+    {
+      "$ref": "#/$defs/rule_task_propose"
+    },
+    {
+      "$ref": "#/$defs/rule_task_accept"
+    },
+    {
+      "$ref": "#/$defs/rule_task_cancel"
+    },
+    {
+      "$ref": "#/$defs/rule_claim"
+    },
+    {
+      "$ref": "#/$defs/rule_release"
+    },
+    {
+      "$ref": "#/$defs/rule_save"
+    },
+    {
+      "$ref": "#/$defs/rule_update"
+    },
+    {
+      "$ref": "#/$defs/rule_switch"
+    },
+    {
+      "$ref": "#/$defs/rule_record_assessment"
+    },
+    {
+      "$ref": "#/$defs/rule_submit"
+    },
+    {
+      "$ref": "#/$defs/rule_expire_claims"
+    },
+    {
+      "$ref": "#/$defs/rule_decision_propose"
+    },
+    {
+      "$ref": "#/$defs/rule_direction_propose"
+    },
+    {
+      "$ref": "#/$defs/rule_review_list"
+    },
+    {
+      "$ref": "#/$defs/rule_review_show"
+    },
+    {
+      "$ref": "#/$defs/rule_review_approve"
+    },
+    {
+      "$ref": "#/$defs/rule_review_request_changes"
+    }
+  ],
+  "$defs": {
+    "op": {
+      "description": "Identificador de operación: palabras del subcomando de la CLI unidas por '.' (05-operaciones §3.2). 'hook' y 'mcp' no emiten sobre.",
+      "enum": [
+        "doctor",
+        "init",
+        "sync-roles",
+        "validate",
+        "status",
+        "context",
+        "check-path",
+        "metrics",
+        "evidence.verify",
+        "task.propose",
+        "task.accept",
+        "task.cancel",
+        "claim",
+        "release",
+        "save",
+        "update",
+        "switch",
+        "record-assessment",
+        "submit",
+        "expire-claims",
+        "decision.propose",
+        "direction.propose",
+        "review.list",
+        "review.show",
+        "review.approve",
+        "review.request-changes"
+      ]
+    },
+    "error_code": {
+      "description": "Catálogo cerrado de errores (05-operaciones §12.1).",
+      "enum": [
+        "E_CONFIG_NOT_A_PROJECT",
+        "E_CONFIG_INVALID",
+        "E_CONFIG_CONVENTION_UNSUPPORTED",
+        "E_CONFIG_CORE_MISMATCH",
+        "E_CONFIG_GIT_UNAVAILABLE",
+        "E_CONFIG_REMOTE_MISMATCH",
+        "E_CONFIG_BASE_NOT_DEFAULT",
+        "E_CONFIG_POLICY_UNAVAILABLE",
+        "E_CONFIG_DOCTOR_FAILED",
+        "E_AUTH_NOT_AUTHENTICATED",
+        "E_AUTH_TOKEN_INVALID",
+        "E_AUTH_INSUFFICIENT_SCOPE",
+        "E_AUTH_LOGIN_CHANGED",
+        "E_FORGE_NOT_FOUND",
+        "E_FORGE_RATE_LIMITED",
+        "E_FORGE_UNAVAILABLE",
+        "E_FORGE_CONFLICT",
+        "E_FORGE_UNEXPECTED",
+        "E_FORGE_CAPABILITY_MISSING",
+        "E_FORGE_PUSH_REJECTED",
+        "E_NET_OFFLINE",
+        "E_NET_TIMEOUT",
+        "E_NET_TLS",
+        "E_CLAIM_ALREADY_CLAIMED",
+        "E_CLAIM_NOT_HELD",
+        "E_CLAIM_LIMIT_REACHED",
+        "E_CLAIM_NO_SECTIONS",
+        "E_CLAIM_SECTION_BUSY",
+        "E_CLAIM_RESERVED",
+        "E_PERM_NOT_A_MEMBER",
+        "E_PERM_ROLE_REQUIRED",
+        "E_PERM_SECTION_NOT_OWNED",
+        "E_PERM_OUTSIDE_TASK",
+        "E_PERM_LEAD_ONLY_PATH",
+        "E_PERM_EDITOR_ONLY_PATH",
+        "E_PERM_APPEND_ONLY",
+        "E_PERM_GENERATED_PATH",
+        "E_PERM_LOCAL_PATH",
+        "E_PERM_OUTSIDE_REPO",
+        "E_PERM_SYMLINK",
+        "E_PERM_PATH_DENIED",
+        "E_PERM_NOT_REVIEWER",
+        "E_PERM_SELF_REVIEW",
+        "E_PERM_COMMAND_DENIED",
+        "E_PERM_SHELL_UNPARSEABLE",
+        "E_PERM_GUARD_TAMPER",
+        "E_PERM_OUT_OF_SCOPE_RESTORED",
+        "E_PERM_OUT_OF_SCOPE_COMMITTED",
+        "E_STATE_NOT_A_TASK",
+        "E_STATE_INVALID_TRANSITION",
+        "E_STATE_NOT_ON_TASK_BRANCH",
+        "E_STATE_DIRTY_WORKTREE",
+        "E_STATE_MERGE_CONFLICT",
+        "E_STATE_MERGE_IN_PROGRESS",
+        "E_STATE_BASE_REWRITTEN",
+        "E_STATE_UNSUPPORTED_DOOR",
+        "E_STATE_PR_DRAFT",
+        "E_STATE_PR_NOT_OPEN",
+        "E_STATE_PR_HEAD_CHANGED",
+        "E_STATE_BUSY",
+        "E_VALIDATION_INPUT",
+        "E_VALIDATION_FAILED",
+        "E_VALIDATION_UNKNOWN_SECTION",
+        "E_VALIDATION_UNKNOWN_PLAN_ID",
+        "E_VALIDATION_ROLES_OUT_OF_SYNC",
+        "E_VALIDATION_NOTE_MISSING",
+        "E_VALIDATION_DECISION_EXISTS",
+        "E_VALIDATION_CURSOR_STALE",
+        "E_VALIDATION_ASSESSMENT",
+        "E_VALIDATION_AI_USE_UNDECLARED",
+        "E_VALIDATION_AI_USE_CONFLICT",
+        "E_VALIDATION_SIGNOFF_MISSING",
+        "E_VALIDATION_ASSISTED_BY_MISSING",
+        "E_VALIDATION_EVIDENCE_FAILED",
+        "E_HUMAN_ONLY_NO_TTY",
+        "E_HUMAN_ONLY_AGENT_ENV",
+        "E_HUMAN_ONLY_NOT_CONFIRMED",
+        "E_INTERNAL_UNEXPECTED",
+        "E_INTERNAL_HOOK_DEADLINE"
+      ]
+    },
+    "perm_code": {
+      "description": "Subconjunto de error_code usado como motivo de denegación de una ruta: los códigos que devuelve check_path de 06-permisos §2.4 (check-path, save, submit, review.show).",
+      "enum": [
+        "E_PERM_OUTSIDE_REPO",
+        "E_PERM_SYMLINK",
+        "E_PERM_NOT_A_MEMBER",
+        "E_PERM_LOCAL_PATH",
+        "E_PERM_GENERATED_PATH",
+        "E_STATE_NOT_ON_TASK_BRANCH",
+        "E_CLAIM_NOT_HELD",
+        "E_STATE_INVALID_TRANSITION",
+        "E_PERM_OUTSIDE_TASK",
+        "E_PERM_APPEND_ONLY",
+        "E_PERM_SECTION_NOT_OWNED",
+        "E_PERM_LEAD_ONLY_PATH",
+        "E_PERM_EDITOR_ONLY_PATH",
+        "E_CONFIG_POLICY_UNAVAILABLE",
+        "E_INTERNAL_UNEXPECTED"
+      ]
+    },
+    "warning_code": {
+      "description": "Catálogo cerrado de avisos (05-operaciones §12.2).",
+      "enum": [
+        "W_NET_OFFLINE",
+        "W_NET_STALE_CACHE",
+        "W_OUTPUT_TRUNCATED",
+        "W_FORGE_REFLECTION_FAILED",
+        "W_FORGE_PROFILE_ADVISORY",
+        "W_FORGE_CAPABILITY_UNKNOWN",
+        "W_FORGE_RULES_NOT_APPLIED",
+        "W_FORGE_CHECKS_SPOOFABLE",
+        "W_FORGE_ACTIONS_RESTRICTED",
+        "W_AUTH_BROAD_TOKEN",
+        "W_AUTH_WORKFLOW_SCOPE",
+        "W_AUTH_LOGIN_CHANGED",
+        "W_CONFIG_POLICY_FALLBACK",
+        "W_PERM_DEPUTY_MISSING",
+        "W_STATE_CHECKOUT_SKIPPED",
+        "W_STATE_INIT_FILES_PENDING",
+        "W_STATE_ANOMALY",
+        "W_STATE_OUT_OF_SCOPE_DROPPED",
+        "W_STATE_MAIN_BROKEN",
+        "W_CLAIM_EXPIRING",
+        "W_CLAIM_LIMIT_EXCEEDED",
+        "W_CLAIM_SECTION_SHARED",
+        "W_VALIDATION_UNTRUSTED_SANITIZED",
+        "W_VALIDATION_CI_FAILING",
+        "W_VALIDATION_UNCITED_OVERLAP",
+        "W_VALIDATION_UNKNOWN_PLAN_IDS",
+        "W_VALIDATION_MODEL_MISMATCH",
+        "W_VALIDATION_NONE_WITH_AGENT",
+        "W_CONFIG_TOOL_MISSING",
+        "W_VALIDATION_EVIDENCE_WEAK"
+      ]
+    },
+    "error": {
+      "type": "object",
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "hint"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/error_code"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "hint": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 500
+        },
+        "details": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    },
+    "warning": {
+      "type": "object",
+      "required": [
+        "code",
+        "message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/warning_code"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "details": {
+          "type": [
+            "object",
+            "null"
+          ]
+        }
+      }
+    },
+    "login": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9-]{0,38}(\\[bot\\])?$"
+    },
+    "task_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "task_state": {
+      "enum": [
+        "proposed",
+        "open",
+        "claimed",
+        "in_review",
+        "changes_requested",
+        "merged",
+        "expired",
+        "cancelled"
+      ]
+    },
+    "anomaly": {
+      "description": "Anomalías de derive_state (04-tareas §1.5 y §13); van en details.anomalies de W_STATE_ANOMALY.",
+      "enum": [
+        "fork_pr_ignored",
+        "missing_acceptance",
+        "assignee_without_ref",
+        "stale_expired_label",
+        "open_pr_without_ref",
+        "ref_on_proposed",
+        "ref_without_owner",
+        "owner_sources_disagree",
+        "claim_without_marker",
+        "claim_ref_replaced",
+        "assignees_mismatch",
+        "pr_closed_unmerged",
+        "multiple_open_prs",
+        "pr_wrong_base",
+        "draft_pr",
+        "submitted_outside_core",
+        "unauthorized_label",
+        "issue_open_after_merge",
+        "reopened_after_merge",
+        "closed_without_merged_pr",
+        "ref_on_closed_issue",
+        "open_pr_on_closed_issue",
+        "forged_marker",
+        "spec_changed_after_claim"
+      ]
+    },
+    "label": {
+      "description": "Etiquetas de la forja (00-marco §5.4).",
+      "enum": [
+        "task",
+        "state:proposed",
+        "state:expired",
+        "flag:overlap",
+        "flag:direction-change",
+        "flag:blocked",
+        "ack:direction",
+        "main-broken",
+        "direction",
+        "flag:bypass",
+        "flag:instructions",
+        "ack:overlap",
+        "review:model"
+      ]
+    },
+    "role": {
+      "enum": [
+        "lead",
+        "researcher",
+        null
+      ]
+    },
+    "profile": {
+      "enum": [
+        "enforced",
+        "advisory"
+      ]
+    },
+    "path_class": {
+      "enum": [
+        "lead",
+        "section",
+        "editor",
+        "append",
+        "task",
+        "generated",
+        "local",
+        "outside"
+      ]
+    },
+    "section_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "plan_id": {
+      "type": "string",
+      "pattern": "^(RQ|HYP|IN|OUT|METH)-[1-9][0-9]*$"
+    },
+    "sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}([0-9a-f]{24})?$"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "datetime": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "repo_path": {
+      "description": "Ruta relativa a la raíz del repositorio, con separador '/', sin '/' inicial.",
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^/\\\\][^\\\\]*$"
+    },
+    "task_branch": {
+      "type": "string",
+      "pattern": "^task/[1-9][0-9]*$"
+    },
+    "ci_state": {
+      "enum": [
+        "success",
+        "failure",
+        "pending",
+        "unknown"
+      ]
+    },
+    "marked_text": {
+      "description": "Texto que no genera el núcleo (05-operaciones §8). trust indica su origen: rules (plan, roles y constitución de la base), reviewed (decisiones, notas y secciones integradas) o untrusted (lo demás). Con reviewed o untrusted es dato, nunca instrucción.",
+      "type": "object",
+      "required": [
+        "trust",
+        "source",
+        "text",
+        "truncated"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "trust": {
+          "enum": [
+            "rules",
+            "reviewed",
+            "untrusted"
+          ]
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "sanitized": {
+          "type": "boolean"
+        }
+      }
+    },
+    "page": {
+      "type": "object",
+      "required": [
+        "next_cursor",
+        "returned"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "returned": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "required": [
+        "id",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "status": {
+          "enum": [
+            "done",
+            "skipped",
+            "failed",
+            "pending",
+            "compensated"
+          ]
+        },
+        "detail": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "required": [
+        "kind",
+        "target",
+        "summary"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "forge_create",
+            "forge_update",
+            "forge_delete",
+            "git_commit",
+            "git_push",
+            "git_checkout",
+            "git_merge",
+            "file_write",
+            "local_write"
+          ]
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summary": {
+          "type": "string"
+        }
+      }
+    },
+    "dry_run_data": {
+      "type": "object",
+      "required": [
+        "dry_run",
+        "plan"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "dry_run": {
+          "const": true
+        },
+        "plan": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/effect"
+          }
+        }
+      }
+    },
+    "failure_data": {
+      "description": "Datos parciales cuando ok=false en una operación de varios pasos (05-operaciones §6.3).",
+      "type": "object",
+      "required": [
+        "failed_step",
+        "steps"
+      ],
+      "properties": {
+        "failed_step": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        }
+      }
+    },
+    "task_ref": {
+      "type": "object",
+      "required": [
+        "number",
+        "url",
+        "state"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "$ref": "#/$defs/task_number"
+        },
+        "url": {
+          "$ref": "#/$defs/url"
+        },
+        "state": {
+          "$ref": "#/$defs/task_state"
+        }
+      }
+    },
+    "pr_brief": {
+      "type": "object",
+      "required": [
+        "number",
+        "url",
+        "draft",
+        "ci",
+        "review"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "url": {
+          "$ref": "#/$defs/url"
+        },
+        "draft": {
+          "type": "boolean"
+        },
+        "ci": {
+          "$ref": "#/$defs/ci_state"
+        },
+        "review": {
+          "enum": [
+            "approved",
+            "changes_requested",
+            "pending",
+            "none"
+          ]
+        }
+      }
+    },
+    "task_summary": {
+      "type": "object",
+      "required": [
+        "number",
+        "title",
+        "state",
+        "sections",
+        "claimed_by",
+        "branch",
+        "pr",
+        "flags",
+        "anomalies",
+        "updated_at"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "$ref": "#/$defs/task_number"
+        },
+        "title": {
+          "$ref": "#/$defs/marked_text"
+        },
+        "state": {
+          "$ref": "#/$defs/task_state"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/section_id"
+          }
+        },
+        "plan_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/plan_id"
+          }
+        },
+        "claimed_by": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/login"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "branch": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/task_branch"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pr": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/pr_brief"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/label"
+          }
+        },
+        "anomalies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/anomaly"
+          }
+        },
+        "updated_at": {
+          "$ref": "#/$defs/datetime"
+        },
+        "expires_at": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/datetime"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "context_package": {
+      "description": "Paquete de contexto del coordinador (04-tareas §8.2). Lo devuelven claim y submit en data.context, y context --task en data.task_context. Recorte en el orden de REQ-TASK-59 dentro del tope de 05-operaciones §7.1.",
+      "type": "object",
+      "required": [
+        "phase",
+        "task",
+        "plan",
+        "active_tasks",
+        "related_sections",
+        "recent_decisions",
+        "deterministic_findings",
+        "omitted"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "phase": {
+          "enum": [
+            "claim",
+            "submission"
+          ]
+        },
+        "task": {
+          "type": "object",
+          "required": [
+            "number",
+            "state",
+            "owner",
+            "sections",
+            "title",
+            "spec"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "number": {
+              "$ref": "#/$defs/task_number"
+            },
+            "state": {
+              "$ref": "#/$defs/task_state"
+            },
+            "owner": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/login"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sections": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/section_id"
+              }
+            },
+            "title": {
+              "$ref": "#/$defs/marked_text"
+            },
+            "spec": {
+              "description": "Campos summary y done del Issue propio (10-seguridad REQ-SEC-7).",
+              "type": "object",
+              "required": [
+                "summary",
+                "done"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "summary": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/marked_text"
+                    },
+                    {
+                      "properties": {
+                        "text": {
+                          "maxLength": 2000
+                        }
+                      }
+                    }
+                  ]
+                },
+                "done": {
+                  "allOf": [
+                    {
+                      "$ref": "#/$defs/marked_text"
+                    },
+                    {
+                      "properties": {
+                        "text": {
+                          "maxLength": 2000
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "plan": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "status",
+              "text"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/plan_id"
+              },
+              "status": {
+                "enum": [
+                  "active",
+                  "retired"
+                ]
+              },
+              "text": {
+                "$ref": "#/$defs/marked_text"
+              }
+            }
+          }
+        },
+        "active_tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "number",
+              "state",
+              "owner",
+              "sections",
+              "pr",
+              "title",
+              "changed_files"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "$ref": "#/$defs/task_number"
+              },
+              "state": {
+                "$ref": "#/$defs/task_state"
+              },
+              "owner": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/login"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/section_id"
+                }
+              },
+              "pr": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              },
+              "title": {
+                "$ref": "#/$defs/marked_text"
+              },
+              "changed_files": {
+                "type": "object",
+                "required": [
+                  "source",
+                  "paths"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "paths": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "items": {
+                      "$ref": "#/$defs/repo_path"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "related_sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "owner",
+              "path",
+              "labels",
+              "macros",
+              "excerpt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/section_id"
+              },
+              "owner": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/login"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "path": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "labels": {
+                "type": "array",
+                "maxItems": 30,
+                "items": {
+                  "type": "string",
+                  "maxLength": 120
+                }
+              },
+              "macros": {
+                "type": "array",
+                "maxItems": 30,
+                "items": {
+                  "type": "string",
+                  "maxLength": 120
+                }
+              },
+              "excerpt": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/marked_text"
+                  },
+                  {
+                    "properties": {
+                      "text": {
+                        "maxLength": 600
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "recent_decisions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "file",
+              "title",
+              "summary",
+              "plan_ids"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "file": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "title": {
+                "$ref": "#/$defs/marked_text"
+              },
+              "summary": {
+                "$ref": "#/$defs/marked_text"
+              },
+              "plan_ids": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/plan_id"
+                }
+              }
+            }
+          }
+        },
+        "deterministic_findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind",
+              "path",
+              "tasks"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "description": "Hallazgo de la capa detectiva determinista (04-tareas §8.1), p. ej. same_file_active.",
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "path": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/repo_path"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/task_number"
+                }
+              }
+            }
+          }
+        },
+        "diff_summary": {
+          "description": "Solo en la fase submission.",
+          "type": "object",
+          "required": [
+            "files",
+            "additions",
+            "deletions",
+            "excerpt"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "files": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "additions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "deletions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "excerpt": {
+              "$ref": "#/$defs/marked_text"
+            }
+          }
+        },
+        "omitted": {
+          "type": "object",
+          "required": [
+            "active_tasks",
+            "related_sections",
+            "recent_decisions"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "active_tasks": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "related_sections": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "recent_decisions": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      },
+      "if": {
+        "required": [
+          "phase"
+        ],
+        "properties": {
+          "phase": {
+            "const": "claim"
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "diff_summary"
+          ]
+        }
+      }
+    },
+    "decision_brief": {
+      "type": "object",
+      "required": [
+        "path",
+        "title",
+        "date",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/repo_path"
+        },
+        "title": {
+          "$ref": "#/$defs/marked_text"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 40
+        }
+      }
+    },
+    "me": {
+      "type": "object",
+      "required": [
+        "login",
+        "role",
+        "is_deputy",
+        "sections"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "login": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/login"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "role": {
+          "$ref": "#/$defs/role"
+        },
+        "is_deputy": {
+          "type": "boolean"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/section_id"
+          }
+        }
+      }
+    },
+    "data_doctor": {
+      "type": "object",
+      "required": [
+        "core_version",
+        "project_root",
+        "convention",
+        "identity",
+        "role",
+        "is_deputy",
+        "profile",
+        "checks",
+        "half_states"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "core_version": {
+          "type": "string"
+        },
+        "project_root": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "convention": {
+          "type": "object",
+          "required": [
+            "project",
+            "supported"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "project": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "supported": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "required": [
+            "login",
+            "source"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "login": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/login"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "source": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "role": {
+          "$ref": "#/$defs/role"
+        },
+        "is_deputy": {
+          "type": "boolean"
+        },
+        "profile": {
+          "$ref": "#/$defs/profile"
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "status",
+              "message",
+              "fix"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "enum": [
+                  "python",
+                  "git",
+                  "project_root",
+                  "project_yaml",
+                  "roles_yaml",
+                  "convention",
+                  "remote",
+                  "identity",
+                  "membership",
+                  "forge_reachable",
+                  "profile",
+                  "deputy",
+                  "codeowners_sync",
+                  "merge-settings",
+                  "generated_files",
+                  "claude_settings",
+                  "mcp_config",
+                  "half_states",
+                  "cache",
+                  "evidence_tools"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "ok",
+                  "warn",
+                  "fail",
+                  "skip"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "fix": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "half_states": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "task",
+              "kind",
+              "suggested_op"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "task": {
+                "$ref": "#/$defs/task_number"
+              },
+              "kind": {
+                "$ref": "#/$defs/anomaly"
+              },
+              "suggested_op": {
+                "$ref": "#/$defs/op"
+              }
+            }
+          }
+        }
+      }
+    },
+    "data_init": {
+      "type": "object",
+      "required": [
+        "repo",
+        "profile",
+        "advisory_accepted",
+        "files",
+        "labels",
+        "protections",
+        "pushed",
+        "setup_task",
+        "pending_steps"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "repo": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+        },
+        "profile": {
+          "enum": [
+            "enforced",
+            "advisory"
+          ]
+        },
+        "advisory_accepted": {
+          "type": "boolean"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "action"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "action": {
+                "enum": [
+                  "created",
+                  "updated",
+                  "deleted",
+                  "unchanged",
+                  "pending"
+                ]
+              }
+            }
+          }
+        },
+        "labels": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "action"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/label"
+              },
+              "action": {
+                "enum": [
+                  "created",
+                  "updated",
+                  "unchanged"
+                ]
+              }
+            }
+          }
+        },
+        "protections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "action",
+              "detail"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "action": {
+                "enum": [
+                  "applied",
+                  "unchanged",
+                  "unsupported",
+                  "skipped"
+                ]
+              },
+              "detail": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pushed": {
+          "type": "boolean"
+        },
+        "setup_task": {
+          "description": "Tarea de preparación (00-marco D-70; 05-operaciones §9.3): creada o encontrada, o null.",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/task_number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pending_steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "data_sync_roles": {
+      "type": "object",
+      "required": [
+        "check_only",
+        "changed",
+        "files",
+        "diff",
+        "unknown_logins"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "check_only": {
+          "type": "boolean"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "action"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "action": {
+                "enum": [
+                  "unchanged",
+                  "updated",
+                  "would_update"
+                ]
+              }
+            }
+          }
+        },
+        "diff": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unknown_logins": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/login"
+          }
+        }
+      }
+    },
+    "data_validate": {
+      "type": "object",
+      "required": [
+        "valid",
+        "base",
+        "head",
+        "results",
+        "page"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "mode": {
+          "enum": [
+            "tree",
+            "pr",
+            "base",
+            "build-log"
+          ]
+        },
+        "pr": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "base": {
+          "$ref": "#/$defs/git_point"
+        },
+        "head": {
+          "$ref": "#/$defs/git_point"
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "check",
+              "status",
+              "findings"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "check": {
+                "description": "ID de regla de 09-ci §4.1 (p. ej. scope).",
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "enum": [
+                  "pass",
+                  "fail",
+                  "skip"
+                ]
+              },
+              "findings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "path",
+                    "line",
+                    "severity",
+                    "code",
+                    "message"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "path": {
+                      "oneOf": [
+                        {
+                          "$ref": "#/$defs/repo_path"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "line": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 1
+                    },
+                    "severity": {
+                      "enum": [
+                        "error",
+                        "warning"
+                      ]
+                    },
+                    "code": {
+                      "description": "Código fino del hallazgo (00-marco §5.11): conv.* de 02-convencion, E_/W_ de CONFIG o VALIDATION, o IL/TX/SB de 10-seguridad.",
+                      "type": "string",
+                      "pattern": "^(conv\\.[a-z0-9-]+\\.[a-z0-9-]+|[EW]_[A-Z]+(_[A-Z0-9]+)+|(IL|TX|SB)[0-9]{2})$"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "pointer": {
+                      "description": "JSON Pointer (RFC 6901) dentro del archivo, para hallazgos de esquema.",
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "pattern": "^(/([^~/]|~[01])*)*$"
+                    },
+                    "hint": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "maxLength": 500
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "page": {
+          "$ref": "#/$defs/page"
+        }
+      }
+    },
+    "git_point": {
+      "type": "object",
+      "required": [
+        "ref",
+        "sha"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "data_status": {
+      "type": "object",
+      "required": [
+        "generated_at",
+        "source",
+        "cache_age_s",
+        "me",
+        "base",
+        "tasks",
+        "page"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/datetime"
+        },
+        "source": {
+          "enum": [
+            "live",
+            "cache"
+          ]
+        },
+        "cache_age_s": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "me": {
+          "$ref": "#/$defs/me"
+        },
+        "base": {
+          "type": "object",
+          "required": [
+            "branch",
+            "sha",
+            "ci",
+            "main_broken_issue",
+            "pdf_url"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "branch": {
+              "type": "string"
+            },
+            "sha": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/sha"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "ci": {
+              "$ref": "#/$defs/ci_state"
+            },
+            "main_broken_issue": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 1
+            },
+            "pdf_url": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/url"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/task_summary"
+          }
+        },
+        "page": {
+          "$ref": "#/$defs/page"
+        }
+      }
+    },
+    "data_context": {
+      "type": "object",
+      "required": [
+        "generated_at",
+        "source",
+        "cache_age_s",
+        "core_version",
+        "convention",
+        "profile",
+        "me",
+        "current",
+        "my_tasks",
+        "others_active",
+        "decisions_recent",
+        "alerts",
+        "summary_md"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "generated_at": {
+          "$ref": "#/$defs/datetime"
+        },
+        "source": {
+          "enum": [
+            "live",
+            "cache",
+            "local"
+          ]
+        },
+        "cache_age_s": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "core_version": {
+          "type": "string"
+        },
+        "convention": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "profile": {
+          "$ref": "#/$defs/profile"
+        },
+        "me": {
+          "$ref": "#/$defs/me"
+        },
+        "current": {
+          "type": "object",
+          "required": [
+            "branch",
+            "task",
+            "task_state",
+            "allowed_paths"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "branch": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "task": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/task_number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "task_state": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/task_state"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "allowed_paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "my_tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "number",
+              "title",
+              "state",
+              "branch"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "$ref": "#/$defs/task_number"
+              },
+              "title": {
+                "$ref": "#/$defs/marked_text"
+              },
+              "state": {
+                "$ref": "#/$defs/task_state"
+              },
+              "branch": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/task_branch"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "others_active": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "number",
+              "title",
+              "sections",
+              "claimed_by"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "$ref": "#/$defs/task_number"
+              },
+              "title": {
+                "$ref": "#/$defs/marked_text"
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/section_id"
+                }
+              },
+              "claimed_by": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/login"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "decisions_recent": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "$ref": "#/$defs/decision_brief"
+          }
+        },
+        "alerts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "kind",
+              "task",
+              "message"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "claim_expiring",
+                  "claim_expired",
+                  "changes_requested",
+                  "review_requested",
+                  "main_broken",
+                  "profile_advisory",
+                  "deputy_missing",
+                  "half_state",
+                  "setup_pending"
+                ]
+              },
+              "task": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/task_number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "message": {
+                "type": "string",
+                "maxLength": 300
+              }
+            }
+          }
+        },
+        "task_context": {
+          "description": "Solo con task (context --task <n> --phase <fase>).",
+          "$ref": "#/$defs/context_package"
+        },
+        "summary_md": {
+          "description": "Resumen en Markdown en el idioma del proyecto, el mismo texto de .aucove/context.md (05-operaciones REQ-OPS-67). Tiene su propio tope, context.max_chars, y no cuenta para el tope del sobre (05-operaciones §7.1).",
+          "type": "string"
+        }
+      }
+    },
+    "data_check_path": {
+      "type": "object",
+      "required": [
+        "basis",
+        "allowed_all",
+        "results"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "type": "object",
+          "required": [
+            "base_ref",
+            "base_sha",
+            "identity",
+            "task",
+            "source"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "base_ref": {
+              "type": "string"
+            },
+            "base_sha": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/sha"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "identity": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/login"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "task": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/task_number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "source": {
+              "enum": [
+                "live",
+                "cache",
+                "local"
+              ]
+            }
+          }
+        },
+        "allowed_all": {
+          "type": "boolean"
+        },
+        "results": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "class",
+              "allowed",
+              "reason_code",
+              "section",
+              "owner",
+              "confirm",
+              "reason"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "class": {
+                "$ref": "#/$defs/path_class"
+              },
+              "allowed": {
+                "type": "boolean"
+              },
+              "reason_code": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/perm_code"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "section": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/section_id"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "owner": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/login"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "confirm": {
+                "description": "true si la escritura está permitida pero es una ruta de control y la puerta debe pedir confirmación humana (06-permisos REQ-PERM-8).",
+                "type": "boolean"
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 300
+              }
+            }
+          }
+        }
+      }
+    },
+    "data_metrics": {
+      "type": "object",
+      "required": [
+        "since",
+        "until",
+        "metrics"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "since": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/datetime"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "until": {
+          "$ref": "#/$defs/datetime"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "value",
+              "unit"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "unit": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "data_evidence_verify": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "verdict",
+        "confidence",
+        "records"
+      ],
+      "properties": {
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdict": {
+          "description": "Global: failed si algún registro da failed; verified si todos dan verified; pending en otro caso (05-operaciones §9.26).",
+          "enum": [
+            "verified",
+            "pending",
+            "failed"
+          ]
+        },
+        "confidence": {
+          "description": "Con verified: strong solo si todos los registros son strong; weak si no. null en otro caso.",
+          "enum": [
+            "strong",
+            "weak",
+            null
+          ]
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "commit",
+              "manifest_sha256",
+              "verdict",
+              "confidence",
+              "checks"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "submission",
+                  "integration"
+                ]
+              },
+              "commit": {
+                "$ref": "#/$defs/sha"
+              },
+              "manifest_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "verdict": {
+                "enum": [
+                  "verified",
+                  "pending",
+                  "failed"
+                ],
+                "description": "Por registro: failed si alguna comprobación da fail; verified si el manifiesto pasa y alguna prueba de fecha da pass o weak (en v0.1, solo una TSA); pending en otro caso."
+              },
+              "confidence": {
+                "enum": [
+                  "strong",
+                  "weak",
+                  null
+                ],
+                "description": "Con verified: strong si alguna TSA da pass; weak si no. null en otro caso."
+              },
+              "checks": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/evidence_check"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "evidence_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "check",
+        "source",
+        "status",
+        "time_utc",
+        "time_local",
+        "reason",
+        "detail"
+      ],
+      "properties": {
+        "check": {
+          "enum": [
+            "manifest",
+            "tsa",
+            "ots",
+            "openings",
+            "actors",
+            "git",
+            "content"
+          ]
+        },
+        "source": {
+          "description": "Id de la TSA del catálogo, 'calendars' o 'bitcoin' (ots), o null.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 32
+        },
+        "status": {
+          "description": "pass; weak (prueba válida con menos confianza: TSA sin OCSP/CRL utilizables, o con OCSP/CRL posteriores al vencimiento del certificado); pending (OTS sin bloque, o con un bloque sin cotejar: bitcoin_unverified); skip (no se pudo comprobar: falta el extra evidence, el commit o el contenido); fail.",
+          "enum": [
+            "pass",
+            "weak",
+            "pending",
+            "skip",
+            "fail"
+          ]
+        },
+        "time_utc": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/datetime"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "time_local": {
+          "description": "La misma hora en America/Mexico_City (o en --tz), con su desfase.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 40
+        },
+        "reason": {
+          "description": "Motivo estable del estado, en minúsculas (por ejemplo, nonce_mismatch o no_revocation), para las máquinas; null si no hay. detail es su texto localizado.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "maxLength": 64
+        },
+        "detail": {
+          "description": "Nunca contiene sales; solo los checks content llevan la ruta del archivo comprobado (REQ-OPS-65).",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300
+        }
+      }
+    },
+    "data_task_propose": {
+      "type": "object",
+      "required": [
+        "task",
+        "created",
+        "idempotency_key"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_ref"
+        },
+        "created": {
+          "type": "boolean"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16,64}$"
+        }
+      }
+    },
+    "data_task_accept": {
+      "type": "object",
+      "required": [
+        "task",
+        "changed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_ref"
+        },
+        "changed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "data_task_cancel": {
+      "type": "object",
+      "required": [
+        "task",
+        "changed",
+        "pr_closed",
+        "ref_deleted",
+        "archive_ref"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_ref"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "pr_closed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "archive_ref": {
+          "description": "Ref de archivo refs/tags/archive/task-<n>-<k> (00-marco §5.3), o null si no hubo trabajo que archivar.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^refs/tags/archive/task-[1-9][0-9]*-[1-9][0-9]*$"
+        },
+        "ref_deleted": {
+          "type": "boolean"
+        }
+      }
+    },
+    "data_claim": {
+      "type": "object",
+      "required": [
+        "task",
+        "branch",
+        "created",
+        "claim_sha",
+        "claimant",
+        "steps",
+        "checkout",
+        "context",
+        "next"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "type": "object",
+          "required": [
+            "number",
+            "url",
+            "title",
+            "state",
+            "sections"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "number": {
+              "$ref": "#/$defs/task_number"
+            },
+            "url": {
+              "$ref": "#/$defs/url"
+            },
+            "title": {
+              "$ref": "#/$defs/marked_text"
+            },
+            "state": {
+              "$ref": "#/$defs/task_state"
+            },
+            "sections": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/section_id"
+              }
+            }
+          }
+        },
+        "branch": {
+          "$ref": "#/$defs/task_branch"
+        },
+        "created": {
+          "type": "boolean"
+        },
+        "claim_sha": {
+          "$ref": "#/$defs/sha"
+        },
+        "claimant": {
+          "$ref": "#/$defs/login"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        },
+        "checkout": {
+          "type": "object",
+          "required": [
+            "done",
+            "reason"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "done": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "context": {
+          "$ref": "#/$defs/context_package"
+        },
+        "next": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/op"
+          }
+        }
+      }
+    },
+    "data_release": {
+      "type": "object",
+      "required": [
+        "task",
+        "changed",
+        "unassigned",
+        "ref_deleted",
+        "local_branch_deleted",
+        "archive_ref",
+        "pr_closed",
+        "handoff_to"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_ref"
+        },
+        "changed": {
+          "type": "boolean"
+        },
+        "unassigned": {
+          "type": "boolean"
+        },
+        "ref_deleted": {
+          "type": "boolean"
+        },
+        "local_branch_deleted": {
+          "type": "boolean"
+        },
+        "archive_ref": {
+          "description": "Ref de archivo refs/tags/archive/task-<n>-<k> (00-marco §5.3), o null si no hubo trabajo que archivar.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^refs/tags/archive/task-[1-9][0-9]*-[1-9][0-9]*$"
+        },
+        "pr_closed": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "handoff_to": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/login"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "data_save": {
+      "type": "object",
+      "required": [
+        "task",
+        "branch",
+        "commit",
+        "pushed",
+        "ahead",
+        "behind"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_number"
+        },
+        "branch": {
+          "$ref": "#/$defs/task_branch"
+        },
+        "commit": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "required": [
+                "sha",
+                "files"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "sha": {
+                  "$ref": "#/$defs/sha"
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/repo_path"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "pushed": {
+          "type": "boolean"
+        },
+        "ahead": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "behind": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "data_update": {
+      "type": "object",
+      "required": [
+        "task",
+        "result",
+        "remote_task_integrated",
+        "behind_before",
+        "merge_commit",
+        "conflicts",
+        "resolvable",
+        "pushed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_number"
+        },
+        "result": {
+          "enum": [
+            "up_to_date",
+            "merged",
+            "conflict",
+            "aborted",
+            "escalated"
+          ]
+        },
+        "remote_task_integrated": {
+          "type": "boolean"
+        },
+        "behind_before": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "merge_commit": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "conflicts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "class",
+              "resolution"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "class": {
+                "$ref": "#/$defs/path_class"
+              },
+              "resolution": {
+                "enum": [
+                  "agent",
+                  "auto_rename",
+                  "auto_base"
+                ]
+              }
+            }
+          }
+        },
+        "resolvable": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "pushed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "data_switch": {
+      "type": "object",
+      "required": [
+        "task",
+        "branch",
+        "previous_branch",
+        "created_local"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_number"
+        },
+        "branch": {
+          "$ref": "#/$defs/task_branch"
+        },
+        "previous_branch": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_local": {
+          "type": "boolean"
+        }
+      }
+    },
+    "data_record_assessment": {
+      "type": "object",
+      "required": [
+        "task",
+        "phase",
+        "target",
+        "comment",
+        "effective_verdict",
+        "labels_added",
+        "mention_comment_url"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_number"
+        },
+        "phase": {
+          "enum": [
+            "claim",
+            "submission"
+          ]
+        },
+        "target": {
+          "type": "object",
+          "required": [
+            "kind",
+            "number"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "issue",
+                "pr"
+              ]
+            },
+            "number": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "comment": {
+          "type": "object",
+          "required": [
+            "id",
+            "url",
+            "created"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "url": {
+              "$ref": "#/$defs/url"
+            },
+            "created": {
+              "description": "false si se editó en su sitio el comentario propio (04-tareas REQ-TASK-13).",
+              "type": "boolean"
+            }
+          }
+        },
+        "effective_verdict": {
+          "description": "Veredicto tras validar las citas (04-tareas REQ-TASK-64).",
+          "enum": [
+            "none",
+            "possible",
+            "clear"
+          ]
+        },
+        "labels_added": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/label"
+          }
+        },
+        "mention_comment_url": {
+          "description": "Comentario nuevo con menciones; solo si la evaluación agregó una etiqueta flag:* (04-tareas REQ-TASK-67).",
+          "oneOf": [
+            {
+              "$ref": "#/$defs/url"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "data_submit": {
+      "type": "object",
+      "required": [
+        "task",
+        "pr",
+        "round",
+        "state",
+        "commit",
+        "update_result",
+        "checks",
+        "reviewers_requested",
+        "steps",
+        "context",
+        "next"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_ref"
+        },
+        "pr": {
+          "type": "object",
+          "required": [
+            "number",
+            "url",
+            "created"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "number": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "url": {
+              "$ref": "#/$defs/url"
+            },
+            "created": {
+              "type": "boolean"
+            }
+          }
+        },
+        "round": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "state": {
+          "$ref": "#/$defs/task_state"
+        },
+        "commit": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "update_result": {
+          "enum": [
+            "up_to_date",
+            "merged",
+            "skipped"
+          ]
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "check",
+              "status"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "check": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "enum": [
+                  "pass",
+                  "fail",
+                  "skip"
+                ]
+              }
+            }
+          }
+        },
+        "reviewers_requested": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/login"
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        },
+        "context": {
+          "$ref": "#/$defs/context_package"
+        },
+        "next": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/op"
+          }
+        }
+      }
+    },
+    "data_expire_claims": {
+      "type": "object",
+      "required": [
+        "evaluated",
+        "threshold_days",
+        "warned",
+        "expired",
+        "unexpired",
+        "repaired",
+        "skipped"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "evaluated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "threshold_days": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "warned": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expiry_entry"
+          }
+        },
+        "expired": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expiry_entry"
+          }
+        },
+        "unexpired": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expiry_entry"
+          }
+        },
+        "repaired": {
+          "description": "Reparaciones automáticas de 04-tareas REQ-TASK-15.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "task",
+              "action"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "task": {
+                "$ref": "#/$defs/task_number"
+              },
+              "action": {
+                "enum": [
+                  "assign_owner",
+                  "clear_assignees",
+                  "remove_stale_expired",
+                  "close_merged_issue"
+                ]
+              }
+            }
+          }
+        },
+        "skipped": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "task",
+              "reason"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "task": {
+                "$ref": "#/$defs/task_number"
+              },
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "expiry_entry": {
+      "type": "object",
+      "required": [
+        "task",
+        "claimed_by",
+        "last_activity"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "task": {
+          "$ref": "#/$defs/task_number"
+        },
+        "claimed_by": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/login"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "last_activity": {
+          "$ref": "#/$defs/datetime"
+        }
+      }
+    },
+    "data_decision_propose": {
+      "type": "object",
+      "required": [
+        "path",
+        "created",
+        "commit",
+        "pushed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/repo_path"
+        },
+        "created": {
+          "type": "boolean"
+        },
+        "commit": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "pushed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "data_direction_propose": {
+      "type": "object",
+      "required": [
+        "issue",
+        "created",
+        "idempotency_key"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "issue": {
+          "type": "object",
+          "required": [
+            "number",
+            "url"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "number": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "url": {
+              "$ref": "#/$defs/url"
+            }
+          }
+        },
+        "created": {
+          "type": "boolean"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{16,64}$"
+        }
+      }
+    },
+    "data_review_list": {
+      "type": "object",
+      "required": [
+        "reviews",
+        "page"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "pr",
+              "url",
+              "task",
+              "title",
+              "author",
+              "sections",
+              "ci",
+              "requested_from_me",
+              "role_in_review",
+              "age_h",
+              "flags"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "pr": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "url": {
+                "$ref": "#/$defs/url"
+              },
+              "task": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/task_number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "title": {
+                "$ref": "#/$defs/marked_text"
+              },
+              "author": {
+                "$ref": "#/$defs/login"
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/section_id"
+                }
+              },
+              "ci": {
+                "$ref": "#/$defs/ci_state"
+              },
+              "requested_from_me": {
+                "type": "boolean"
+              },
+              "role_in_review": {
+                "enum": [
+                  "approver",
+                  "owner",
+                  "none"
+                ]
+              },
+              "age_h": {
+                "type": "number",
+                "minimum": 0
+              },
+              "flags": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/label"
+                }
+              }
+            }
+          }
+        },
+        "page": {
+          "$ref": "#/$defs/page"
+        }
+      }
+    },
+    "data_review_show": {
+      "type": "object",
+      "required": [
+        "pr",
+        "task",
+        "files",
+        "scope_violations",
+        "ci",
+        "pdf_url",
+        "assessments",
+        "flags",
+        "reviews",
+        "approval",
+        "human_actions",
+        "page"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "pr": {
+          "type": "object",
+          "required": [
+            "number",
+            "url",
+            "files_url",
+            "title",
+            "body",
+            "author",
+            "base",
+            "head_sha",
+            "draft"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "number": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "url": {
+              "$ref": "#/$defs/url"
+            },
+            "files_url": {
+              "$ref": "#/$defs/url"
+            },
+            "title": {
+              "$ref": "#/$defs/marked_text"
+            },
+            "body": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/marked_text"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "author": {
+              "$ref": "#/$defs/login"
+            },
+            "base": {
+              "type": "string"
+            },
+            "head_sha": {
+              "$ref": "#/$defs/sha"
+            },
+            "draft": {
+              "type": "boolean"
+            }
+          }
+        },
+        "task": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/task_number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "class",
+              "owner",
+              "additions",
+              "deletions",
+              "allowed_for_task"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "class": {
+                "$ref": "#/$defs/path_class"
+              },
+              "owner": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/login"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "additions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "deletions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "allowed_for_task": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "scope_violations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "reason_code"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "$ref": "#/$defs/repo_path"
+              },
+              "reason_code": {
+                "$ref": "#/$defs/perm_code"
+              }
+            }
+          }
+        },
+        "ci": {
+          "type": "object",
+          "required": [
+            "state",
+            "checks"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "$ref": "#/$defs/ci_state"
+            },
+            "checks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "conclusion"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "conclusion": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "pdf_url": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/url"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assessments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "phase",
+              "overlap_verdict",
+              "direction_verdict",
+              "reason",
+              "url"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "phase": {
+                "enum": [
+                  "claim",
+                  "submission"
+                ]
+              },
+              "overlap_verdict": {
+                "enum": [
+                  "none",
+                  "possible",
+                  "clear"
+                ]
+              },
+              "direction_verdict": {
+                "enum": [
+                  "none",
+                  "possible"
+                ]
+              },
+              "reason": {
+                "$ref": "#/$defs/marked_text"
+              },
+              "url": {
+                "$ref": "#/$defs/url"
+              }
+            }
+          }
+        },
+        "flags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/label"
+          }
+        },
+        "reviews": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "login",
+              "state",
+              "commit_id"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "login": {
+                "$ref": "#/$defs/login"
+              },
+              "state": {
+                "enum": [
+                  "APPROVED",
+                  "CHANGES_REQUESTED",
+                  "COMMENTED",
+                  "DISMISSED",
+                  "PENDING"
+                ]
+              },
+              "commit_id": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/sha"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "approval": {
+          "type": "object",
+          "required": [
+            "profile",
+            "required_from",
+            "satisfied"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "profile": {
+              "$ref": "#/$defs/profile"
+            },
+            "required_from": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/login"
+              }
+            },
+            "satisfied": {
+              "type": "boolean"
+            }
+          }
+        },
+        "human_actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "action",
+              "web_url",
+              "cli"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "enum": [
+                  "approve",
+                  "request_changes"
+                ]
+              },
+              "web_url": {
+                "$ref": "#/$defs/url"
+              },
+              "cli": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "page": {
+          "$ref": "#/$defs/page"
+        }
+      }
+    },
+    "data_review_approve": {
+      "type": "object",
+      "required": [
+        "pr",
+        "review",
+        "created",
+        "merge_url"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "pr": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "review": {
+          "$ref": "#/$defs/review_written"
+        },
+        "created": {
+          "type": "boolean"
+        },
+        "merge_url": {
+          "$ref": "#/$defs/url"
+        }
+      }
+    },
+    "data_review_request_changes": {
+      "type": "object",
+      "required": [
+        "pr",
+        "review",
+        "created"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "pr": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "review": {
+          "$ref": "#/$defs/review_written"
+        },
+        "created": {
+          "type": "boolean"
+        }
+      }
+    },
+    "review_written": {
+      "type": "object",
+      "required": [
+        "id",
+        "state",
+        "commit_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "state": {
+          "enum": [
+            "APPROVED",
+            "CHANGES_REQUESTED"
+          ]
+        },
+        "commit_id": {
+          "$ref": "#/$defs/sha"
+        }
+      }
+    },
+    "rule_doctor": {
+      "$comment": "Si op='doctor' y data es un objeto que no es de dry-run: data_doctor (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "doctor"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_doctor"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_init": {
+      "$comment": "Si op='init' y data es un objeto que no es de dry-run: data_init (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "init"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_init"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_sync_roles": {
+      "$comment": "Si op='sync-roles' y data es un objeto que no es de dry-run: data_sync-roles (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "sync-roles"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_sync_roles"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_validate": {
+      "$comment": "Si op='validate' y data es un objeto que no es de dry-run: data_validate (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "validate"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_validate"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_status": {
+      "$comment": "Si op='status' y data es un objeto que no es de dry-run: data_status (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "status"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_status"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_context": {
+      "$comment": "Si op='context' y data es un objeto que no es de dry-run: data_context (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "context"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_context"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_check_path": {
+      "$comment": "Si op='check-path' y data es un objeto que no es de dry-run: data_check-path (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "check-path"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_check_path"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_metrics": {
+      "$comment": "Si op='metrics' y data es un objeto que no es de dry-run: data_metrics (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "metrics"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_metrics"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_evidence_verify": {
+      "$comment": "Si op='evidence.verify' y data es un objeto que no es de dry-run: data_evidence_verify (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "evidence.verify"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_evidence_verify"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_task_propose": {
+      "$comment": "Si op='task.propose' y data es un objeto que no es de dry-run: data_task.propose (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "task.propose"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_task_propose"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_task_accept": {
+      "$comment": "Si op='task.accept' y data es un objeto que no es de dry-run: data_task.accept (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "task.accept"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_task_accept"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_task_cancel": {
+      "$comment": "Si op='task.cancel' y data es un objeto que no es de dry-run: data_task.cancel (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "task.cancel"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_task_cancel"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_claim": {
+      "$comment": "Si op='claim' y data es un objeto que no es de dry-run: data_claim (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "claim"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_claim"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_release": {
+      "$comment": "Si op='release' y data es un objeto que no es de dry-run: data_release (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "release"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_release"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_save": {
+      "$comment": "Si op='save' y data es un objeto que no es de dry-run: data_save (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "save"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_save"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_update": {
+      "$comment": "Si op='update' y data es un objeto que no es de dry-run: data_update (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "update"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_update"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_switch": {
+      "$comment": "Si op='switch' y data es un objeto que no es de dry-run: data_switch (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "switch"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_switch"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_record_assessment": {
+      "$comment": "Si op='record-assessment' y data es un objeto que no es de dry-run: data_record-assessment (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "record-assessment"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_record_assessment"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_submit": {
+      "$comment": "Si op='submit' y data es un objeto que no es de dry-run: data_submit (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "submit"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_submit"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_expire_claims": {
+      "$comment": "Si op='expire-claims' y data es un objeto que no es de dry-run: data_expire-claims (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "expire-claims"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_expire_claims"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_decision_propose": {
+      "$comment": "Si op='decision.propose' y data es un objeto que no es de dry-run: data_decision.propose (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "decision.propose"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_decision_propose"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_direction_propose": {
+      "$comment": "Si op='direction.propose' y data es un objeto que no es de dry-run: data_direction.propose (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "direction.propose"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_direction_propose"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_review_list": {
+      "$comment": "Si op='review.list' y data es un objeto que no es de dry-run: data_review.list (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "review.list"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_review_list"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_review_show": {
+      "$comment": "Si op='review.show' y data es un objeto que no es de dry-run: data_review.show (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "review.show"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_review_show"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_review_approve": {
+      "$comment": "Si op='review.approve' y data es un objeto que no es de dry-run: data_review.approve (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "review.approve"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_review_approve"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_review_request_changes": {
+      "$comment": "Si op='review.request-changes' y data es un objeto que no es de dry-run: data_review.request-changes (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "review.request-changes"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_review_request_changes"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

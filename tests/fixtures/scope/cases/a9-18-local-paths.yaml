@@ -1,0 +1,19 @@
+id: a9-18-local-paths
+description: Archivos de configuración local (clase local) que no se versionan.
+covers: [a9:local-path]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: .claude/settings.local.json
+    content: |
+      {"permissions": {"allow": ["Bash"]}}
+  - status: added
+    path: tex/build/main.log
+    content: |
+      This is a log.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_LOCAL_PATH]
+  paths: [.claude/settings.local.json, tex/build/main.log]

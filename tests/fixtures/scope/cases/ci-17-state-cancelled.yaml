@@ -1,0 +1,16 @@
+id: ci-17-state-cancelled
+description: La tarea se canceló (Issue cerrado como not_planned) y el PR sigue abierto.
+covers: [ci-4.2:state-cancelled]
+task: {number: 17, claimant: carla, sections: [methods], state: cancelled}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Trabajo sobre una tarea cancelada.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_STATE_INVALID_TRANSITION]
+  mentions: [cancelled]

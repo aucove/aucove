@@ -1,0 +1,21 @@
+id: a9-16-author-not-claimant
+description: >
+  Bruno abre el PR de task/17, que reclamó carla, y empujó a esa rama: el autor del PR no
+  es el reclamante y hay un push ajeno.
+covers: [a9:author-not-claimant]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: bruno}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Cambio de otra persona en la rama de carla.
+pushes:
+  - {actor: carla, type: push}
+  - {actor: bruno, type: push}
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_CLAIM_NOT_HELD]
+  mentions: [bruno, carla]

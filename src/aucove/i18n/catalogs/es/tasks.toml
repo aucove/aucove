@@ -1,0 +1,133 @@
+# Catálogo del área tasks: textos que las operaciones de tarea escriben en la forja (en el
+# idioma del proyecto) y los efectos de su `--dry-run` (05-operaciones §6.5). Mismas claves,
+# marcadores y fragmentos entre acentos graves que en en/tasks.toml (REQ-ARCH-72..74).
+
+[tasks.claim]
+comment = "**Reclamo de #{task}** por @{login}. Partes: {sections}."
+
+[tasks.release]
+comment = "**Liberación de #{task}** por @{login}."
+reason = "Motivo: {reason}"
+handoff = "Traspaso a @{login}: puede reclamarla y seguir desde el archivo."
+
+[tasks.escalation]
+comment = "**Escalamiento de #{task}** a @{lead}: la actualización desde la base necesita al responsable. Motivo: {reason}"
+
+[tasks.save.auto]
+update = "Guarda los cambios antes de actualizar desde la base"
+switch = "Guarda los cambios antes de cambiar de tarea"
+release = "Guarda los cambios antes de liberar la tarea"
+submit = "Registra la sesión antes de entregar"
+
+[tasks.note]
+heading = "## Sesión {n} · {date} · @{login}"
+done = "Hecho"
+next = "Pendiente"
+decisions = "Decisiones"
+questions = "Preguntas abiertas"
+
+[tasks.submit]
+comment = "**Entrega {round} de #{task}.**"
+seal = "El sello de esta entrega aparecerá como comentario del PR en unos minutos. Cada ronda nueva se sella otra vez, y `aucove status` guarda una copia en `.aucove/evidence/`."
+done = "Entrega {round} de #{task}: {url}"
+
+[tasks.pr]
+summary = "Resumen"
+task = "Tarea"
+parts = "Cambios por parte"
+part = "`{section}`: {files}"
+more = " y {n} más"
+no_parts = "Ninguna parte: solo la nota y las decisiones."
+ai = "Uso de IA"
+ai_none = "Sin uso de IA."
+ai_uses = "Usos: {uses}. Herramientas: {tools}."
+decisions = "Decisiones"
+no_decisions = "Ninguna."
+verification = "Verificación"
+check_scope = "El PR solo toca las partes de la tarea, su nota y decisiones nuevas."
+check_note = "La nota `memory/notes/task-{n}.md` resume el trabajo."
+check_ai = "Revisé el texto producido con IA y me hago responsable de él."
+replaces = "Reemplaza a #{pr}."
+
+[tasks.assessment]
+overlap_possible = "**Posible traslape (consultivo).**"
+overlap_clear = "**Traslape claro (consultivo).**"
+overlap_item = "Con {target}: {reason}"
+direction = "**Posible cambio de dirección (consultivo).** Afecta a {ids}."
+none = "Sin traslape ni cambio de dirección."
+footer = "Evaluación hecha por la sesión de @{login}; puede equivocarse. Decide el responsable."
+mention_claim = "{mentions}: la evaluación del reclamo de #{task} agregó {labels} (consultivo). El detalle está en el comentario de reclamo."
+mention_submission = "{mentions}: la evaluación de la entrega de #{task} agregó {labels} (consultivo). El detalle está en el comentario de entrega."
+
+[tasks.accept]
+summary = "Vas a aceptar la tarea #{task} «{title}»: se quitará la etiqueta `state:proposed` y quedará abierta para reclamarla."
+
+[tasks.cancel]
+summary = "Vas a cancelar la tarea #{task} «{title}». Se hará lo siguiente:"
+pr_comment = "La tarea #{task} fue cancelada por @{login}; este PR se cierra sin integrar."
+reason = "Motivo: {reason}"
+
+[tasks.decision]
+commit = "Decisión: {title}"
+
+[tasks.direction]
+kind_line = "**Tipo de cambio:** {kind}"
+change = "## Cambio propuesto"
+rationale = "## Justificación"
+ids = "## IDs de `plan.md`"
+no_ids = "Ninguno."
+
+[tasks.direction.kind]
+add = "agregar"
+modify = "modificar"
+retire = "retirar"
+
+[tasks.expiry]
+warning = "{mentions}: la tarea #{task} lleva {idle} días sin actividad; si sigue así, vence en {left} días. Para renovarla, guarda el trabajo con `{name} save` o vuelve a reclamarla con `{name} claim {task}`."
+expired = "{mentions}: la tarea #{task} venció tras {idle} días sin actividad (`state:expired`). La rama `task/{task}` sigue en la forja: quien la reclamó la renueva con `{name} save` o `{name} claim {task}`, y el responsable decide si liberarla."
+activity = "Hubo actividad en la tarea #{task}; los {days} días del plazo vuelven a contar desde ahora."
+
+[tasks.effect]
+claim_ref = "Crear el commit de reclamo y la rama `task/{task}`."
+assign = "Asignar el Issue #{task} a @{login}."
+claim_comment = "Crear o actualizar el comentario de reclamo."
+renew = "Quitar la etiqueta `state:expired`."
+checkout = "Cambiar a la rama `task/{task}`."
+cache = "Escribir la caché de la tarea."
+save_commit = "Hacer un commit con {n} archivos cambiados."
+push = "Subir el trabajo a `task/{task}`."
+merge_remote = "Fusionar `origin/task/{task}` en la rama local."
+merge_base = "Fusionar `origin/{base}` en la rama de la tarea."
+merge_abort = "Cancelar la fusión en curso."
+merge_commit = "Hacer el commit de la fusión."
+blocked = "Agregar la etiqueta `flag:blocked`."
+escalation = "Publicar el comentario de escalamiento para el responsable."
+close_pr = "Cerrar el PR #{pr}."
+archive = "Archivar el trabajo de #{task} en una etiqueta `archive/task-{task}-*`."
+delete_ref = "Borrar la rama `task/{task}` de la forja."
+unassign = "Quitar la asignación y la etiqueta `state:expired` del Issue #{task}."
+release_comment = "Publicar el comentario de liberación."
+cleanup = "Cambiar a la rama base y borrar la rama local `task/{task}`."
+assessment = "Registrar la evaluación de fase {phase}."
+flags = "Agregar las etiquetas {labels}."
+note = "Agregar un bloque a la nota de #{task}."
+submit_commit = "Hacer el commit de la nota y de los cambios pendientes."
+create_pr = "Abrir el PR de `task/{task}`."
+pr_body = "Escribir el cuerpo del PR."
+submission_comment = "Crear o actualizar el comentario de entrega."
+add_proposed = "Agregar la etiqueta `state:proposed` al Issue #{task}, para que la aceptación quede registrada."
+accept = "Quitar la etiqueta `state:proposed` del Issue #{task}."
+remove_labels = "Quitar {labels} del Issue #{task}."
+unassign_only = "Quitar la asignación del Issue #{task}."
+close_issue = "Cerrar el Issue #{task} como no planificado."
+decision_file = "Escribir el registro `{path}`."
+decision_commit = "Hacer el commit del registro de decisión."
+warn = "Avisar en la tarea #{task} que está por vencer."
+expire = "Agregar `state:expired` a la tarea #{task} y avisarlo en su comentario de vencimiento."
+unexpire = "Quitar `state:expired` de la tarea #{task}: hubo actividad."
+
+[tasks.effect.repair]
+assign_owner = "Asignar el Issue #{task} a quien lo reclamó."
+clear_assignees = "Quitar la asignación del Issue #{task}: ya no tiene rama."
+remove_stale_expired = "Quitar la etiqueta `state:expired` obsoleta del Issue #{task}."
+close_merged_issue = "Cerrar el Issue #{task}: su PR ya se integró."

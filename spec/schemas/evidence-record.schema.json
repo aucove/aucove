@@ -1,0 +1,350 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aucove.invalid/schemas/evidence-record/v1",
+  "title": "Registro de evidencia",
+  "description": "Índice de un registro sellado (00-marco D-45; 11-trazabilidad §8.5). Es el JSON del comentario <!-- aucove:ci:evidence v1 kind=<kind> sha=<commit> attempt=<n> ... --> y el record.json de cada carpeta del artefacto evidence-<kind>-<sha>-a<n> y de la copia local .aucove/evidence/. Lo sellado son los bytes del manifiesto, nunca este índice. En el comentario, si el JSON pasa de 60 000 caracteres, se quitan en orden openings, manifest, los data de revocation y, si aún no cabe, los data de las pruebas, y truncated es true (09-ci REQ-CI-54); en record.json manifest, openings y los data son null porque van en archivos de la misma carpeta.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "kind",
+    "commit",
+    "pr",
+    "task",
+    "plan",
+    "manifest_sha256",
+    "manifest",
+    "openings",
+    "proofs",
+    "truncated",
+    "run_id",
+    "run_attempt",
+    "artifact"
+  ],
+  "properties": {
+    "schema": {
+      "const": "https://aucove.invalid/schemas/evidence-record/v1"
+    },
+    "kind": {
+      "enum": [
+        "submission",
+        "integration"
+      ]
+    },
+    "commit": {
+      "$ref": "#/$defs/oid"
+    },
+    "pr": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "task": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "plan": {
+      "description": "true si el rango toca plan.md, roles.yaml o memory/constitution.md, o si base es null (primer registro): sello del plan al estilo de un prerregistro.",
+      "type": "boolean"
+    },
+    "manifest_sha256": {
+      "$ref": "#/$defs/hex256"
+    },
+    "manifest": {
+      "description": "Bytes exactos del manifiesto como cadena UTF-8; null si no cupo y siempre en record.json (van en manifest.json).",
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 2000000
+    },
+    "openings": {
+      "description": "Aperturas (evidence-openings/v1); null si no cupieron y siempre en record.json (van en openings.json).",
+      "anyOf": [
+        {
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "proofs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/proof"
+      }
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "run_id": {
+      "description": "GITHUB_RUN_ID del job que selló.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "run_attempt": {
+      "description": "GITHUB_RUN_ATTEMPT: un reintento sella de nuevo y sube otro artefacto.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "artifact": {
+      "description": "Nombre del artefacto del run: evidence-<kind>-<commit>-a<run_attempt>.",
+      "type": "string",
+      "pattern": "^evidence-(submission|integration)-[0-9a-f]{40}-a[1-9][0-9]{0,2}$"
+    }
+  },
+  "$defs": {
+    "oid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "hex256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "b64": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+      "maxLength": 400000
+    },
+    "revocation": {
+      "description": "Estado de revocación del certificado de la TSA capturado al sellar (OCSP de preferencia; si no, la CRL).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "file",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "ocsp",
+            "crl"
+          ]
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^tsa/[a-z0-9-]{1,32}\\.(ocsp|crl)\\.der$"
+        },
+        "data": {
+          "description": "DER en base64; null en record.json o si no cupo.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/b64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "source",
+        "status",
+        "file",
+        "data",
+        "time_utc",
+        "revocation",
+        "error"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "ots",
+            "rfc3161"
+          ]
+        },
+        "source": {
+          "description": "rfc3161: id del catálogo de TSA (11-trazabilidad §8.7); ots: 'calendars'.",
+          "type": "string",
+          "pattern": "^[a-z0-9-]{1,32}$"
+        },
+        "status": {
+          "description": "ok: prueba obtenida y verificada al sellar (la de OTS queda pendiente de Bitcoin); error: no se obtuvo.",
+          "enum": [
+            "ok",
+            "error"
+          ]
+        },
+        "file": {
+          "description": "Ruta dentro de la carpeta del registro.",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(manifest\\.json\\.ots|tsa/[a-z0-9-]{1,32}\\.tsr)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "description": "Bytes de la prueba en base64; null en record.json, si no cupo o si status es error. La cadena de la TSA no va aquí: está en el artefacto y en el catálogo del núcleo.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/b64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "time_utc": {
+          "description": "genTime de la TSA (rfc3161), obligatorio si status es ok; null en ots. evidence verify lo coteja con el token.",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revocation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/revocation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "error"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "file": {
+                "type": "null"
+              },
+              "data": {
+                "type": "null"
+              },
+              "revocation": {
+                "type": "null"
+              },
+              "error": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "ok"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "error": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "ots"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "revocation": {
+                "type": "null"
+              },
+              "time_utc": {
+                "type": "null"
+              },
+              "source": {
+                "const": "calendars"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "rfc3161"
+              },
+              "status": {
+                "const": "ok"
+              }
+            },
+            "required": [
+              "type",
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "time_utc": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

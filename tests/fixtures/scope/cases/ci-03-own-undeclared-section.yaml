@@ -1,0 +1,19 @@
+id: ci-03-own-undeclared-section
+description: >
+  La investigadora toca una sección propia (methods) que su tarea no declara: la tarea
+  #22 solo declara results.
+covers: [ci-4.2:own-undeclared-section]
+task: {number: 22, claimant: carla, sections: [results]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Cambio fuera de lo que declara la tarea.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_OUTSIDE_TASK]
+  paths: [sections/methods/methods.tex]
+  mentions: ["#22"]

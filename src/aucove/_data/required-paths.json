@@ -1,0 +1,82 @@
+{
+  "milestone": "H3",
+  "fixed": [
+    ".gitattributes",
+    ".github/CODEOWNERS",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/ISSUE_TEMPLATE/task.yml",
+    ".github/pull_request_template.md",
+    ".github/workflows/build.yml",
+    ".github/workflows/compile.yml",
+    ".github/workflows/editor-review-trigger.yml",
+    ".github/workflows/editor-review.yml",
+    ".github/workflows/expire-claims.yml",
+    ".github/workflows/main-broken.yml",
+    ".github/workflows/seal.yml",
+    ".github/workflows/validate.yml",
+    ".gitignore",
+    ".latexmkrc",
+    ".mcp.json",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "LICENSE",
+    "README.md",
+    "REUSE.toml",
+    "bib/references.bib",
+    "data/README.md",
+    "memory/constitution.md",
+    "memory/decisions/.gitkeep",
+    "memory/notes/.gitkeep",
+    "plan.md",
+    "project.yaml",
+    "roles.yaml",
+    "tex/guide.md",
+    "tex/main.tex",
+    "tex/notation.tex",
+    "tex/preamble.tex"
+  ],
+  "per_section": [
+    "sections/{id}/{id}.tex",
+    "sections/{id}/{id}.md",
+    "sections/{id}/pending.bib"
+  ],
+  "per_section_dirs": [
+    "sections/{id}/figures",
+    "sections/{id}/tables"
+  ],
+  "formats": {
+    ".github/workflows/editor-review-trigger.yml": [
+      "latex"
+    ],
+    ".github/workflows/editor-review.yml": [
+      "latex"
+    ],
+    ".latexmkrc": [
+      "latex"
+    ],
+    "bib/references.bib": [
+      "latex"
+    ],
+    "sections/{id}/pending.bib": [
+      "latex"
+    ],
+    "sections/{id}/{id}.md": [
+      "none"
+    ],
+    "sections/{id}/{id}.tex": [
+      "latex"
+    ],
+    "tex/guide.md": [
+      "latex"
+    ],
+    "tex/main.tex": [
+      "latex"
+    ],
+    "tex/notation.tex": [
+      "latex"
+    ],
+    "tex/preamble.tex": [
+      "latex"
+    ]
+  }
+}

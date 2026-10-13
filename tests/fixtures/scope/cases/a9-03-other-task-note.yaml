@@ -1,0 +1,18 @@
+id: a9-03-other-task-note
+description: La investigadora de la tarea 17 modifica la nota de la tarea 15.
+covers: [a9:other-task-note]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: modified
+    path: memory/notes/task-15.md
+    content: |
+      # Tarea 15
+
+      Nota de la tarea 15, editada desde otra tarea.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_OUTSIDE_TASK]
+  paths: [memory/notes/task-15.md]
+  mentions: ["#17"]

@@ -1,0 +1,23 @@
+id: a9-05-codeowners-by-hand-lead
+description: >
+  El responsable edita .github/CODEOWNERS a mano: no coincide con la regeneración
+  (roles-sync falla), así que generated_matches es falso y scope deniega la ruta
+  generated aunque el autor sea lead.
+covers: [a9:codeowners-by-hand]
+task: {number: 18, claimant: ana, sections: [introduction]}
+pr: {author: ana}
+changes:
+  - status: modified
+    path: .github/CODEOWNERS
+    content: |
+      # Editado a mano.
+      * @ana @bruno
+      /sections/results/ @carla
+prior: {roles-sync: fail, generated-sync: pass}
+checks: [scope, roles-sync, generated-sync]
+expect:
+  valid: false
+  checks: {scope: fail, roles-sync: fail, generated-sync: pass}
+  codes: [E_PERM_GENERATED_PATH]
+  paths: [.github/CODEOWNERS]
+  mentions: [sync-roles]

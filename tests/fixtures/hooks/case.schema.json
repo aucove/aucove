@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Caso de T4: fixture de hooks (12-mvp §3.5)",
+  "description": "Un archivo tests/fixtures/hooks/<evento>/<caso>.json. tests/hooks/runner.py lo valida contra este esquema y, además, que id coincida con la ruta, que hook_event_name corresponda al evento y que roles_base exista.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "class", "os", "setup", "stdin", "expect"],
+  "properties": {
+    "id": {
+      "description": "<evento>/<caso>, igual a la ruta del archivo sin la extensión.",
+      "type": "string",
+      "pattern": "^(session-start|post-model-switch|pre-tool-use|post-tool-use|post-tool-use-failure|stop|session-end|config-change)/[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "description": {
+      "description": "Texto libre opcional para quien lee el caso; el ejecutor lo ignora.",
+      "type": "string",
+      "minLength": 1
+    },
+    "class": {
+      "enum": ["deny", "allow", "fault"]
+    },
+    "os": {
+      "description": "Sistemas donde corre el caso; en los demás se omite.",
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"enum": ["windows", "macos", "linux"]}
+    },
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity", "branch", "roles_base", "task_sections"],
+      "properties": {
+        "identity": {
+          "description": "Login de la caché de identidad; null = sin caché de identidad.",
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/login"}
+          ]
+        },
+        "branch": {
+          "description": "Rama que queda activa en el repositorio del caso.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(/[A-Za-z0-9][A-Za-z0-9._-]*)*$"
+        },
+        "roles_base": {
+          "description": "roles.yaml de la base: un fixture compartido de tests/fixtures/roles, por nombre (basic) o por ruta relativa a tests/fixtures (roles/basic.yaml).",
+          "type": "string",
+          "pattern": "^(roles/[a-z0-9]+(-[a-z0-9]+)*\\.yaml|[a-z0-9]+(-[a-z0-9]+)*)$"
+        },
+        "task_sections": {
+          "description": "Secciones efectivas por número de tarea, para la caché local de tareas.",
+          "type": "object",
+          "propertyNames": {"pattern": "^[1-9][0-9]{0,8}$"},
+          "additionalProperties": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"$ref": "#/$defs/section_id"}
+          }
+        }
+      }
+    },
+    "stdin": {
+      "description": "Objeto: el JSON que Claude Code envía por stdin, con ${REPO} en lugar de la raíz del repositorio. Cadena: bytes crudos en UTF-8 (\"\" = stdin vacío).",
+      "oneOf": [
+        {"type": "string"},
+        {"$ref": "#/$defs/door_input"}
+      ]
+    },
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision"],
+      "properties": {
+        "decision": {"enum": ["deny", "allow"]},
+        "reason_mentions": {
+          "description": "Textos que debe contener la razón (sin distinguir mayúsculas).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"class": {"enum": ["deny", "fault"]}}},
+      "then": {"properties": {"expect": {"properties": {"decision": {"const": "deny"}}}}}
+    },
+    {
+      "if": {"properties": {"class": {"const": "allow"}}},
+      "then": {
+        "properties": {
+          "expect": {
+            "properties": {
+              "decision": {"const": "allow"},
+              "reason_mentions": {"maxItems": 0}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"id": {"pattern": "^pre-tool-use/"}}},
+      "then": {
+        "properties": {
+          "stdin": {
+            "if": {"type": "object"},
+            "then": {"$ref": "#/$defs/pre_tool_use_input"}
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "login": {
+      "type": "string",
+      "maxLength": 39,
+      "pattern": "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*(_[A-Za-z0-9]+)?$"
+    },
+    "section_id": {
+      "type": "string",
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "door_input": {
+      "description": "Claves comunes de la entrada de Claude Code; puede traer más.",
+      "type": "object",
+      "required": ["session_id", "cwd", "hook_event_name"],
+      "properties": {
+        "session_id": {"type": "string"},
+        "cwd": {"type": "string"},
+        "hook_event_name": {"type": "string", "minLength": 1}
+      }
+    },
+    "pre_tool_use_input": {
+      "description": "Entrada de PreToolUse (12-mvp §3.5).",
+      "type": "object",
+      "required": ["session_id", "cwd", "hook_event_name", "tool_name", "tool_input", "tool_use_id"],
+      "properties": {
+        "hook_event_name": {"const": "PreToolUse"},
+        "tool_name": {"type": "string", "minLength": 1},
+        "tool_input": {"type": "object"},
+        "tool_use_id": {"type": "string"}
+      }
+    }
+  }
+}

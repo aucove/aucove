@@ -1,0 +1,36 @@
+id: ci-07-lead-plan-and-decision
+description: >
+  PR del responsable en task/18 que cambia plan.md y agrega una decisión nueva: pasa
+  scope (lo aprueba el suplente, D-17).
+covers: [ci-4.2:lead-plan-decision, a9:new-decision]
+task: {number: 18, claimant: ana, sections: [introduction]}
+pr: {author: ana}
+changes:
+  - status: modified
+    path: plan.md
+    content: |
+      # Plan
+
+      ## Preguntas de investigación
+
+      - RQ-1: ¿Cómo cambian los viajes entre las dos olas de la encuesta?
+      - RQ-2: ¿Qué grupos cambian más?
+  - status: added
+    path: memory/decisions/2026-09-30-18-two-waves.md
+    content: |
+      ---
+      id: 2026-09-30-18-two-waves
+      title: "Usar las dos olas"
+      date: "2026-09-30"
+      author: ana
+      origin: human
+      task: 18
+      status: accepted
+      summary: "Se usan las dos olas de la encuesta para responder RQ-2."
+      ---
+
+      Se usan las dos olas de la encuesta.
+checks: [scope, decisions-immutable]
+expect:
+  valid: true
+  checks: {scope: pass, decisions-immutable: pass}

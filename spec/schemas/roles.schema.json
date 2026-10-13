@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aucove.invalid/schemas/roles/v1",
+  "title": "roles.yaml",
+  "description": "Única fuente de autorización del proyecto (D-08): personas, rol de permiso, tipo de cuenta, roles CRediT y dueños de parte (sección). Autoridad: 03-esquemas §4. Las restricciones entre campos (lead coincide, logins únicos sin distinguir mayúsculas, dueños existentes) son reglas semánticas del núcleo (REQ-SCHEMA-24 a REQ-SCHEMA-31).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "lead",
+    "people",
+    "sections"
+  ],
+  "properties": {
+    "version": {
+      "description": "Versión del formato de roles.yaml.",
+      "const": 1
+    },
+    "lead": {
+      "description": "login del responsable. Debe coincidir, sin distinguir mayúsculas, con la única persona de role lead.",
+      "$ref": "#/$defs/login"
+    },
+    "deputy": {
+      "description": "login del suplente (D-17), o null. Distinto del lead; persona activa con role researcher.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/login"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "editor": {
+      "description": "login del editor del artículo (00-marco D-56), o null: si falta, lo es el lead. Persona activa de cualquier rol; solo tiene efecto con format: latex.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/login"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "people": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/person"
+      },
+      "contains": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "const": "lead"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "sections": {
+      "description": "Partes del proyecto (identificador estable section; 00-marco D-43): cada una con un solo dueño y su carpeta sections/<id>/.",
+      "type": "array",
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/section"
+      }
+    }
+  },
+  "$defs": {
+    "login": {
+      "description": "Usuario de la forja (GitHub). Alfanumérico con guiones simples, sin guion inicial ni final; admite el sufijo _shortcode de Enterprise Managed Users. Se compara sin distinguir mayúsculas.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 39,
+      "pattern": "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*(_[A-Za-z0-9]+)?$"
+    },
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "credit_role": {
+      "description": "Identificador de uno de los 14 roles de CRediT (ANSI/NISO Z39.104-2022), igual al último segmento de su URI en credit.niso.org/contributor-roles/.",
+      "enum": [
+        "conceptualization",
+        "data-curation",
+        "formal-analysis",
+        "funding-acquisition",
+        "investigation",
+        "methodology",
+        "project-administration",
+        "resources",
+        "software",
+        "supervision",
+        "validation",
+        "visualization",
+        "writing-original-draft",
+        "writing-review-editing"
+      ]
+    },
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "login",
+        "name",
+        "role",
+        "account_type"
+      ],
+      "properties": {
+        "login": {
+          "$ref": "#/$defs/login"
+        },
+        "forge_id": {
+          "description": "Id numérico durable de la cuenta en la forja (08-forja). Opcional; si existe, la identidad se compara primero por este id.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "name": {
+          "description": "Nombre completo, tal como debe aparecer en la autoría y en CRediT.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "email": {
+          "description": "Opcional. Se versiona en el repositorio: DEBE ser la dirección noreply de la forja desde el día 1 (00-marco D-44), porque la historia sellada no se reescribe antes de abrir.",
+          "type": "string",
+          "format": "email",
+          "maxLength": 254,
+          "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+        },
+        "orcid": {
+          "description": "ORCID iD sin el prefijo https://orcid.org/, con guiones. El núcleo verifica el dígito de control (ISO/IEC 7064 MOD 11-2).",
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$"
+        },
+        "role": {
+          "description": "Rol de permiso (00-marco §5.6).",
+          "enum": [
+            "lead",
+            "researcher"
+          ]
+        },
+        "account_type": {
+          "description": "Régimen de datos de la cuenta de IA que la persona usa en el proyecto (03-esquemas §4.4). Si usa varias, la de menor protección. Matriz de uso en 10-seguridad §8.",
+          "enum": [
+            "consumer_training_on",
+            "consumer_training_off",
+            "team",
+            "enterprise",
+            "api",
+            "cloud_provider",
+            "local",
+            "none",
+            "unknown"
+          ]
+        },
+        "credit": {
+          "description": "Roles CRediT declarados; los confirma el responsable (11-trazabilidad).",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/credit_role"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "active": {
+          "description": "false para una persona que dejó el proyecto: conserva su crédito, pero no puede ser lead, deputy ni dueña de sección.",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "section": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "owner"
+      ],
+      "properties": {
+        "id": {
+          "description": "Identificador estable de la parte; su contenido vive en sections/<id>/. 'none' está prohibido porque GitHub lo reserva en los formularios.",
+          "allOf": [
+            {
+              "$ref": "#/$defs/slug"
+            },
+            {
+              "maxLength": 40
+            },
+            {
+              "not": {
+                "const": "none"
+              }
+            }
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "\\S"
+        },
+        "owner": {
+          "description": "login del único dueño de la parte; debe existir en people.",
+          "$ref": "#/$defs/login"
+        }
+      }
+    }
+  }
+}

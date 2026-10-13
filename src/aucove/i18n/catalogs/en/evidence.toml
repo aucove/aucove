@@ -1,0 +1,204 @@
+# Catalog of the evidence area (EV-07): texts of `evidence verify` (05-operaciones §9.26)
+# and of the stable reasons of the evidence layer (11-trazabilidad §8): ManifestError.reason,
+# Skipped.reason, RecordError.reason, the folder problems, check_manifest,
+# CanonicalError.reason and the Check.reason codes of tsa, revocation and ots. Details never
+# carry salts (REQ-OPS-65). Same keys, placeholders and backtick spans as es/evidence.toml
+# (REQ-ARCH-72..74).
+
+[evidence]
+verify = "Evidence verification"
+
+[evidence.verdict]
+verified = "verified"
+pending = "pending"
+failed = "failed"
+
+[evidence.confidence]
+strong = "strong"
+weak = "weak"
+
+[evidence.kind]
+submission = "Submission"
+integration = "Integration"
+
+[evidence.status]
+pass = "pass"
+weak = "weak"
+pending = "pending"
+skip = "skipped"
+fail = "fail"
+
+[evidence.check_name]
+manifest = "manifest"
+tsa = "TSA"
+ots = "OTS"
+openings = "openings"
+actors = "actors"
+git = "git"
+content = "content"
+
+[evidence.render]
+header = "{title} · {target}: {verdict}"
+record = "{kind} {commit}: {verdict}"
+check = "  [{status}] {check}{source}: {detail}"
+time = "      {utc}"
+time_local = "      {utc} · {local}"
+confidence = "({confidence} confidence)"
+
+[evidence.note]
+more = "Other problems: {n}."
+upgraded = "It was completed with the calendars and `manifest.json.ots` was rewritten."
+upgrade_dry_run = "Completed with the calendars; with `--dry-run` it was not rewritten."
+upgrade_not_written = "Completed, but `manifest.json.ots` could not be rewritten."
+completed = "Completed in memory with the calendars; `--upgrade` saves it."
+
+# -- evidence verify checks (evidence.check.<check>.<reason>) ---------------------------------
+
+[evidence.check.manifest]
+ok = "Canonical manifest with the SHA-256 of `record.json`: entries {entries}, actors {actors}."
+missing = "`manifest.json` is missing: the record does not carry the manifest (for example, a truncated comment)."
+unreadable = "`manifest.json` could not be read. {problem}"
+sha_mismatch = "The SHA-256 of `manifest.json` is not the one in `record.json`."
+invalid_json = "`manifest.json` is not in the canonical JSON profile. {problem}"
+not_canonical = "`manifest.json` is not in its exact canonical form (RFC 8785)."
+schema = "`manifest.json` does not meet the `evidence-manifest/v1` schema at {pointer}."
+record_invalid = "`record.json` cannot be understood. {problem}"
+record_schema = "`record.json` does not meet the `evidence-record/v1` schema at {pointer}."
+record_mismatch = "The {field} field of `record.json` does not match the sealed manifest."
+record_unreadable = "`record.json` cannot be understood and neither the manifest nor the folder name identify the record: what is missing is filled with zeros."
+unverifiable = "The record could not be verified: its files caused an unexpected error ({error})."
+
+[evidence.check.tsa]
+ok = "Valid stamp up to a catalog root; the stored revocation data ({revocation}) shows the certificate valid at `genTime`."
+not_obtained = "The proof was not obtained when sealing."
+missing = "The proof's `.tsr` is missing."
+unreadable = "The `.tsr` could not be read. {problem}"
+time_mismatch = "The time declared in `record.json` is not the stamp's `genTime`."
+missing_extra = "The `evidence` extra is missing: the proof was not verified."
+unknown_tsa = "The TSA is not in the core catalog."
+invalid = "The stamp cannot be read."
+rejected = "The TSA rejected the request."
+digest_mismatch = "The stamp is not for the SHA-256 of the manifest."
+nonce_mismatch = "The stamp's nonce is not the request's nonce."
+policy = "The stamp's policy is not in the catalog."
+chain = "The chain does not reach a catalog root valid at `genTime`."
+signature = "The stamp's signature does not verify."
+ess = "The `signingCertificate` attribute does not match the chain."
+no_revocation = "Valid stamp, but there is no OCSP or CRL showing the certificate valid at `genTime`."
+ocsp_invalid = "Valid stamp, but the stored OCSP cannot be read."
+ocsp_status = "Valid stamp, but the stored OCSP is not a successful response."
+ocsp_mismatch = "Valid stamp, but the stored OCSP is for another certificate."
+ocsp_signature = "Valid stamp, but the signature of the stored OCSP does not verify."
+ocsp_unknown = "Valid stamp, but the stored OCSP does not know the certificate."
+crl_invalid = "Valid stamp, but the stored CRL cannot be read."
+crl_signature = "Valid stamp, but the stored CRL is not from the issuer or its signature does not verify."
+stale = "Valid stamp, but the stored OCSP or CRL do not cover `genTime`."
+after_expiry = "Valid stamp, but the stored OCSP or CRL was issued after the TSA certificate expired, when its status is no longer guaranteed."
+revoked = "The TSA certificate was revoked: the stamp is not valid."
+revoked_later = "The TSA certificate was revoked after `genTime` for a reason that does not invalidate the stamp."
+
+[evidence.check.ots]
+pending = "The proof commits to the manifest and awaits the Bitcoin block; pending calendars: {n}."
+bitcoin_unverified = "The proof commits to the manifest and ends in Bitcoin block {height} (Merkle root {merkle_root}), which this version does not check: check it by hand as `VERIFY.md` explains."
+invalid = "The `.ots` proof cannot be read."
+digest_mismatch = "The `.ots` proof is not for the SHA-256 of the manifest."
+missing_extra = "The `evidence` extra is missing: the proof was not verified."
+not_obtained = "The proof was not obtained when sealing."
+missing = "`manifest.json.ots` is missing."
+unreadable = "`manifest.json.ots` could not be read. {problem}"
+
+[evidence.check.openings]
+ok = "The file openings reproduce their commitment: {n}."
+missing = "There are no openings (`openings.json`)."
+unreadable = "`openings.json` could not be read. {problem}"
+invalid = "`openings.json` does not have the shape of the openings."
+schema = "`openings.json` does not meet the `evidence-openings/v1` schema at {pointer}."
+other_manifest = "The openings belong to another manifest."
+no_manifest = "Without the manifest the openings cannot be checked."
+mismatch = "Openings that do not reproduce their commitment: {n} of {total}."
+
+[evidence.check.actors]
+ok = "The actors reproduce their commitment: {roles}."
+none = "The openings carry no actors."
+missing = "There are no actor openings."
+no_manifest = "Without the manifest the actors cannot be checked."
+mismatch = "Actors that do not reproduce their commitment: {roles}."
+
+[evidence.check.git]
+ok = "The commit, its tree and its first-parent commits match; blobs {blobs}, actors checked against the commit {actors}."
+missing_commit = "The commit is not in the repository: fetch the PR heads with `git fetch origin '+refs/pull/*/head:refs/pull/*/head'`."
+missing_base = "The manifest base is not in this shallow clone: the tree, blobs {blobs} and actors {actors} were checked, but not the commits or `plan`; fetch the full history with `git fetch --unshallow`."
+unknown_base = "The manifest base is not a commit of this repository, which is not shallow and should have it."
+base_not_ancestor = "The manifest base is not an ancestor of the commit."
+not_a_commit = "The record id is in the repository, but it is not a commit."
+tree_mismatch = "The commit tree is not the manifest's tree."
+commits_mismatch = "The first-parent commits are not the manifest's commits."
+plan_mismatch = "The plan field of `record.json` does not match the changes in the range."
+blob_mismatch = "Openings that do not match the blob at their path in the commit: {n}."
+missing_blob = "Opening blobs missing from the repository: {n}."
+content_mismatch = "Blobs whose content does not give their commitment: {n}."
+size_mismatch = "Blobs with a size other than their opening's: {n}."
+actor_mismatch = "The commit object does not match these actors: {roles}."
+repo_error = "The repository could not be read."
+
+[evidence.check.content]
+raw = "{path}: the raw bytes match."
+clean = "{path}: the clean form matches (`git hash-object --path`)."
+clean_by_oid = "{path}: the clean form is the opening's blob, but without that blob it is not checked against the manifest (use `--repo`)."
+mismatch = "{path}: neither the raw bytes nor the clean form match."
+clean_unavailable = "{path}: the raw bytes do not match and git could not compute the clean form."
+not_sealed = "{path}: the opening does not match any manifest entry."
+unsafe_path = "Openings with a path that would leave the `--content` folder, which are not read: {n}."
+unreadable = "{path}: it could not be read."
+no_files = "No file of the openings is in the `--content` folder."
+no_openings = "Without the manifest and its openings the content cannot be compared."
+
+# -- stable reasons of the evidence layer ------------------------------------------------------
+
+[evidence.manifest_problem]
+entries_unsorted = "The manifest entries are not sorted by `p`."
+entries_duplicate = "The manifest repeats an entry (`p`)."
+actors_duplicate = "The manifest repeats an actor role."
+commits_last = "The last of `commits` is not `commit`."
+
+[evidence.canonical]
+float = "There is a number with decimals or an exponent."
+int_range = "There is an integer outside the ±2^53 range."
+key_type = "There is a key that is not text."
+key_not_ascii = "There is a key with characters outside ASCII."
+surrogate = "There is a text with a lone UTF-16 surrogate."
+type = "There is a value that JSON does not represent."
+duplicate_key = "A key is repeated."
+encoding = "It is not valid UTF-8."
+syntax = "It is not valid JSON."
+
+[evidence.folder]
+missing = "The file is not there."
+too_large = "The file exceeds the maximum size (64 MiB)."
+unreadable = "The file cannot be read."
+invalid = "The file does not have the expected shape."
+
+[evidence.record_error]
+invalid = "It does not have the shape of `evidence-record/v1`."
+inconsistent = "The files do not give the record's digest."
+missing = "`record.json` is missing."
+
+[evidence.manifest_error]
+bad_input = "An input value does not have the expected shape (sha, number, repository, date or generator)."
+unknown_commit = "The commit is not in the repository."
+not_a_commit = "The id exists, but it is not a commit."
+unknown_base = "The base is not in the repository or is not a commit."
+base_not_ancestor = "The base is not an ancestor of the commit."
+no_merge_base = "The commit has no common ancestor with the base branch."
+empty_range = "There are no commits between the base and the commit."
+too_many_entries = "The range changes more than 10,000 files."
+missing_blob = "A blob of the range is missing locally."
+bad_salt = "The salt source did not give 32 bytes."
+salt_reuse = "The salt source repeated a salt."
+
+[evidence.skipped]
+non_utf8 = "A path that is not valid UTF-8 does not enter the manifest."
+path_too_long = "A path longer than 4096 bytes does not enter the manifest."
+gitlink = "A submodule (gitlink) does not enter the manifest."
+actor_not_utf8 = "An actor whose identity cannot be decoded does not enter the manifest."
+actor_too_long = "An actor whose identity is longer than 320 characters does not enter the manifest."

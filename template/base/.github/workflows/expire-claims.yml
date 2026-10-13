@@ -1,0 +1,33 @@
+name: expire-claims
+on:
+  schedule:
+    - cron: "17 6 * * *"     # diario, fuera del inicio de hora (alta carga documentada)
+  workflow_dispatch: {}
+permissions: {}
+concurrency: { group: expire-claims, cancel-in-progress: false }
+jobs:
+  expire:
+    name: aucove/expire-claims
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions: { contents: read, issues: write, pull-requests: read, actions: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo (core_pin del árbol, REQ-CI-12)
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ github.workspace }}/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove==${PIN}" --constraints lock.txt
+      - name: Vencer reclamos
+        env: { GITHUB_TOKEN: "${{ github.token }}" }
+        run: |
+          aucove expire-claims --json > "$RUNNER_TEMP/expire.json"
+          aucove ci comment --kind expire-claims --policy . --report "$RUNNER_TEMP/expire.json" --summary "$GITHUB_STEP_SUMMARY"

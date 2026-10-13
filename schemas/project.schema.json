@@ -1,0 +1,557 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aucove.invalid/schemas/project/v1",
+  "title": "project.yaml",
+  "description": "Configuración del proyecto (convención 0.1). Autoridad: 03-esquemas §3. Los valores 'default' son informativos: el núcleo aplica los valores por defecto de forma explícita (REQ-SCHEMA-15).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "convention",
+    "core",
+    "core_pin",
+    "name",
+    "title",
+    "language",
+    "format",
+    "forge"
+  ],
+  "properties": {
+    "convention": {
+      "description": "Versión de la convención de repositorio, como cadena entre comillas (\"0.1\"). La compatibilidad con el núcleo la define 01-arquitectura.",
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "core": {
+      "description": "Rango de versiones del núcleo aceptadas, como especificador PEP 440 (por ejemplo \">=0.1,<0.2\"). No se admite el operador ===.",
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 100,
+      "pattern": "^\\s*(~=|==|!=|<=|>=|<|>)\\s*[0-9]+(\\.[0-9]+)*((a|b|rc)[0-9]+)?(\\.post[0-9]+)?(\\.dev[0-9]+)?(\\.\\*)?\\s*(,\\s*(~=|==|!=|<=|>=|<|>)\\s*[0-9]+(\\.[0-9]+)*((a|b|rc)[0-9]+)?(\\.post[0-9]+)?(\\.dev[0-9]+)?(\\.\\*)?\\s*)*$"
+    },
+    "core_pin": {
+      "description": "Versión exacta del núcleo que instalan CI, devcontainer y sesiones en la nube (01-arquitectura §6.2). Debe satisfacer 'core' y escribirse en una sola línea de nivel superior entre comillas.",
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+((a|b|rc)[0-9]+)?$"
+    },
+    "name": {
+      "description": "Nombre corto del proyecto en kebab-case ASCII.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "title": {
+      "description": "Título legible del proyecto.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "\\S"
+    },
+    "language": {
+      "description": "Idioma de skills, mensajes y plantillas (D-02). No cambia ningún identificador.",
+      "enum": [
+        "es",
+        "en"
+      ]
+    },
+    "format": {
+      "description": "Manuscrito del proyecto (00-marco D-43): latex (tex/main.tex, compilado por el CI) o none (sin manuscrito; el texto de cada parte va en sections/<id>/<id>.md y no se compila). markdown y quarto quedan reservados.",
+      "enum": [
+        "latex",
+        "none"
+      ]
+    },
+    "mode": {
+      "description": "group (por defecto) o individual: proyecto de una sola persona activa, con PR que se integran sin aprobación (00-marco D-57; 03-esquemas REQ-SCHEMA-94).",
+      "enum": [
+        "group",
+        "individual"
+      ],
+      "default": "group"
+    },
+    "disclosure": {
+      "description": "Política de apertura (00-marco D-44): private (no se prevé abrir), milestones (privado; se abren bloques en hitos con la checklist de 11-trazabilidad §8.9) u open (repositorio público; exige data_policy.level: public). Si falta, el núcleo aplica milestones (REQ-SCHEMA-15).",
+      "enum": [
+        "private",
+        "milestones",
+        "open"
+      ],
+      "default": "milestones"
+    },
+    "forge": {
+      "$ref": "#/$defs/forge"
+    },
+    "build": {
+      "$ref": "#/$defs/build"
+    },
+    "limits": {
+      "$ref": "#/$defs/limits"
+    },
+    "context": {
+      "$ref": "#/$defs/context"
+    },
+    "ci": {
+      "$ref": "#/$defs/ci"
+    },
+    "coordinator": {
+      "$ref": "#/$defs/coordinator"
+    },
+    "review": {
+      "$ref": "#/$defs/review"
+    },
+    "data_policy": {
+      "$ref": "#/$defs/data_policy"
+    },
+    "licenses": {
+      "$ref": "#/$defs/licenses"
+    }
+  },
+  "allOf": [
+    {
+      "description": "Con format: none no hay manuscrito: no se admite build (D-43, REQ-SCHEMA-90).",
+      "if": {
+        "properties": {
+          "format": {
+            "const": "none"
+          }
+        },
+        "required": [
+          "format"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "build"
+          ]
+        }
+      }
+    },
+    {
+      "description": "Un repositorio abierto solo admite datos public (D-44, REQ-SCHEMA-92).",
+      "if": {
+        "properties": {
+          "disclosure": {
+            "const": "open"
+          }
+        },
+        "required": [
+          "disclosure"
+        ]
+      },
+      "then": {
+        "required": [
+          "data_policy"
+        ],
+        "properties": {
+          "data_policy": {
+            "required": [
+              "level"
+            ],
+            "properties": {
+              "level": {
+                "const": "public"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "relPath": {
+      "description": "Ruta relativa POSIX dentro del repositorio, sin segmentos '..' ni ruta absoluta.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._/-]*$",
+      "not": {
+        "pattern": "(^|/)\\.\\.?(/|$)|//|/$"
+      }
+    },
+    "forge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "repo"
+      ],
+      "properties": {
+        "type": {
+          "description": "Tipo de forja. v0.1 solo admite github (D-04); gitlab y forgejo quedan reservados.",
+          "const": "github"
+        },
+        "repo": {
+          "description": "Repositorio canónico como owner/name. Se compara sin distinguir mayúsculas.",
+          "type": "string",
+          "maxLength": 140,
+          "pattern": "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*/[A-Za-z0-9._-]{1,100}$",
+          "not": {
+            "pattern": "/\\.\\.?$"
+          }
+        },
+        "base_branch": {
+          "description": "Rama base del proyecto (00-marco §5.3). DEBE ser la rama por defecto del repositorio (REQ-SCHEMA-19).",
+          "type": "string",
+          "default": "main",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9_-][A-Za-z0-9._-]*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)*$",
+          "not": {
+            "pattern": "^task/|\\.\\.|\\.lock$|\\.$"
+          }
+        },
+        "advisory_acceptance": {
+          "description": "Aceptación explícita del perfil advisory por el responsable (06-permisos REQ-PERM-41).",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "by",
+            "at"
+          ],
+          "properties": {
+            "by": {
+              "$ref": "#/$defs/login"
+            },
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    },
+    "build": {
+      "description": "Compilación del manuscrito. Solo con format: latex (D-43).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "engine": {
+          "description": "Motor LaTeX que usa latexmk. El mapeo a opciones de latexmk lo define 09-ci.",
+          "enum": [
+            "pdflatex",
+            "xelatex",
+            "lualatex"
+          ],
+          "default": "pdflatex"
+        },
+        "main": {
+          "description": "Archivo principal del documento.",
+          "allOf": [
+            {
+              "$ref": "#/$defs/relPath"
+            },
+            {
+              "pattern": "\\.tex$"
+            }
+          ],
+          "default": "tex/main.tex"
+        },
+        "image": {
+          "description": "Imagen de compilación en CI, fijada por digest (09-ci REQ-CI-16, REQ-CI-17).",
+          "type": "string",
+          "pattern": "^[^\\s@]+@sha256:[0-9a-f]{64}$",
+          "default": "registry.gitlab.com/islandoftex/images/texlive:TL2026-2026-09-20-full@sha256:7334b00bf8e7a0996f7ddd65482363aaf7711d372e569f3ea78509619e3083ff"
+        },
+        "bibliography": {
+          "description": "Procesador de bibliografía.",
+          "enum": [
+            "biber",
+            "bibtex",
+            "none"
+          ],
+          "default": "biber"
+        },
+        "bib_files": {
+          "description": "Archivos .bib del proyecto (proceso en 02-convencion).",
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/relPath"
+              },
+              {
+                "pattern": "\\.bib$"
+              }
+            ]
+          },
+          "uniqueItems": true,
+          "maxItems": 20,
+          "default": [
+            "bib/references.bib"
+          ]
+        },
+        "compile_on_submit": {
+          "description": "Compilación local al entregar (D-14): never, if_available (si latexmk está instalado) o always.",
+          "enum": [
+            "never",
+            "if_available",
+            "always"
+          ],
+          "default": "if_available"
+        },
+        "timeout_minutes": {
+          "description": "Tiempo máximo de una compilación, local o en CI.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "default": 10
+        },
+        "shell_escape": {
+          "description": "disabled: el motor recibe -no-shell-escape; restricted: -shell-restricted (10-seguridad REQ-SEC-54). No existe un modo sin restricción.",
+          "enum": [
+            "disabled",
+            "restricted"
+          ],
+          "default": "disabled"
+        }
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_active_claims": {
+          "description": "Máximo de reclamos activos por persona (semántica en 04-tareas).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3
+        },
+        "claim_expiry_days": {
+          "description": "Días sin actividad tras los cuales vence un reclamo (semántica en 04-tareas).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90,
+          "default": 14
+        },
+        "expiry_warning_days": {
+          "description": "Días de aviso antes del vencimiento de un reclamo (semántica en 04-tareas). Menor que claim_expiry_days.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "default": 3
+        },
+        "handoff_hold_days": {
+          "description": "Vigencia de un traspaso de tarea (semántica en 04-tareas).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "default": 7
+        },
+        "exclusive_sections": {
+          "description": "true prohíbe dos tareas activas sobre una misma sección (semántica en 04-tareas).",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_chars": {
+          "description": "Tope de caracteres del paquete de contexto (get_context). No supera 9000, para dejar margen al envoltorio de SessionStart (tope de Claude Code: 10 000).",
+          "type": "integer",
+          "minimum": 2000,
+          "maximum": 9000,
+          "default": 8000
+        },
+        "recent_decisions": {
+          "description": "Cantidad de decisiones vigentes más recientes que incluye el contexto.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20,
+          "default": 5
+        }
+      }
+    },
+    "ci": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pdf_retention_days": {
+          "description": "Días de retención de los PDF de PR; los de la base usan 90 (09-ci REQ-CI-19). Sin efecto con format: none.",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 90,
+          "default": 14
+        },
+        "latexdiff": {
+          "description": "PDF de diferencias contra la base, opcional (09-ci REQ-CI-23). Sin efecto con format: none.",
+          "type": "boolean",
+          "default": false
+        },
+        "model_review": {
+          "$ref": "#/$defs/model_review"
+        }
+      }
+    },
+    "model_review": {
+      "description": "Revisión con modelo en CI: opcional y desactivada por defecto (00-marco §1, D-15). Reservada: sin efecto en la plantilla v0.1 (09-ci §8). No nombra credenciales (REQ-SCHEMA-21).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "auth": {
+          "description": "api_key (secreto en un environment protegido) u oidc (federación de identidad). Nunca tokens de suscripción (D-15).",
+          "enum": [
+            "api_key",
+            "oidc"
+          ]
+        },
+        "model": {
+          "description": "ID del modelo. Sin valor por defecto.",
+          "type": "string",
+          "pattern": "^claude-[a-z0-9-]+$"
+        },
+        "max_turns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4,
+          "default": 4
+        }
+      },
+      "if": {
+        "properties": {
+          "enabled": {
+            "const": true
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "then": {
+        "required": [
+          "auth",
+          "model"
+        ]
+      }
+    },
+    "login": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 39,
+      "pattern": "^[A-Za-z0-9]+(-[A-Za-z0-9]+)*(_[A-Za-z0-9]+)?$"
+    },
+    "coordinator": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "require_direction_ack": {
+          "description": "Activa el check direction-ack (04-tareas §9, 09-ci).",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sla_hours": {
+          "description": "Horas de SLA de revisión (06-permisos §8).",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 720,
+          "default": 72
+        }
+      }
+    },
+    "data_policy": {
+      "description": "Política de datos del proyecto. Semántica y matriz con account_type en 10-seguridad §8.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "description": "Nivel de dato. restricted y local_only quedan reservados en v0.1.",
+          "enum": [
+            "public",
+            "internal"
+          ],
+          "default": "internal"
+        },
+        "require_commercial": {
+          "description": "true: no se admiten cuentas de consumo (10-seguridad §8.3, C1). Si falta, el núcleo aplica true cuando disclosure no es open, y false si lo es (D-48, REQ-SCHEMA-91); un esquema no puede expresar ese valor por defecto condicional.",
+          "type": "boolean"
+        },
+        "human_subjects": {
+          "type": "boolean",
+          "default": false
+        },
+        "ethics_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "pattern": "\\S"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "if": {
+        "properties": {
+          "human_subjects": {
+            "const": true
+          }
+        },
+        "required": [
+          "human_subjects"
+        ]
+      },
+      "then": {
+        "required": [
+          "ethics_ref"
+        ],
+        "properties": {
+          "ethics_ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "licenses": {
+      "description": "Licencias del contenido del proyecto (11-trazabilidad §7.3). Identificadores SPDX o LicenseRef-*.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "holder",
+        "text",
+        "code",
+        "data"
+      ],
+      "properties": {
+        "holder": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^(LicenseRef-[A-Za-z0-9.-]+|[A-Za-z0-9][A-Za-z0-9.+-]*)$"
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^(LicenseRef-[A-Za-z0-9.-]+|[A-Za-z0-9][A-Za-z0-9.+-]*)$"
+        },
+        "data": {
+          "type": "string",
+          "maxLength": 100,
+          "pattern": "^(LicenseRef-[A-Za-z0-9.-]+|[A-Za-z0-9][A-Za-z0-9.+-]*)$"
+        }
+      }
+    }
+  }
+}

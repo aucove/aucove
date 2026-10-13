@@ -1,0 +1,38 @@
+aucove
+Copyright 2026 The aucove Authors
+
+This product includes software developed by The aucove Authors.
+
+The core is licensed under the Apache License, Version 2.0 (see LICENSE).
+The distribution also contains files under other licenses: skills/ is under
+MIT-0, template/ is under MIT-0 (code) and CC0-1.0 (example text), and the
+SPDX license list in src/aucove/_data/spdx-licenses.json is under CC0-1.0
+(Linux Foundation and its Contributors). The annotations are in REUSE.toml and
+the license texts in LICENSES/.
+
+The optional "evidence" extra installs third-party packages that are not
+included in the distribution: opentimestamps and python-bitcoinlib
+(LGPL-3.0-or-later), rfc3161-client (Apache-2.0) and, on Windows, tzdata
+(Apache-2.0) (00-marco D-07 d).
+
+Titularidad (00-marco D-07 b, REQ-TRACE-73)
+-------------------------------------------
+"The aucove Authors" es el titular que figura en este archivo y en las
+cabeceras de copyright. Cada desarrollador puede confirmar con su institución
+quién es el titular de los derechos patrimoniales de su código (en México,
+salvo pacto en contrario, el art. 103 de la LFDA los atribuye al empleador
+cuando el programa se crea en ejercicio de sus funciones). Si se confirma otro
+titular, se ajustan este archivo, las cabeceras de copyright de los archivos
+fuente y REUSE.toml. La confirmación no condiciona la publicación ni la
+aceptación de contribuciones. Esta nota no es una conclusión legal.
+
+Ownership (00-marco D-07 b, REQ-TRACE-73)
+-----------------------------------------
+"The aucove Authors" is the holder stated in this file and in the copyright
+headers. Each developer may confirm with their institution who holds the
+economic rights to their code (in Mexico, unless otherwise agreed, article 103
+of the LFDA assigns them to the employer when the program is created in the
+course of the employee's duties). If another holder is confirmed, this file,
+the copyright headers of the source files and REUSE.toml are updated. The
+confirmation does not condition publication or the acceptance of
+contributions. This note is not a legal conclusion.

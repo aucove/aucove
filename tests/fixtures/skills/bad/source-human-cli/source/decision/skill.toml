@@ -1,0 +1,10 @@
+key = "decision"
+cli = ["decision propose"]
+
+[name]
+es = "decision"
+en = "decision"
+
+[description]
+es = "Propón una decisión."
+en = "Propose a decision."

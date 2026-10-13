@@ -1,0 +1,17 @@
+% tex/preamble.tex de prueba: paquetes, configuración y metadatos.
+% Un \newcommand o un \usepackage{svg} en un comentario no cuentan.
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+\fi
+\usepackage[english]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage[backend=biber,style=authoryear]{biblatex}
+\usepackage{hyperref}
+\makeatletter
+\hypersetup{hidelinks}
+\makeatother
+\title{Test document}
+\author{Test authors}
+\date{\today}

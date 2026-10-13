@@ -1,0 +1,16 @@
+id: ci-10-not-task-branch
+description: PR cuya cabeza no es task/<n>.
+covers: [ci-4.2:not-task-branch]
+task: null
+pr: {author: carla, head_branch: carla/methods-draft}
+changes:
+  - status: modified
+    path: sections/methods/methods.tex
+    content: |
+      \section{Métodos}
+      Borrador fuera de una rama de tarea.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_STATE_NOT_ON_TASK_BRANCH]
+  mentions: [carla/methods-draft, task/<n>]

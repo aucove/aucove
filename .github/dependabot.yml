@@ -1,0 +1,28 @@
+# Dependabot del repositorio del framework (10-seguridad REQ-SEC-51).
+# Actualizaciones de versión con un enfriamiento de 7 días (cooldown.default-days);
+# Dependabot no lo aplica a las de seguridad. Los PR que abre dependabot[bot] quedan
+# exentos del check de DCO, y quien los integra responde por ellos (00-marco D-07 c).
+version: 2
+updates:
+  # Acciones de .github/workflows (raíz) y de los workflows de la plantilla. Un cambio en
+  # template/base/.github/workflows hace fallar tests/render/test_template_workflows.py
+  # (EXPECTED_PINS) a propósito: hay que actualizar a la vez la copia de 09-ci.
+  - package-ecosystem: github-actions
+    directories:
+      - "/"
+      - "/template/base/.github/workflows"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+  # Dependencias de Python de pyproject.toml y uv.lock (REQ-SEC-44). Incluye hatchling (grupo
+  # dev), que ci.yml usa también como backend del build (--build-constraints con hashes).
+  # No cubre la versión de uv de setup-uv ni REUSE_IMAGE de ci.yml: se suben a mano.
+  - package-ecosystem: uv
+    directory: "/"
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5

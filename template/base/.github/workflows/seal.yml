@@ -1,0 +1,90 @@
+name: seal
+on:
+  push:
+    branches: [main]          # = project.yaml: forge.base_branch; lo escribe init
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+permissions: {}
+concurrency:                  # un grupo por commit: un push nuevo no cancela un sello pendiente
+  group: seal-${{ github.event_name }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+jobs:
+  submission:
+    name: aucove/seal-submission
+    if: github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions: { contents: read, pull-requests: write }
+    steps:
+      - name: Política = rama por defecto
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { path: base, persist-credentials: false, fetch-depth: 1 }
+      - name: Historia del PR como datos (nada del PR se ejecuta, REQ-CI-29)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { ref: "${{ github.event.pull_request.head.sha }}", path: pr, persist-credentials: false, fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo con el extra evidence (core_pin de la base, REQ-CI-12)
+        # el paso de REQ-CI-12 con POLICY_YAML = base/project.yaml y el extra evidence
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ github.workspace }}/base/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove[evidence]==${PIN}" --constraints lock.txt
+      - name: Sellar la entrega (OpenTimestamps)
+        working-directory: ${{ runner.temp }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: >-
+          aucove ci seal --kind submission --policy "$GITHUB_WORKSPACE/base"
+          --repo-dir "$GITHUB_WORKSPACE/pr" --commit "$HEAD_SHA" --base-sha "$BASE_SHA" --pr "$PR_NUMBER"
+          --out "$RUNNER_TEMP/evidence" --summary "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: evidence-submission-${{ github.event.pull_request.head.sha }}-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/evidence
+          retention-days: 400     # la forja la recorta al máximo del repo (06 REQ-PERM-57)
+          if-no-files-found: ignore
+  integration:
+    name: aucove/seal-integration
+    if: github.event_name == 'push'
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions: { contents: read, pull-requests: write, actions: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false, fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo con el extra evidence (core_pin del árbol, REQ-CI-12)
+        # igual que en submission, con POLICY_YAML = project.yaml del árbol
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ github.workspace }}/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove[evidence]==${PIN}" --constraints lock.txt
+      - name: Sellar la integración (2 TSA RFC 3161 + OpenTimestamps)
+        working-directory: ${{ runner.temp }}
+        env: { GITHUB_TOKEN: "${{ github.token }}" }
+        run: >-
+          aucove ci seal --kind integration --policy "$GITHUB_WORKSPACE" --repo-dir "$GITHUB_WORKSPACE"
+          --commit "$GITHUB_SHA" --out "$RUNNER_TEMP/evidence" --summary "$GITHUB_STEP_SUMMARY"
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: evidence-integration-${{ github.sha }}-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/evidence
+          retention-days: 400
+          if-no-files-found: ignore

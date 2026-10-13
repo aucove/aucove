@@ -1,0 +1,17 @@
+id: a9-07-rename-into-foreign-section
+description: >
+  Renombre de un archivo de la sección propia a una ajena: delete(old) se permite y
+  create(new) se deniega en la ruta nueva.
+covers: [a9:rename-across-sections]
+task: {number: 17, claimant: carla, sections: [methods, results]}
+pr: {author: carla}
+changes:
+  - status: renamed
+    previous_path: sections/methods/sampling.tex
+    path: sections/results/sampling.tex
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_SECTION_NOT_OWNED]
+  paths: [sections/results/sampling.tex]
+  mentions: [bruno]

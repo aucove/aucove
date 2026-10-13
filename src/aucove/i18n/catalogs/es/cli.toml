@@ -1,0 +1,296 @@
+# Textos de la CLI generada del registro (05-operaciones §3.4 y §4).
+# Paridad con en/cli.toml: mismas claves, marcadores y fragmentos entre acentos graves.
+
+[cli.help]
+usage_prefix = "uso: "
+description = "Operaciones del núcleo sobre un proyecto de investigación en LaTeX y git."
+epilog = "Ayuda de cada operación: {prog} <operación> --help"
+commands = "operaciones"
+globals = "opciones globales"
+options = "opciones de la operación"
+
+[cli.global]
+json = "Escribe en stdout solo el sobre de resultado, en JSON compacto."
+dry_run = "Calcula el plan sin escribir nada."
+lang = "Idioma de los mensajes."
+root = "Directorio desde el que se busca el proyecto."
+input = "Archivo JSON (o - para stdin) con los mismos argumentos que la herramienta MCP; excluye los flags de la operación."
+version = "Muestra la versión instalada y termina."
+help = "Muestra esta ayuda y termina."
+
+[cli.output]
+ok = "{op}: correcto."
+failed = "{op}: falló."
+dry_run = "{op}: simulación; no se escribió nada. Plan:"
+hint = "sugerencia"
+details = "detalles"
+warning = "aviso"
+interrupted = "Interrumpido."
+see_help = "Consulta `{prog} --help`."
+
+[cli.op.doctor]
+summary = "Diagnostica el entorno, el proyecto y la conexión con la forja."
+
+[cli.op.doctor.param]
+refresh = "Fuerza la actualización de la caché de identidad y capacidades."
+
+[cli.op.init]
+summary = "Solo humana: configura el proyecto y su repositorio (idioma, formato, etiquetas, protecciones y archivos generados). Pide teclear `init <owner>/<repo>`."
+
+[cli.op.init.param]
+language = "Idioma del proyecto: es o en (si falta, se pregunta)."
+format = "Formato: latex (manuscrito compilado) o none (cada parte en Markdown)."
+disclosure = "Política de apertura: private, milestones u open."
+individual = "Proyecto de una sola persona (mode: individual): los PR se integran sin aprobación."
+regenerate = "Solo vuelve a generar en el árbol de trabajo los archivos generados, sin llamar a la forja."
+
+[cli.ask.init]
+language = "Idioma del proyecto / Project language (es/en): "
+
+[cli.op.sync-roles]
+summary = "Regenera CODEOWNERS y el formulario de tareas a partir de roles.yaml."
+
+[cli.op.sync-roles.param]
+check = "Solo comprueba que los archivos generados están al día; no escribe."
+
+[cli.op.validate]
+summary = "Valida el proyecto con las reglas de la convención y del CI."
+
+[cli.op.validate.param]
+mode = "Modo de validación: árbol local (tree), PR, rama base o registro de compilación."
+base = "Referencia de la rama base con la que se compara."
+head = "Referencia de la cabeza que se valida."
+checks = "Corre solo esta regla; se puede repetir."
+changed_only = "Revisa solo los archivos cambiados respecto de la base."
+policy = "Checkout de la rama base del que se lee la política."
+tree = "Directorio del árbol que se valida."
+pr = "Número del PR que se valida."
+before = "SHA anterior de la rama base."
+after = "SHA posterior de la rama base."
+log = "Registro de compilación de LaTeX que se analiza."
+report = "Escribe además el sobre de resultado en este archivo."
+pin_report = "Sobre de validate de la versión fijada del núcleo, del que se toman sus reglas."
+format = "Formato de la salida legible: texto o anotaciones de GitHub."
+cursor = "Cursor de paginación de una respuesta anterior."
+max_chars = "Tope de caracteres de la respuesta, entre 2000 y 40000."
+
+[cli.op.status]
+summary = "Muestra el estado de las tareas, la rama base y su CI; copia los sellos de tus entregas."
+
+[cli.op.status.param]
+mine = "Solo tus tareas: las que reclamas y las que propusiste y nadie reclama."
+task = "Solo esta tarea."
+states = "Solo las tareas en este estado; se puede repetir."
+section = "Solo las tareas de esta parte."
+cursor = "Cursor de paginación de una respuesta anterior."
+max_chars = "Tope de caracteres de la respuesta, entre 2000 y 40000."
+
+[cli.op.context]
+summary = "Resume el contexto del proyecto en Markdown: lo que lee cualquier agente al empezar."
+
+[cli.op.context.param]
+refresh = "Lee la forja aunque la caché tenga menos de 10 minutos."
+task = "Agrega el paquete de contexto de esta tarea (con `--phase`)."
+phase = "Fase del paquete de contexto: claim o submission (con `--task`)."
+
+[cli.group.task]
+summary = "Tareas: proponer, aceptar y cancelar."
+
+[cli.op.task.propose]
+summary = "Propone una tarea nueva: crea su Issue con `task` y `state:proposed`."
+
+[cli.op.task.propose.param]
+title = "Título de la tarea (máx. 120 caracteres)."
+sections = "Parte que toca la tarea; se puede repetir."
+body = "Resumen de la tarea."
+body_file = "Archivo con el resumen de la tarea."
+plan_refs = "ID de `plan.md` al que se refiere la tarea; se puede repetir."
+idempotency_key = "Clave propia para no duplicar la propuesta (16 a 64 hexadecimales)."
+
+[cli.op.task.accept]
+summary = "Solo humana: acepta una tarea propuesta (quita `state:proposed`). Pide teclear `accept <n>`."
+
+[cli.op.task.accept.param]
+task = "Número del Issue de la tarea."
+
+[cli.op.task.cancel]
+summary = "Solo humana: cancela una tarea, archiva su trabajo, borra su rama y cierra el Issue. Pide teclear `cancel <n>`."
+
+[cli.op.task.cancel.param]
+task = "Número del Issue de la tarea."
+reason = "Motivo de la cancelación, que se publica en el PR (máx. 500 caracteres)."
+
+[cli.op.claim]
+summary = "Reclama una tarea abierta: crea su rama `task/<n>` y cambia a ella."
+
+[cli.op.claim.param]
+task = "Número del Issue de la tarea."
+checkout = "Cambia a la rama de la tarea (por defecto); `--no-checkout` no cambia."
+fresh = "Con un traspaso, parte de la base en lugar del trabajo archivado."
+
+[cli.op.release]
+summary = "Libera una tarea reclamada: archiva el trabajo publicado y borra su rama."
+
+[cli.op.release.param]
+task = "Número del Issue de la tarea."
+reason = "Motivo de la liberación (máx. 500 caracteres)."
+handoff = "Solo el responsable: traspasa la tarea a esta persona, que sigue desde el archivo."
+
+[cli.op.save]
+summary = "Guarda el trabajo de la tarea actual: commit con la traza de uso de IA y push."
+
+[cli.op.save.param]
+message = "Mensaje del commit (máx. 200 caracteres)."
+ai_use = "Usos de IA, separados por comas (none, ideation, literature, drafting, editing, translation, code, analysis, figures, review)."
+ai_tool = "Herramienta de IA que se declara, si no se detecta sola."
+ai_model = "Modelo de IA que se declara."
+paths = "Guarda solo esta ruta; se puede repetir."
+
+[cli.op.update]
+summary = "Actualiza la rama de la tarea desde la base con una fusión, nunca rebase."
+
+[cli.op.update.param]
+continue = "Termina la fusión después de resolver los conflictos y sube el resultado."
+abort = "Cancela la fusión en curso."
+escalate = "Con `--abort`: marca la tarea como bloqueada y avisa al responsable con este motivo."
+
+[cli.op.switch]
+summary = "Cambia a otra tarea tuya: guarda la actual, trae la rama y la sincroniza."
+
+[cli.op.switch.param]
+task = "Número del Issue de la tarea."
+
+[cli.op.record-assessment]
+summary = "Registra la evaluación de traslape que hizo la sesión; la evaluación va en `--input`."
+
+[cli.op.record-assessment.param]
+task = "Número del Issue de la tarea."
+phase = "Fase de la evaluación: claim o submission."
+
+[cli.op.submit]
+summary = "Entrega la tarea actual: nota de sesión, comprobaciones locales y el PR."
+
+[cli.op.submit.param]
+summary = "Resumen de la entrega (máx. 4000 caracteres)."
+summary_file = "Archivo con el resumen de la entrega."
+title = "Título del PR; por defecto, el del Issue."
+note_file = "Archivo JSON con la nota de sesión: done, next, decisions y questions."
+ai_use = "Usos de IA, separados por comas."
+ai_tool = "Herramienta de IA que se declara, si no se detecta sola."
+ai_model = "Modelo de IA que se declara."
+ai_note = "Nota sobre el uso de IA (máx. 500 caracteres)."
+sign_off = "Confirma la declaración de responsabilidad `attest-v1`."
+compile = "Compila el artículo antes de entregar; `--no-compile` no compila."
+
+[cli.op.expire-claims]
+summary = "Vence los reclamos sin actividad y avisa antes (lo corre el CI a diario; también el responsable)."
+
+[cli.op.expire-claims.param]
+policy = "Directorio con `project.yaml` y `roles.yaml` de la base, si no se corre en el clon."
+now = "Solo con la forja falsa: la fecha y hora que se toman como ahora (ISO 8601)."
+
+[cli.group.decision]
+summary = "Registros de decisión del proyecto."
+
+[cli.group.direction]
+summary = "Propuestas de cambio de dirección del proyecto (`plan.md`)."
+
+[cli.op.decision.propose]
+summary = "Registra una decisión en `memory/decisions/` desde la tarea actual y la sube."
+
+[cli.op.decision.propose.param]
+title = "Título de la decisión (máx. 120 caracteres); de él sale el nombre del archivo."
+summary = "Resumen en una línea (máx. 280 caracteres)."
+context = "Qué problema o pregunta llevó a decidir."
+decision = "Qué se decidió."
+consequences = "Qué cambia con la decisión."
+status = "accepted (se adopta) o rejected (se descarta de forma explícita)."
+alternatives = "Alternativa considerada; se puede repetir."
+supersedes = "ID de una decisión de la base que esta reemplaza; se puede repetir."
+plan_refs = "ID de `plan.md` al que se refiere la decisión; se puede repetir."
+
+[cli.op.direction.propose]
+summary = "Propone un cambio de dirección: abre un Issue `direction` con los IDs de `plan.md` afectados."
+
+[cli.op.direction.propose.param]
+title = "Título de la propuesta (máx. 120 caracteres)."
+kind = "add (agregar), modify (modificar) o retire (retirar) elementos de `plan.md`."
+change = "El cambio propuesto."
+rationale = "Por qué conviene el cambio."
+plan_refs = "ID de `plan.md` afectado, obligatorio con modify y retire; se puede repetir."
+
+[cli.group.review]
+summary = "Revisión de los PR: los que te esperan, su resumen y aprobar o pedir cambios."
+
+[cli.op.review.list]
+summary = "Lista los PR abiertos que esperan tu revisión, con tu rol en cada uno."
+
+[cli.op.review.list.param]
+all = "Solo el responsable o el suplente: todos los PR abiertos de tareas."
+cursor = "Cursor de la página siguiente."
+max_chars = "Tope de caracteres de la respuesta (2000 a 40000)."
+
+[cli.op.review.show]
+summary = "Resume un PR para revisarlo: archivos, alcance, CI, evaluaciones y aprobaciones."
+
+[cli.op.review.show.param]
+pr = "Número del PR."
+cursor = "Cursor de la página siguiente de archivos."
+max_chars = "Tope de caracteres de la respuesta (2000 a 40000)."
+
+[cli.op.review.approve]
+summary = "Solo humana: aprueba un PR sobre su cabeza actual. Pide teclear `approve <pr>`."
+
+[cli.op.review.approve.param]
+pr = "Número del PR."
+body = "Comentario de la aprobación (opcional)."
+body_file = "Archivo con el comentario de la aprobación."
+
+[cli.op.review.request-changes]
+summary = "Solo humana: pide cambios en un PR. Pide teclear `request-changes <pr>`."
+
+[cli.op.review.request-changes.param]
+pr = "Número del PR."
+body = "Los cambios que pides (obligatorio; si falta, se pregunta)."
+body_file = "Archivo con los cambios que pides."
+
+[cli.ask.review.request-changes]
+body = "Escribe los cambios que pides (una línea): "
+
+[cli.attest]
+text = "Declaro que revisé personalmente el contenido de esta entrega, incluidas las partes elaboradas con asistencia de IA; que la declaración de uso de IA es correcta y completa, y que asumo la responsabilidad por este contenido ante el equipo del proyecto."
+question = "¿Confirmas esta declaración? Escribe s para aceptar: "
+
+[cli.confirm]
+type_exactly = "Para confirmar, escribe exactamente «{challenge}» y pulsa Intro: "
+
+[cli.op.check-path]
+summary = "Indica si puedes escribir en cada ruta y por qué."
+
+[cli.op.check-path.param]
+paths = "Ruta que se consulta, relativa a la raíz del proyecto o absoluta; admite varias."
+task = "Número de la tarea; por defecto, la de la rama actual."
+
+[cli.op.metrics]
+summary = "Exporta las métricas del piloto en CSV (una fila por tarea o por evento), con los logins seudonimizados."
+
+[cli.op.metrics.param]
+since = "Primer día incluido, AAAA-MM-DD (UTC): las tareas creadas y los eventos desde ese día."
+until = "Último día incluido, AAAA-MM-DD (UTC); por defecto, hasta ahora."
+table = "Tabla del CSV: tasks (una fila por tarea; por defecto) o events (una fila por evento)."
+output = "Archivo donde se escribe el CSV de la tabla; sin esta opción no se escribe ningún archivo."
+no_pseudonymize = "Exporta los logins tal cual, sin seudónimo (no hace falta la sal)."
+
+[cli.group.evidence]
+summary = "Evidencia verificable de fecha de las entregas y las integraciones."
+
+[cli.op.evidence.verify]
+summary = "Verifica registros de evidencia: manifiesto, sellos TSA y OTS, aperturas y actores."
+
+[cli.op.evidence.verify.param]
+path = "Carpeta de un registro o carpeta que los contiene: un artefacto, un paquete o la copia local de evidencia."
+repo = "Repositorio git con el que se cotejan el commit, su árbol y los blobs de las aperturas."
+content = "Carpeta con archivos en sus rutas del repositorio, que se comparan con lo sellado."
+offline = "No usa la red. Sin esta opción, y con red, consulta los calendarios de OpenTimestamps para completar en memoria las pruebas OTS pendientes."
+upgrade = "Además de completar en memoria las pruebas OTS pendientes, reescribe `manifest.json.ots` con la prueba completa."
+tz = "Zona horaria de las horas locales; por defecto, America/Mexico_City."

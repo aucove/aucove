@@ -1,0 +1,326 @@
+# Textos de los subcomandos internos `ci` (09-ci; área ci).
+# Los fragmentos entre acentos graves y los marcadores {x} deben ser iguales en en/ci.toml.
+
+[ci]
+description = "Subcomandos internos del CI de la plantilla. No emiten el sobre de resultado."
+commands = "subcomandos"
+unavailable = "`ci {name}`: no disponible en esta versión ({version})."
+unknown = "Subcomando desconocido: {name}."
+missing = "Falta el subcomando."
+usage = "Error de uso: {message}"
+internal = "Error interno (traza {trace_id})."
+
+[ci.command]
+build-plan = "Plan de compilación de `compile.yml` a partir de la política de la base."
+pin-plan = "Decide si el job `pin` instala el `core_pin` del PR."
+comment = "Publica o actualiza el comentario único del CI en el PR y escribe el resumen del job."
+base-report = "Reporte posterior a la integración en la base."
+seal = "Sella la cabeza de un PR de tarea o un push a la base y deja el registro de evidencia."
+editor-review = "Decide si el PR tiene la aprobación del editor del artículo y publica el check en su cabeza."
+audit = "Audita cómo entró cada commit de un push a la base y marca con `flag:bypass` lo que no cumple la matriz."
+
+[ci.plan]
+finding = "{where}: {code}: {message}"
+invalid_value = "Valor inválido para `{key}`; no se emite nada."
+
+[ci.build_plan]
+arg_mode = "`pr` (merge commit de un PR) o `base` (push a la base)."
+arg_policy = "Directorio con el `project.yaml` de la política (el de la base)."
+arg_changed = "Archivo con las rutas cambiadas, una por línea, como las da `git diff --name-only`."
+changed_required = "`--changed` es obligatorio con `--mode pr`."
+policy_unreadable = "No se puede leer el `project.yaml` de la política: {path}"
+policy_invalid = "El `project.yaml` de la política no es válido; no se emite el plan."
+changed_unreadable = "No se puede leer la lista de archivos cambiados: {path}"
+changed_too_large = "La lista de archivos cambiados es demasiado grande; se compila de todos modos."
+no_sha = "No se pudo determinar el commit: `GITHUB_SHA` no es válido o `git rev-parse HEAD` no respondió."
+format_none = "Sin manuscrito (`format: none`): no hay nada que compilar."
+
+[ci.pin_plan]
+arg_policy = "Checkout de la rama por defecto, que es la política."
+arg_tree = "Checkout de la cabeza del PR (solo en PR del mismo repositorio)."
+base_unreadable = "No se puede leer el `project.yaml` de la base: {path}"
+base_invalid = "El `project.yaml` de la base no es válido."
+base_pin_invalid = "La base no tiene una línea `core_pin` válida."
+fork = "Sin árbol del PR: las reglas se evalúan con el núcleo de la base."
+pr_pin_missing = "El PR no tiene una línea `core_pin` válida: las reglas se evalúan con el núcleo de la base."
+same = "El PR no cambia `core_pin`: las reglas se evalúan con el núcleo de la base."
+unsatisfied = "El `core_pin` del PR ({pin}) no satisface `core` de la base ({core}): no se instala esa versión."
+run = "El PR cambia `core_pin` a {pin}: las reglas que dependen del núcleo se evalúan con esa versión."
+
+[ci.comment]
+arg_kind = "Tipo de comentario: `build`, `validate` o `expire-claims`."
+arg_pr = "Número del PR (con `build` y `validate`)."
+arg_language = "Idioma del comentario (`es` o `en`); por defecto, el de la política."
+arg_outcome = "Resultado del paso de compilación, tal como lo da Actions."
+arg_pdf_url = "URL del artefacto con el PDF."
+arg_diff_url = "URL del artefacto con el PDF de diferencias, si existe."
+arg_run_url = "URL de la ejecución del workflow."
+arg_report_dir = "Directorio con el `diagnostics.json` descargado."
+arg_policy = "Checkout de la base, de donde sale el idioma."
+arg_report = "Reporte de `validate` o de `expire-claims` (sobre de resultado)."
+arg_summary = "Archivo del resumen del job (`GITHUB_STEP_SUMMARY`)."
+arg_skip_reason = "Motivo de la compilación omitida (`skip_reason` de `compile.yml`): `format-none` o `no-changes`."
+skip_reason_build_only = "`--skip-reason` solo se admite con `--kind build`."
+no_manuscript = "Sin manuscrito: el resultado queda en el resumen del job y no se comenta en el PR."
+report_required = "`--report` es obligatorio con `--kind {kind}`."
+pr_required = "`--pr` es obligatorio con `--kind {kind}`."
+pr_not_allowed = "`--kind {kind}` no es de un PR: no admite `--pr`."
+summary_failed = "No se pudo escribir el resumen del job: {path}"
+forge_failed = "No se pudo publicar el comentario: {code}."
+forge_error = "No se pudo publicar el comentario (error de la forja: {kind})."
+no_permission = "El token no puede comentar en el PR (por ejemplo, un PR desde un fork); el resultado queda en el resumen del job."
+created = "Comentario creado."
+updated = "Comentario actualizado."
+unchanged = "El comentario ya estaba al día."
+labeled = "Etiqueta agregada al PR: {label}."
+unavailable_value = "no disponible"
+artifact_note = "Los enlaces a artefactos requieren una sesión en GitHub."
+shown = "Se muestran {shown} de {total}."
+hint = "Sugerencia: {hint}"
+
+# Resumen de expire-claims (09-ci §6; 05 §9.19): solo el resumen del job, sin comentario en un PR.
+[ci.comment.expire]
+title = "{check}"
+head = "{tasks} evaluadas; un reclamo vence a los {days} días sin actividad."
+nothing = "Sin cambios: ningún reclamo se avisó, venció, renovó ni reparó."
+unavailable = "Reporte de `expire-claims` no disponible: el veredicto es el del paso anterior."
+incomplete = "`expire-claims` no terminó: {code}"
+nobody = "sin reclamante"
+
+[ci.comment.expire.tasks]
+one = "1 tarea"
+other = "{n} tareas"
+
+[ci.comment.expire.list]
+warned = "Avisadas"
+expired = "Vencidas"
+unexpired = "Renovadas (se quitó `state:expired`)"
+repaired = "Reparadas"
+skipped = "Omitidas"
+
+[ci.comment.expire.action]
+assign_owner = "se asignó al dueño"
+clear_assignees = "se quitaron los asignados"
+remove_stale_expired = "se quitó una `state:expired` sobrante"
+close_merged_issue = "se cerró el Issue de un PR integrado"
+
+[ci.comment.expire.reason]
+blocked = "`flag:blocked`"
+no_owner = "sin dueño"
+
+[ci.comment.severity]
+error = "error"
+warning = "aviso"
+
+[ci.comment.build]
+title = "{check}: {result}"
+pdf = "PDF"
+diff = "PDF de diferencias con la base"
+run = "Ejecución del workflow"
+diagnostics = "Diagnósticos"
+diagnostics_unavailable = "Diagnóstico no disponible."
+no_diagnostics = "Sin diagnósticos."
+
+[ci.comment.build.outcome]
+success = "la compilación terminó bien"
+failure = "la compilación falló"
+cancelled = "compilación cancelada"
+skipped = "compilación omitida (el PR no cambia archivos que se compilen, o falló un paso anterior: ver la ejecución)"
+unknown = "sin resultado de la compilación"
+format-none = "sin manuscrito"
+no-changes = "compilación omitida"
+
+[ci.comment.build.reason]
+format-none = "Sin manuscrito (`format: none`): no hay nada que compilar."
+no-changes = "El PR no cambia archivos que se compilen: `tex/`, `sections/`, `bib/`, `project.yaml` ni los workflows de compilación."
+
+[ci.comment.validate]
+title = "{check}: {result}"
+unavailable = "Validación no disponible: no hay un reporte legible. El veredicto lo da el check."
+incomplete = "La validación no terminó: {code}"
+rules = "Reglas"
+findings = "Hallazgos"
+all_pass = "Todas las reglas pasan."
+counts = "{errors} y {warnings}."
+head = "Cabeza: {ref} ({sha})"
+more = "Se muestran {shown} de {total} hallazgos; la lista completa está en las anotaciones del job."
+
+[ci.comment.validate.result]
+pass = "aprobada"
+fail = "con errores"
+unavailable = "no disponible"
+incomplete = "no se completó"
+
+[ci.comment.validate.status]
+pass = "pasa"
+fail = "falla"
+skip = "omitida"
+
+[ci.comment.validate.errors]
+one = "1 error"
+other = "{n} errores"
+
+[ci.comment.validate.warnings]
+one = "1 aviso"
+other = "{n} avisos"
+
+# --- ci seal (09-ci §7.4, REQ-CI-50..56; 11-trazabilidad §8). Cada motivo del resumen va con su
+# texto y su código entre acentos graves: ci.seal.reason, ci.seal.proof_reason y, de evidence.toml,
+# evidence.manifest_error, evidence.skipped y evidence.check.tsa. Las fechas de las pruebas son
+# «fecha verificable» (REQ-TRACE-75).
+
+[ci.seal]
+arg_kind = "Qué se sella: `submission` (la cabeza de un PR de tarea) o `integration` (un push a la base)."
+arg_policy = "Directorio con el `project.yaml` de la política: idioma y rama base."
+arg_repo_dir = "Checkout con la historia de git; solo se leen sus objetos y nada de él se ejecuta."
+arg_commit = "Commit que se sella (40 dígitos hexadecimales)."
+arg_base_sha = "Punta de la rama base del PR; solo con `submission`."
+arg_pr = "Número del PR; solo con `submission`."
+arg_out = "Directorio donde queda la carpeta del registro, la que sube el artefacto."
+arg_summary = "Archivo del resumen del job (`GITHUB_STEP_SUMMARY`)."
+submission_args = "`--pr` y `--base-sha` son obligatorios con `--kind submission`."
+integration_args = "`--pr` y `--base-sha` solo se usan con `--kind submission`."
+summary_failed = "No se pudo escribir el resumen del job: {path}"
+done = "{check}: registros={records}, estado `{status}`."
+
+[ci.seal.kind]
+submission = "registro de entrega"
+integration = "registro de integración"
+
+[ci.seal.title]
+submission = "Registro de entrega"
+integration = "Registro de integración"
+
+[ci.seal.comment]
+line = "**{check}**: {record} del commit `{sha}` (intento {attempt}), `{status}` con {ok} de {total} pruebas. Hora del sellado (reloj del runner): {utc} (UTC), {local} en la hora del centro de México. El JSON de este comentario es el registro; la carpeta completa está en el artefacto `{artifact}`."
+line_utc = "**{check}**: {record} del commit `{sha}` (intento {attempt}), `{status}` con {ok} de {total} pruebas. Hora del sellado (reloj del runner): {utc} (UTC). El JSON de este comentario es el registro; la carpeta completa está en el artefacto `{artifact}`."
+
+[ci.seal.summary]
+headline = "**{record}** del commit `{sha}` (intento {attempt}): `{status}`, {ok} de {total} pruebas obtenidas."
+sealed_at = "Hora del sellado (reloj del runner): {utc} (UTC); {local} (hora del centro de México). La fecha verificable es la de las pruebas."
+sealed_at_utc = "Hora del sellado (reloj del runner): {utc} (UTC); la hora del centro de México no está disponible en este equipo. La fecha verificable es la de las pruebas."
+no_pr = "Sin PR: el registro queda solo en el artefacto y en este resumen."
+pr = "PR #{pr}."
+pr_task = "PR #{pr}, de la tarea #{task}."
+base_merge_base = "Entradas: el diff desde el merge-base `{base}`, con {commits} y {entries}."
+base_sealed = "Entradas: desde `{base}`, el último commit ya sellado, con {commits} y {entries}."
+base_empty = "Entradas: desde el árbol vacío, porque no hay un commit sellado antes (primer registro), con {commits} y {entries}."
+base_unknown = "Entradas: desde el árbol vacío, porque no se pudo saber qué commit se selló antes, con {commits} y {entries}."
+plan_yes = "Sello del plan: sí (el rango toca `plan.md`, `roles.yaml` o `memory/constitution.md`, o es el primer registro)."
+plan_no = "Sello del plan: no."
+manifest = "Huella SHA-256 de `manifest.json`: `{sha256}`."
+artifact = "Artefacto `{artifact}`, con la carpeta `{folder}`."
+out_failed = "No se pudo escribir la carpeta del registro: el artefacto `{artifact}` quedará vacío."
+skipped = "Fuera del manifiesto ({n}, `{reason}`): {text}"
+comment_created = "Comentario `ci:evidence` publicado en el PR #{pr}."
+comment_unchanged = "El comentario `ci:evidence` de este intento ya estaba en el PR #{pr}."
+comment_failed = "No se pudo comentar en el PR #{pr} (`{kind}`): el registro queda en el artefacto y en este resumen."
+comment_no_forge = "Sin acceso a la forja: no se comentó en el PR #{pr}; el registro queda en el artefacto y en este resumen."
+proofs = "Pruebas"
+table = "| Prueba | Origen | Resultado | Fecha verificable (UTC) | Hora del centro de México |"
+proof_ok = "obtenida, con {revocation}"
+proof_no_revocation = "obtenida, sin OCSP ni CRL (`{reason}`)"
+proof_pending = "obtenida, pendiente de Bitcoin"
+proof_error = "no obtenida (`{reason}`): {text}"
+skip_not_task = "El PR #{pr} no es de una tarea (su rama no es `task/<n>`): no se sella."
+skip_fork = "El PR #{pr} viene de un fork: no se sella."
+not_built = "No se pudo armar el registro del commit `{sha}` (`{reason}`): {text}"
+
+[ci.seal.summary.commits]
+one = "1 commit"
+other = "{n} commits"
+
+[ci.seal.summary.entries]
+one = "1 archivo"
+other = "{n} archivos"
+
+# Por qué no se armó el registro (además de los de evidence.manifest_error).
+[ci.seal.reason]
+pr_unavailable = "No se pudo leer el PR y `GITHUB_HEAD_REF` falta o está vacía: no se sabe de qué tarea es."
+pr_not_found = "La forja responde que el PR no existe."
+env = "Faltan variables de Actions del run o no son válidas."
+git_unavailable = "No se encontró git en este equipo."
+git_error = "git no pudo leer los objetos del repositorio de `--repo-dir`."
+internal = "Error interno al sellar."
+
+# Por qué no se obtuvo una prueba (además de los de evidence.check.tsa, si el sello no verificó).
+[ci.seal.proof_reason]
+http = "Respondió con un error HTTP."
+timeout = "No respondió a tiempo."
+offline = "Sin conexión de red."
+tls = "Falló la conexión segura (TLS)."
+calendars = "Respondieron menos calendarios de OpenTimestamps que el mínimo."
+missing_extra = "Falta el extra `evidence`: la prueba no se pidió."
+internal = "Error interno del cliente de la prueba."
+
+[ci.seal.note]
+policy_unreadable = "No se pudo leer el `project.yaml` de la política: se usan el idioma y la rama por omisión."
+forge_unavailable = "Sin acceso a la forja (`{code}`)."
+forge_error = "La forja respondió con un error en `{method}` (`{kind}`)."
+head_ref = "No se pudo leer el PR: la tarea sale de `GITHUB_HEAD_REF` y el registro no lleva al autor del PR."
+env_invalid = "Faltan o no son válidas estas variables de Actions: {names}."
+no_branch = "No se conoce la rama base: se sella desde el árbol vacío."
+internal = "Error interno al sellar ({type})."
+
+# ci editor-review (09-ci §4.5; 00-marco D-56): el texto del check run y del resumen del job.
+[ci.editor_review]
+arg_pr = "Número del PR que se evalúa."
+arg_policy = "Checkout de la rama por defecto con la política (`project.yaml` y `roles.yaml`)."
+arg_summary = "Archivo del resumen del job (`GITHUB_STEP_SUMMARY`)."
+headline = "**{check}** en la cabeza `{sha}`: {verdict}"
+not_open = "El PR #{pr} no está abierto: no se evalúa."
+pr_unavailable = "No se pudo leer el PR #{pr} (`{code}`): el check no se publicó."
+publish_failed = "No se pudo publicar el check `{check}` (`{code}`)."
+summary_failed = "No se pudo escribir el resumen del job: {path}"
+done = "{check} en `{sha}`: `{conclusion}` (`{reason}`)."
+
+[ci.editor_review.reason]
+individual = "proyecto individual (`mode: individual`), sin aprobaciones."
+format_none = "sin manuscrito (`format: none`), no hay editor del artículo."
+no_editor = "`roles.yaml` no declara editor del artículo; basta la aprobación del responsable o del suplente."
+author_is_editor = "el autor del PR es el editor del artículo, @{editor}."
+no_latex = "el PR no toca el LaTeX."
+approved = "@{editor}, el editor del artículo, aprobó esta cabeza."
+changes_requested = "@{editor}, el editor del artículo, pidió cambios."
+missing = "falta la aprobación de @{editor}, el editor del artículo, sobre esta cabeza."
+policy_unavailable = "no se pudo leer la política de la base (`{code}`); el check falla cerrado."
+forge_error = "la forja respondió con un error (`{code}`); el check falla cerrado."
+internal = "error interno (`{code}`); el check falla cerrado."
+
+[ci.editor_review.hint]
+missing = "El editor aprueba desde la página del PR o con `{cli}`. Un push nuevo pide otra aprobación."
+changes_requested = "Atiende los cambios que pidió @{editor} y pídele otra revisión."
+
+# ci audit (09-ci §7.1, REQ-CI-46; 06-permisos §3.5 y REQ-PERM-23)
+[ci.audit]
+arg_before = "Commit de la base antes del push (`github.event.before`); su política decide."
+arg_after = "Commit de la base después del push (`GITHUB_SHA`)."
+arg_forced = "Si el push fue forzado (`github.event.forced`): `true` o `false`."
+arg_summary = "Archivo del resumen del job (`GITHUB_STEP_SUMMARY`)."
+no_repo = "El directorio actual no es el checkout de un repositorio git: no se puede auditar."
+new_branch = "La base es nueva (sin commit anterior): no hay nada que auditar."
+policy_unavailable = "No se pudo leer la política del commit `{sha}` (`{code}`): no se auditó."
+failed = "La auditoría no terminó (`{code}`)."
+summary_failed = "No se pudo escribir el resumen del job: {path}"
+marked = "`{sha}`: `{verdict}` ({action})."
+nothing = "Sin commits nuevos en la base."
+missing = "Faltó la aprobación de: {logins}."
+scope = "El alcance no se cumplía: {codes}."
+checks_red = "Checks requeridos sin éxito en la cabeza del PR: {checks}."
+mention = "Para revisar: {mentions}."
+trace_ok = "traza del squash en regla"
+trace_counts = "traza del squash: {errors} errores y {warnings} avisos"
+
+[ci.audit.headline]
+bypass = "**Auditoría de la integración:** el PR #{pr} entró en `{base}` (`{sha}`) sin cumplir la matriz de aprobación o el alcance."
+bypass_no_deputy = "**Auditoría de la integración:** el PR #{pr} del responsable entró en `{base}` (`{sha}`) sin aprobación, porque no hay suplente que pueda darla."
+direct_push = "**Auditoría de la integración:** el commit `{sha}` entró en `{base}` sin PR."
+force_push = "**Auditoría de la integración:** `{base}` recibió un push forzado; su punta es `{sha}`."
+compliant = "**Auditoría de la integración:** `{sha}` cumple la matriz."
+
+[ci.audit.title]
+direct_push = "Commit sin PR en {base} ({sha})"
+force_push = "Push forzado en {base} ({sha})"
+bypass = "Integración sin cumplir la matriz en {base} ({sha})"
+bypass_no_deputy = "Integración sin suplente en {base} ({sha})"
+compliant = "Auditoría de {base} ({sha})"

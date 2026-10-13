@@ -1,0 +1,43 @@
+# .gitignore (clase lead). Las líneas del bloque [req] son obligatorias (conv.gitignore.required).
+# [req] estado local del núcleo y de las puertas
+/.aucove/
+/.claude/settings.local.json
+/.claude/worktrees/
+/CLAUDE.local.md
+# [req] compilación y datos crudos
+/tex/build/
+/tex/build-diff/
+/data/*
+!/data/README.md
+# [req] secretos (defensa en profundidad)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+# auxiliares de LaTeX de editores que compilan en tex/
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.xdv
+/tex/*.pdf
+# Python, R, notebooks y sistema
+__pycache__/
+.venv/
+.ipynb_checkpoints/
+.Rhistory
+.RData
+.DS_Store
+Thumbs.db
+desktop.ini

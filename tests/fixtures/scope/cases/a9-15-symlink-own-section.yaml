@@ -1,0 +1,17 @@
+id: a9-15-symlink-own-section
+description: >
+  Un enlace simbólico en la sección propia: el modo 120000 sale de git ls-tree, no de
+  la API (REQ-CI-24), y los enlaces no se admiten (REQ-CONV-10).
+covers: [a9:symlink]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: sections/methods/link.tex
+    mode: "120000"
+    content: ../../../plan.md
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_SYMLINK]
+  paths: [sections/methods/link.tex]

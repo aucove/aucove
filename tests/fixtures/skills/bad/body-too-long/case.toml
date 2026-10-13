@@ -1,0 +1,3 @@
+description = "cuerpo de exactamente 500 líneas (debe tener menos de 500)"
+lang = "es"
+expect = ["body-length"]

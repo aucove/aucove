@@ -1,0 +1,48 @@
+{
+  "schema": "aucove.result/v1",
+  "ok": false,
+  "op": "validate",
+  "data": {
+    "valid": false,
+    "mode": "build-log",
+    "pr": 42,
+    "base": {"ref": "main", "sha": null},
+    "head": {"ref": "task/17", "sha": "0123456789abcdef0123456789abcdef01234567"},
+    "results": [
+      {
+        "check": "latex-log",
+        "status": "fail",
+        "findings": [
+          {
+            "path": "sections/methods/methods.tex",
+            "line": 12,
+            "severity": "error",
+            "code": "E_VALIDATION_LATEX",
+            "message": "Undefined control sequence \\foo.",
+            "pointer": null,
+            "hint": null
+          },
+          {
+            "path": "tex/main.tex",
+            "line": null,
+            "severity": "warning",
+            "code": "E_VALIDATION_LATEX",
+            "message": "Label(s) may have changed. Rerun to get cross-references right.",
+            "pointer": null,
+            "hint": null
+          }
+        ]
+      }
+    ],
+    "page": {"next_cursor": null, "returned": 2, "total": 5}
+  },
+  "warnings": [
+    {"code": "W_OUTPUT_TRUNCATED", "message": "The response was truncated.", "details": {"omitted": 3}}
+  ],
+  "error": {
+    "code": "E_VALIDATION_FAILED",
+    "message": "Some checks failed.",
+    "retryable": false,
+    "hint": "Fix the findings and run it again."
+  }
+}

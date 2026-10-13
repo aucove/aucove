@@ -1,0 +1,12 @@
+# Política de la base de los casos de scope.
+convention: "0.1"
+core: ">=0.1.0,<0.2"
+core_pin: "0.1.0"
+name: demo
+title: "Proyecto de prueba del control de alcance"
+language: es
+format: latex
+forge:
+  type: github
+  repo: example-org/demo
+  base_branch: main

@@ -1,0 +1,126 @@
+# Pruebas nocturnas del framework (08-forja REQ-FORGE-64; 01-arquitectura REQ-ARCH-11;
+# 12-mvp REQ-MVP-22). Corre cada noche, a mano y desde release.yml antes de publicar, nunca
+# en un PR. Mismas reglas que ci.yml: permissions: {} arriba y mínimos por job,
+# timeout-minutes, todo uses: fijado por SHA con la versión en un comentario y checkout sin
+# credenciales.
+# - live: la suite de contrato contra GitHub real (T2) en los dos repos sandbox, con los
+#   tokens de las cuentas de prueba, que solo existen como secretos del environment
+#   forge-tests (12-mvp REQ-MVP-28; guía de mantenimiento, punto 9).
+# - template-drift: la rama principal de aucove-template es, byte a byte tras pasar CRLF a
+#   LF, el render de la última etiqueta estable (REQ-ARCH-11). Mientras no haya una versión
+#   final, no hay plantilla publicada (REQ-ARCH-8) y el job solo lo avisa. No corre desde
+#   release.yml: ahí la etiqueta estable más reciente es la que se publica, y su plantilla
+#   llega después, con el job template.
+name: nightly
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # todos los días a las 06:17 UTC, fuera de la hora en punto
+  workflow_dispatch:
+  workflow_call:
+
+permissions: {}
+
+# Un grupo fijo: la corrida nocturna, la manual y la que llama release.yml (con la ref de la
+# etiqueta) usan los mismos repos sandbox, así que van de a una.
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  live:
+    name: live (${{ matrix.sandbox }})
+    strategy:
+      fail-fast: false
+      matrix:
+        sandbox: [public, private]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: forge-tests
+    permissions:
+      contents: read
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      AUCOVE_CONTRACT_REPO: ${{ matrix.sandbox == 'public' && vars.CONTRACT_REPO_PUBLIC || vars.CONTRACT_REPO_PRIVATE }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"   # el mismo uv que ci.yml
+          python-version: "3.11"
+          enable-cache: false
+      - name: Dependencias de desarrollo del lock
+        run: uv sync --locked --group dev --extra evidence --no-install-project
+      - name: El environment trae el sandbox y las dos cuentas obligatorias (REQ-MVP-28)
+        env:
+          LEAD: ${{ secrets.TEST_GH_TOKEN_LEAD }}
+          RESEARCHER_A: ${{ secrets.TEST_GH_TOKEN_RESEARCHER_A }}
+        run: |
+          missing=()
+          if [ -z "$AUCOVE_CONTRACT_REPO" ]; then missing+=("la variable del repo sandbox"); fi
+          if [ -z "$LEAD" ]; then missing+=("TEST_GH_TOKEN_LEAD"); fi
+          if [ -z "$RESEARCHER_A" ]; then missing+=("TEST_GH_TOKEN_RESEARCHER_A"); fi
+          if [ "${#missing[@]}" -ne 0 ]; then
+            echo "::error::faltan en el environment forge-tests: ${missing[*]}"
+            exit 1
+          fi
+      - name: Suite de contrato contra GitHub real (T2; REQ-FORGE-64)
+        env:
+          TEST_GH_TOKEN_LEAD: ${{ secrets.TEST_GH_TOKEN_LEAD }}
+          TEST_GH_TOKEN_RESEARCHER_A: ${{ secrets.TEST_GH_TOKEN_RESEARCHER_A }}
+          TEST_GH_TOKEN_RESEARCHER_B: ${{ secrets.TEST_GH_TOKEN_RESEARCHER_B }}
+          TEST_GH_TOKEN_READ_ONLY: ${{ secrets.TEST_GH_TOKEN_READ_ONLY }}
+          TEST_GH_TOKEN_NO_PERMISSION: ${{ secrets.TEST_GH_TOKEN_NO_PERMISSION }}
+          TEST_GH_TOKEN_TEAM_LEAD: ${{ secrets.TEST_GH_TOKEN_TEAM_LEAD }}
+        run: uv run --no-sync pytest -m live -rs -p no:cacheprovider
+
+  template-drift:
+    # Llamado desde release.yml, el contexto github es el del push de la etiqueta.
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0   # las etiquetas
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"   # el mismo uv que ci.yml
+          python-version: "3.11"
+          enable-cache: false
+      - name: Última etiqueta estable
+        id: stable
+        run: |
+          tag="$(git tag --list 'v[0-9]*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if [ -z "$tag" ]; then
+            echo "::notice::Todavía no hay una versión final: aucove-template no se publica con una preliminar (REQ-ARCH-8)."
+          fi
+      - name: aucove-template es el render de esa etiqueta (REQ-ARCH-11)
+        if: steps.stable.outputs.tag != ''
+        env:
+          TAG: ${{ steps.stable.outputs.tag }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/stable" "$TAG"
+          git clone --quiet --depth 1 "https://github.com/${OWNER}/aucove-template.git" "$RUNNER_TEMP/published"
+      - name: render --check con el código de esa etiqueta
+        if: steps.stable.outputs.tag != ''
+        working-directory: ${{ runner.temp }}/stable
+        env:
+          TAG: ${{ steps.stable.outputs.tag }}
+        run: |
+          uv sync --locked --group dev --no-install-project
+          uv sync --locked --group dev --no-build-isolation-package aucove
+          uv run --no-sync python tools/render_template.py --lang en --core-pin "${TAG#v}" --out "$RUNNER_TEMP/published" --check

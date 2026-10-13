@@ -1,0 +1,15 @@
+# Skill de ejemplo bueno con campos de Claude Code (01-arquitectura §10.2).
+key = "decision"
+cli = ["decision propose"]
+
+[name]
+es = "decision"
+en = "decision"
+
+[description]
+es = "Propón una decisión: redacta el registro en memory/decisions/ y abre la propuesta para que la apruebe el responsable."
+en = "Propose a decision: draft the record in memory/decisions/ and open the proposal for the lead to approve."
+
+[claude]
+disable-model-invocation = true
+argument-hint = { es = "[tema de la decisión]", en = "[decision topic]" }

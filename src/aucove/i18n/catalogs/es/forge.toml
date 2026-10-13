@@ -1,0 +1,11 @@
+# Catálogo del adaptador de la forja: textos de los `hint` de sus errores (08-forja §2.1).
+# Los fragmentos entre acentos graves y los marcadores deben coincidir con en/forge.toml.
+
+[forge.hint]
+no_token = "Define `GH_TOKEN` con un token fine-grained limitado al repositorio del proyecto, o ejecuta `gh auth login`."
+permission = "Al token le falta un permiso que pide GitHub: {permissions}."
+permission_unknown = "El token no tiene permiso para esta operación en el repositorio."
+token_approval = "Si la organización exige aprobar los tokens fine-grained, un owner debe aprobarlo en Settings → Personal access tokens → Pending requests."
+rate_limited = "Se alcanzó el límite de la API de GitHub; vuelve a intentarlo después de {reset_at}."
+base_not_default = "La rama base del proyecto debe ser la rama por defecto del repositorio, que es `{default_branch}`."
+mark_ready = "Marca el PR como listo para revisión en la web de GitHub: {url}"

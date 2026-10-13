@@ -1,0 +1,25 @@
+{
+  "id": "pre-tool-use/allow-own-section-edit",
+  "description": "carla edita su propia parte methods (sections/methods/), declarada en la tarea 12 que tiene reclamada.",
+  "class": "allow",
+  "os": ["windows", "macos", "linux"],
+  "setup": {
+    "identity": "carla",
+    "branch": "task/12",
+    "roles_base": "roles/basic.yaml",
+    "task_sections": {"12": ["methods"]}
+  },
+  "stdin": {
+    "session_id": "t",
+    "cwd": "${REPO}",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Edit",
+    "tool_use_id": "toolu_t",
+    "tool_input": {
+      "file_path": "${REPO}/sections/methods/methods.tex",
+      "old_string": "a",
+      "new_string": "b"
+    }
+  },
+  "expect": {"decision": "allow"}
+}

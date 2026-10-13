@@ -1,0 +1,204 @@
+# Catálogo del área evidence (EV-07): textos de `evidence verify` (05-operaciones §9.26) y
+# de los motivos estables de la capa evidence (11-trazabilidad §8): ManifestError.reason,
+# Skipped.reason, RecordError.reason, los problemas de carpeta, check_manifest,
+# CanonicalError.reason y los Check.reason de tsa, revocation y ots. Los detalles nunca
+# llevan sales (REQ-OPS-65). Mismas claves, marcadores y fragmentos entre acentos graves
+# que en en/evidence.toml (REQ-ARCH-72..74).
+
+[evidence]
+verify = "Verificación de evidencia"
+
+[evidence.verdict]
+verified = "verificado"
+pending = "pendiente"
+failed = "falló"
+
+[evidence.confidence]
+strong = "alta"
+weak = "baja"
+
+[evidence.kind]
+submission = "Entrega"
+integration = "Integración"
+
+[evidence.status]
+pass = "pasa"
+weak = "débil"
+pending = "pendiente"
+skip = "omitido"
+fail = "falla"
+
+[evidence.check_name]
+manifest = "manifiesto"
+tsa = "TSA"
+ots = "OTS"
+openings = "aperturas"
+actors = "actores"
+git = "git"
+content = "contenido"
+
+[evidence.render]
+header = "{title} · {target}: {verdict}"
+record = "{kind} {commit}: {verdict}"
+check = "  [{status}] {check}{source}: {detail}"
+time = "      {utc}"
+time_local = "      {utc} · {local}"
+confidence = "(confianza {confidence})"
+
+[evidence.note]
+more = "Otros problemas: {n}."
+upgraded = "Se completó con los calendarios y se reescribió `manifest.json.ots`."
+upgrade_dry_run = "Se completó con los calendarios; con `--dry-run` no se reescribió."
+upgrade_not_written = "Se completó, pero no se pudo reescribir `manifest.json.ots`."
+completed = "Se completó en memoria con los calendarios; `--upgrade` la guarda."
+
+# -- checks de evidence verify (evidence.check.<check>.<motivo>) ---------------------------
+
+[evidence.check.manifest]
+ok = "Manifiesto canónico con el SHA-256 de `record.json`: entradas {entries}, actores {actors}."
+missing = "Falta `manifest.json`: el registro no trae el manifiesto (por ejemplo, un comentario recortado)."
+unreadable = "No se pudo leer `manifest.json`. {problem}"
+sha_mismatch = "El SHA-256 de `manifest.json` no es el de `record.json`."
+invalid_json = "`manifest.json` no está en el perfil canónico de JSON. {problem}"
+not_canonical = "`manifest.json` no está en su forma canónica exacta (RFC 8785)."
+schema = "`manifest.json` no cumple el esquema `evidence-manifest/v1` en {pointer}."
+record_invalid = "`record.json` no se entiende. {problem}"
+record_schema = "`record.json` no cumple el esquema `evidence-record/v1` en {pointer}."
+record_mismatch = "El campo {field} de `record.json` no corresponde al manifiesto sellado."
+record_unreadable = "`record.json` no se entiende y ni el manifiesto ni el nombre de la carpeta identifican el registro: lo que falta va en ceros."
+unverifiable = "El registro no se pudo verificar: sus archivos provocaron un error inesperado ({error})."
+
+[evidence.check.tsa]
+ok = "Sello válido hasta una raíz del catálogo; la revocación guardada ({revocation}) muestra el certificado vigente en `genTime`."
+not_obtained = "La prueba no se obtuvo al sellar."
+missing = "Falta el `.tsr` de la prueba."
+unreadable = "No se pudo leer el `.tsr`. {problem}"
+time_mismatch = "La hora declarada en `record.json` no es el `genTime` del sello."
+missing_extra = "Falta el extra `evidence`: no se verificó la prueba."
+unknown_tsa = "La TSA no está en el catálogo del núcleo."
+invalid = "El sello no se puede leer."
+rejected = "La TSA rechazó la solicitud."
+digest_mismatch = "El sello no es del SHA-256 del manifiesto."
+nonce_mismatch = "El nonce del sello no es el de la solicitud."
+policy = "La política del sello no está en el catálogo."
+chain = "La cadena no llega a una raíz del catálogo vigente en `genTime`."
+signature = "La firma del sello no verifica."
+ess = "El atributo `signingCertificate` no corresponde a la cadena."
+no_revocation = "Sello válido, pero sin OCSP ni CRL que muestren el certificado vigente en `genTime`."
+ocsp_invalid = "Sello válido, pero el OCSP guardado no se puede leer."
+ocsp_status = "Sello válido, pero el OCSP guardado no es una respuesta correcta."
+ocsp_mismatch = "Sello válido, pero el OCSP guardado es de otro certificado."
+ocsp_signature = "Sello válido, pero la firma del OCSP guardado no verifica."
+ocsp_unknown = "Sello válido, pero el OCSP guardado no conoce el certificado."
+crl_invalid = "Sello válido, pero la CRL guardada no se puede leer."
+crl_signature = "Sello válido, pero la CRL guardada no es de la emisora o su firma no verifica."
+stale = "Sello válido, pero el OCSP o la CRL guardados no cubren `genTime`."
+after_expiry = "Sello válido, pero el OCSP o la CRL guardados son posteriores al vencimiento del certificado de la TSA, cuando su estado ya no se garantiza."
+revoked = "El certificado de la TSA estaba revocado: el sello no vale."
+revoked_later = "El certificado de la TSA se revocó después de `genTime` por un motivo que no invalida el sello."
+
+[evidence.check.ots]
+pending = "La prueba compromete el manifiesto y espera el bloque de Bitcoin; calendarios pendientes: {n}."
+bitcoin_unverified = "La prueba compromete el manifiesto y termina en el bloque {height} de Bitcoin (raíz de Merkle {merkle_root}), que esta versión no coteja: cotéjalo a mano como explica `VERIFY.md`."
+invalid = "La prueba `.ots` no se puede leer."
+digest_mismatch = "La prueba `.ots` no es del SHA-256 del manifiesto."
+missing_extra = "Falta el extra `evidence`: no se verificó la prueba."
+not_obtained = "La prueba no se obtuvo al sellar."
+missing = "Falta `manifest.json.ots`."
+unreadable = "No se pudo leer `manifest.json.ots`. {problem}"
+
+[evidence.check.openings]
+ok = "Las aperturas de archivos reproducen su compromiso: {n}."
+missing = "No hay aperturas (`openings.json`)."
+unreadable = "No se pudo leer `openings.json`. {problem}"
+invalid = "`openings.json` no tiene la forma de las aperturas."
+schema = "`openings.json` no cumple el esquema `evidence-openings/v1` en {pointer}."
+other_manifest = "Las aperturas son de otro manifiesto."
+no_manifest = "Sin el manifiesto no se pueden comprobar las aperturas."
+mismatch = "Aperturas que no reproducen su compromiso: {n} de {total}."
+
+[evidence.check.actors]
+ok = "Los actores reproducen su compromiso: {roles}."
+none = "Las aperturas no traen actores."
+missing = "No hay aperturas de actores."
+no_manifest = "Sin el manifiesto no se pueden comprobar los actores."
+mismatch = "Actores que no reproducen su compromiso: {roles}."
+
+[evidence.check.git]
+ok = "El commit, su árbol y sus commits de primer padre coinciden; blobs {blobs}, actores cotejados con el commit {actors}."
+missing_commit = "El commit no está en el repositorio: trae las cabezas de los PR con `git fetch origin '+refs/pull/*/head:refs/pull/*/head'`."
+missing_base = "La base del manifiesto no está en este clon superficial: se cotejaron el árbol, blobs {blobs} y actores {actors}, pero no los commits ni `plan`; trae la historia completa con `git fetch --unshallow`."
+unknown_base = "La base del manifiesto no es un commit de este repositorio, que no es superficial y debería tenerla."
+base_not_ancestor = "La base del manifiesto no es un ancestro del commit."
+not_a_commit = "El id del registro está en el repositorio, pero no es un commit."
+tree_mismatch = "El árbol del commit no es el del manifiesto."
+commits_mismatch = "Los commits de primer padre no son los del manifiesto."
+plan_mismatch = "El campo plan de `record.json` no corresponde a los cambios del rango."
+blob_mismatch = "Aperturas que no corresponden al blob de su ruta en el commit: {n}."
+missing_blob = "Blobs de las aperturas que faltan en el repositorio: {n}."
+content_mismatch = "Blobs cuyo contenido no da su compromiso: {n}."
+size_mismatch = "Blobs con otro tamaño que el de su apertura: {n}."
+actor_mismatch = "El objeto commit no coincide con estos actores: {roles}."
+repo_error = "No se pudo leer el repositorio."
+
+[evidence.check.content]
+raw = "{path}: coinciden los bytes crudos."
+clean = "{path}: coincide la forma limpia (`git hash-object --path`)."
+clean_by_oid = "{path}: la forma limpia es el blob de la apertura, pero sin ese blob no se coteja con el manifiesto (usa `--repo`)."
+mismatch = "{path}: no coinciden los bytes crudos ni la forma limpia."
+clean_unavailable = "{path}: no coinciden los bytes crudos y git no pudo calcular la forma limpia."
+not_sealed = "{path}: la apertura no corresponde a ninguna entrada del manifiesto."
+unsafe_path = "Aperturas con una ruta que saldría de la carpeta de `--content`, que no se leen: {n}."
+unreadable = "{path}: no se pudo leer."
+no_files = "Ningún archivo de las aperturas está en la carpeta de `--content`."
+no_openings = "Sin el manifiesto y sus aperturas no se puede comparar el contenido."
+
+# -- motivos estables de la capa evidence ----------------------------------------------------
+
+[evidence.manifest_problem]
+entries_unsorted = "Las entradas del manifiesto no están ordenadas por `p`."
+entries_duplicate = "El manifiesto repite una entrada (`p`)."
+actors_duplicate = "El manifiesto repite un rol de actor."
+commits_last = "El último de `commits` no es `commit`."
+
+[evidence.canonical]
+float = "Hay un número con decimales o exponente."
+int_range = "Hay un entero fuera del rango de ±2^53."
+key_type = "Hay una clave que no es texto."
+key_not_ascii = "Hay una clave con caracteres fuera de ASCII."
+surrogate = "Hay un texto con un sustituto UTF-16 suelto."
+type = "Hay un valor que JSON no representa."
+duplicate_key = "Se repite una clave."
+encoding = "No es UTF-8 válido."
+syntax = "No es JSON válido."
+
+[evidence.folder]
+missing = "El archivo no está."
+too_large = "El archivo pasa del tamaño máximo (64 MiB)."
+unreadable = "El archivo no se puede leer."
+invalid = "El archivo no tiene la forma esperada."
+
+[evidence.record_error]
+invalid = "No tiene la forma de `evidence-record/v1`."
+inconsistent = "Los archivos no dan la huella del registro."
+missing = "Falta `record.json`."
+
+[evidence.manifest_error]
+bad_input = "Un dato de entrada no tiene la forma esperada (sha, número, repositorio, fecha o generador)."
+unknown_commit = "El commit no está en el repositorio."
+not_a_commit = "El id existe, pero no es un commit."
+unknown_base = "La base no está en el repositorio o no es un commit."
+base_not_ancestor = "La base no es ancestro del commit."
+no_merge_base = "El commit no tiene ancestro común con la rama base."
+empty_range = "No hay commits entre la base y el commit."
+too_many_entries = "El rango cambia más de 10 000 archivos."
+missing_blob = "Falta en local un blob del rango."
+bad_salt = "La fuente de sales no dio 32 bytes."
+salt_reuse = "La fuente de sales repitió una sal."
+
+[evidence.skipped]
+non_utf8 = "Una ruta que no es UTF-8 válido no entra al manifiesto."
+path_too_long = "Una ruta de más de 4096 bytes no entra al manifiesto."
+gitlink = "Un submódulo (gitlink) no entra al manifiesto."
+actor_not_utf8 = "Un actor con una identidad que no se puede decodificar no entra al manifiesto."
+actor_too_long = "Un actor con una identidad de más de 320 caracteres no entra al manifiesto."

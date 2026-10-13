@@ -1,0 +1,3 @@
+description = "un skill de .agents/skills menciona la herramienta Edit de Claude Code"
+lang = "es"
+expect = ["claude-tool"]

@@ -1,0 +1,25 @@
+{
+  "id": "pre-tool-use/deny-foreign-section-edit",
+  "description": "carla (researcher, dueña de methods) trabaja en task/12 y un Edit toca la parte results (sections/results/), de bruno.",
+  "class": "deny",
+  "os": ["windows", "macos", "linux"],
+  "setup": {
+    "identity": "carla",
+    "branch": "task/12",
+    "roles_base": "roles/basic.yaml",
+    "task_sections": {"12": ["methods"]}
+  },
+  "stdin": {
+    "session_id": "t",
+    "cwd": "${REPO}",
+    "hook_event_name": "PreToolUse",
+    "tool_name": "Edit",
+    "tool_use_id": "toolu_t",
+    "tool_input": {
+      "file_path": "${REPO}/sections/results/results.tex",
+      "old_string": "a",
+      "new_string": "b"
+    }
+  },
+  "expect": {"decision": "deny", "reason_mentions": ["results", "bruno"]}
+}

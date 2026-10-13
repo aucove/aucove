@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://aucove.invalid/schemas/roles/v1
+# People, roles and part owners (lead class). Format: 03-esquemas §4.
+# Single source of people and owners: `aucove sync-roles` generates
+# .github/CODEOWNERS and .github/ISSUE_TEMPLATE/task.yml from it.
+# The 7 parts follow the default article outline (00-marco D-55). Rename them, remove them or
+# split them into subparts (for example, experiments-a and experiments-b), each with its owner.
+# With LaTeX, the article editor gathers the parts of each section in tex/outline/<id>.tex.
+version: 1
+lead: example-lead
+# deputy: example-researcher   # deputy (D-17): an active person with role researcher
+# editor: example-researcher   # article editor (D-56); if absent, the lead is the editor
+people:
+  - login: example-lead
+    name: "Example Lead"
+    role: lead
+    account_type: team        # change it to the real regime of your account (03-esquemas §4.4)
+    credit: []
+  - login: example-researcher
+    name: "Example Researcher"
+    role: researcher
+    account_type: team        # change it to the real regime of your account
+    credit: []
+sections:
+  - id: introduction
+    title: "Introduction"
+    owner: example-lead
+  - id: background
+    title: "Background and related work"
+    owner: example-lead
+  - id: theory
+    title: "Theoretical framework"
+    owner: example-lead
+  - id: methodology
+    title: "Proposal and methodology"
+    owner: example-lead
+  - id: experiments
+    title: "Experiments"
+    owner: example-lead
+  - id: results
+    title: "Results analysis"
+    owner: example-lead
+  - id: conclusions
+    title: "Conclusions"
+    owner: example-lead

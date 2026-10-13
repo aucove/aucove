@@ -1,0 +1,178 @@
+# Reglas citations, labels-refs, latex-macros y latex-log, y los conv.latex.*, conv.main.*,
+# conv.outline.* y conv.bib.* de la regla convention (02-convencion §4, §5 y §12; 09-ci §4.1; D-33 g).
+# Área latex (D-32 f): claves latex.* y finding.<código>.* de los códigos que emiten
+# ops/rules/latex.py y ops/rules/latex_log.py.
+
+# -- motivos de una regla que no pudo evaluarse (unavailable) ----------------------------
+
+[latex.reason]
+no_tree = "no hay árbol que validar (PR desde un fork o sin `--tree`)"
+timeout = "el análisis superó su tiempo máximo"
+unreadable = "el archivo no se puede leer como texto UTF-8 de 5 MB o menos"
+no_log = "no se encontró el log de la compilación"
+log_unreadable = "el log no es un archivo regular legible"
+
+# -- citations (E_VALIDATION_CITATION) ---------------------------------------------------
+
+[latex.citation]
+bib_syntax = "{file} tiene una entrada con sintaxis inválida"
+bib_missing_key = "{file} tiene una entrada sin clave"
+bib_unterminated = "{file} tiene una entrada sin cerrar"
+resource_place = "{text} solo puede estar en `tex/main.tex`"
+resource = "{text} no es una forma aceptada; solo valen `\\addbibresource{{../bib/references.bib}}` y `\\addbibresource{{../sections/<id>/pending.bib}}`"
+undefined = "la clave '{key}' no está en `bib/references.bib` ni en `{pending}`"
+undefined_lead = "la clave '{key}' no está en `bib/references.bib` ni en ningún `pending.bib`"
+
+# -- labels-refs (E_VALIDATION_LABEL) ----------------------------------------------------
+
+[latex.label]
+lead = "este archivo no puede definir la etiqueta '{label}', porque las etiquetas van en las partes y en los archivos de enlace de `tex/outline/`"
+malformed = "la etiqueta '{label}' no tiene la forma tipo:id[:nombre], con tipo sec, fig, tab, eq, lst, alg, thm, itm o fn, y el id (el de la parte o el del archivo de enlace) y el nombre en minúsculas, dígitos y guiones"
+foreign = "la etiqueta '{label}' usa la parte '{other}', pero está en la carpeta de '{section}'"
+foreign_outline = "la etiqueta '{label}' usa el id '{other}', pero está en el archivo de enlace de '{section}'"
+duplicate = "la etiqueta '{label}' también se define en {other}, línea {number}"
+undefined_ref = "{command} apunta a '{label}', que no se define en ningún archivo"
+
+# -- convention: tex/main.tex (conv.main.*) ----------------------------------------------
+
+[latex.main]
+unknown_line = "la línea {text} no pertenece a la gramática"
+input_target = "{text} no apunta a `preamble`, `notation`, un archivo de enlace (`outline/<id>`) ni otro `.tex` de `tex/`"
+part_input = "{text} incluye una parte, pero `tex/main.tex` solo incluye archivos de enlace (`\\input{{outline/<id>}}`), y cada uno incluye sus partes"
+repeated = "{text} aparece más de una vez"
+order = "{text} está fuera de orden (clase, `\\input{{preamble}}`, `\\input{{notation}}`, bibliografías, `\\begin{{document}}`, cuerpo y `\\end{{document}}`)"
+missing = "falta la línea {text}"
+undeclared = "{text} es de la parte '{section}', que no está en `roles.yaml`"
+undeclared_fix = "Quita {text} o declara la parte '{section}' en `roles.yaml`."
+duplicate = "{text} está repetida"
+duplicate_fix = "Deja una sola línea {text}."
+missing_bib = "falta `\\addbibresource{{../sections/{section}/pending.bib}}`"
+missing_bib_fix = "Agrega `\\addbibresource{{../sections/{section}/pending.bib}}` después de `\\addbibresource{{../bib/references.bib}}`."
+references_first = "{text} está antes de `\\addbibresource{{../bib/references.bib}}`"
+references_first_fix = "Mueve `\\addbibresource{{../bib/references.bib}}` antes de todos los `pending.bib`."
+outline_unknown = "{text} apunta a `tex/outline/{outline}.tex`, que no existe"
+outline_unknown_fix = "Crea `tex/outline/{outline}.tex` o quita {text}."
+missing_outline = "falta `\\input{{outline/{outline}}}`, aunque existe `tex/outline/{outline}.tex`"
+missing_outline_fix = "Agrega `\\input{{outline/{outline}}}` entre `\\begin{{document}}` y `\\end{{document}}`, donde va esa sección del artículo, o borra `tex/outline/{outline}.tex` si sobra."
+
+# -- convention: tex/outline/<id>.tex (conv.outline.*) ----------------------------------
+
+[latex.outline]
+head = "el archivo debe empezar con `\\section{{...}}` y, en la línea siguiente, `\\label{{sec:{outline}}}`"
+heading = "{command} sobra, porque el único comando de sección de un archivo de enlace es el `\\section` de su primera línea"
+input = "{text} no es una línea `\\input{{../sections/<id>/<id>}}`; un archivo de enlace solo incluye partes, cada una sola en su línea"
+undeclared = "incluye la parte '{part}', que no está en `roles.yaml`"
+undeclared_fix = "Quita la línea o declara la parte '{part}' en `roles.yaml`."
+duplicate = "la parte '{part}' ya se incluye en {other}, línea {number}"
+duplicate_fix = "Incluye la parte '{part}' una sola vez en todo `tex/outline/`."
+missing_part = "ningún archivo de enlace incluye la parte '{part}'"
+missing_part_fix = "Agrega `\\input{{../sections/{part}/{part}}}` en el archivo de enlace de su sección del artículo."
+
+# -- convention: archivos .tex (conv.latex.*) --------------------------------------------
+
+[latex.forbidden]
+exec = "ejecuta programas externos"
+io = "lee o escribe archivos"
+lua_engine = "el código Lua solo se admite fuera de las partes y de los archivos de enlace, y con `build.engine: lualatex`"
+carets = "la secuencia `^^` escribe caracteres de forma oculta"
+
+[latex.path]
+reader = "este comando lee un archivo por ruta y no se admite en una parte"
+no_braces = "`\\input` debe llevar el destino entre llaves"
+missing = "falta el destino entre llaves"
+unsafe = "la ruta no puede ser absoluta ni contener `~`, `|`, `\\` ni otro `..` que el del prefijo `../sections/{section}/`"
+prefix = "la ruta debe empezar con `../sections/{section}/`"
+not_tex = "el destino de `\\input` debe ser un `.tex`, con o sin extensión"
+figure = "la figura debe estar en `../sections/{section}/figures/` y ser `.pdf`, `.png`, `.jpg` o `.jpeg`"
+outline = "un archivo de enlace solo incluye partes, con `\\input`; las figuras, las tablas y los demás archivos van en una parte"
+
+# -- latex-log (E_VALIDATION_LATEX) ------------------------------------------------------
+
+[latex.log]
+error = "error de LaTeX: {text}"
+fatal = "la compilación se detuvo por un error fatal"
+undefined_citation = "cita indefinida '{key}'"
+undefined_reference = "referencia indefinida '{key}'"
+multiply_defined = "etiqueta '{key}' definida varias veces"
+undefined_summary = "quedan citas o referencias indefinidas"
+multiply_summary = "hay etiquetas definidas varias veces"
+warning = "aviso: {text}"
+truncated = "el log supera 5 MB y solo se analizaron sus últimos 5 MB"
+
+# -- hallazgos ---------------------------------------------------------------------------
+
+[finding.E_VALIDATION_CITATION]
+message = "Cita o bibliografía inválida: {detail}."
+hint = "Cita solo claves de `bib/references.bib` o del `pending.bib` de tu parte, y declara la bibliografía solo con las dos formas de `tex/main.tex`."
+
+[finding.E_VALIDATION_LABEL]
+message = "Etiqueta o referencia inválida: {detail}."
+hint = "Define cada etiqueta una sola vez, en un archivo de tu parte y con su id (por ejemplo, `fig:methods:pipeline`); cada `\\ref` debe apuntar a una etiqueta existente."
+
+[finding.E_VALIDATION_MACRO]
+message = "Definición o cambio de catcodes {command} fuera de `tex/notation.tex`."
+hint = "Mueve la definición a `tex/notation.tex`; si la necesita una parte, pide al editor del artículo que la agregue."
+
+[finding.E_VALIDATION_LATEX]
+message = "Compilación: {detail}"
+hint = "Corrige el archivo y la línea indicados; el log completo está en el artefacto de la compilación."
+
+[finding.conv.main.grammar]
+message = "`tex/main.tex` fuera de la gramática: {detail}."
+hint = "Deja en `tex/main.tex` solo las líneas de la plantilla: clase, `\\input{{preamble}}`, `\\input{{notation}}`, bibliografías, `\\begin{{document}}`, el cuerpo y `\\end{{document}}`."
+
+[finding.conv.main.sections]
+message = "`tex/main.tex` no coincide con `roles.yaml` ni con `tex/outline/`: {detail}."
+hint = "{fix}"
+
+[finding.conv.outline.grammar]
+message = "Archivo de enlace fuera de la gramática: {detail}."
+hint = "Un archivo de enlace tiene su `\\section{{...}}` y su `\\label{{sec:<id>}}`, la prosa del editor del artículo y las líneas `\\input{{../sections/<id>/<id>}}` de sus partes (02-convencion §4.1.1)."
+
+[finding.conv.outline.parts]
+message = "`tex/outline/` no coincide con `roles.yaml`: {detail}."
+hint = "{fix}"
+
+[finding.conv.outline.missing]
+message = "El artículo todavía no incluye todo: {detail}."
+hint = "{fix} Es una tarea del editor del artículo."
+
+[finding.conv.latex.structure]
+message = "{command} no se admite en este archivo: las partes y los archivos de enlace no cargan paquetes ni declaran la estructura, y `tex/notation.tex` no carga paquetes ni incluye archivos."
+hint = "Pide el cambio al editor del artículo: los paquetes van en `tex/preamble.tex`, y el título de cada sección, en su archivo de `tex/outline/`."
+
+[finding.conv.latex.forbidden-command]
+message = "Comando prohibido {command}: {reason}."
+hint = "Quítalo; si de verdad lo necesitas, propón el cambio al editor del artículo."
+
+[finding.conv.latex.hidden-block]
+message = "Texto oculto con {command} en una parte o en un archivo de enlace."
+hint = "Borra el texto que no va en el documento; el historial de git lo conserva."
+
+[finding.conv.latex.path-outside-section]
+message = "{command} con la ruta '{target}': {detail}."
+hint = "Usa rutas relativas a `tex/` dentro de la carpeta de tu parte, como `../sections/<id>/figures/...`."
+
+[finding.conv.latex.sentence-per-line]
+message = "Posible segunda oración en la línea: '{excerpt}'."
+hint = "Escribe una oración por línea; si el punto es de una abreviatura, ignora el aviso."
+
+[finding.conv.latex.shell-package]
+message = "`tex/preamble.tex` carga el paquete {package}, que necesita shell escape."
+hint = "Quítalo: la compilación desactiva el shell escape y el paquete no funcionaría."
+
+[finding.conv.bib.key-syntax]
+message = "La clave '{key}' no cumple `^[A-Za-z][A-Za-z0-9_:-]*$`."
+hint = "Cambia la clave en Zotero (Better BibTeX) y vuelve a exportar, salvo que ya esté citada en la rama base."
+
+[finding.conv.bib.forbidden-field]
+message = "La entrada '{key}' tiene el campo `{field}`, que la exportación no debe incluir."
+hint = "Quita el campo; en Better BibLaTeX, agrégalo a los campos que se omiten al exportar."
+
+[finding.conv.bib.pending-consolidated]
+message = "La clave '{key}' ya está en `bib/references.bib`."
+hint = "Borra la entrada de tu `pending.bib`: vale la consolidada."
+
+[finding.conv.bib.pending-conflict]
+message = "La clave '{key}' tiene otro contenido en {other}."
+hint = "Copia en los dos `pending.bib` la misma entrada exportada de Zotero, o pide al editor del artículo que la consolide."

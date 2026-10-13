@@ -1,0 +1,44 @@
+# Catálogo del área review: la vista legible de `review list` y `review show`
+# (05-operaciones §9.22 y §9.23). Mismas claves, marcadores y fragmentos entre acentos graves
+# que en en/review.toml (REQ-ARCH-72..74).
+
+[review.role]
+approver = "aprobador"
+owner = "dueño de una parte"
+none = "sin rol"
+
+[review.list]
+line = "PR #{pr} [{role}] CI {ci} · hace {age} h · @{author} · {title}"
+none = "No hay PR que esperen tu revisión."
+more = "Hay más PR: repite con `--cursor {cursor}`."
+
+[review.show]
+header = "PR #{pr}: {title} (de @{author})"
+head = "Cabeza {sha} · CI {ci}"
+approval_ok = "Aprobación: cumplida."
+approval_missing = "Aprobación: falta la de {logins}."
+control = "Atención: el PR toca rutas de control: {paths}."
+plan_without_decision = "El PR cambia `plan.md` y no agrega una decisión."
+violation = "Fuera del alcance de la tarea: {path} ({code})."
+pdf = "PDF: {url}"
+more = "Hay más archivos: repite con `--cursor {cursor}`."
+
+[review.show.action]
+approve = "Para aprobar, revisa los archivos en la web: {url} (o en la terminal: `{cli}`)."
+request_changes = "Para pedir cambios, comenta en la web: {url} (o en la terminal: `{cli}`)."
+
+[review.confirm]
+approve = "Vas a aprobar el PR #{pr} «{title}» de @{author}."
+request_changes = "Vas a pedir cambios en el PR #{pr} «{title}» de @{author}."
+files = "Archivos cambiados: {n}."
+ci_failing = "Atención: el CI de esta cabeza está en rojo."
+merge_on_web = "El núcleo no integra: después, integra en la web ({url})."
+
+[review.effect]
+approve = "Aprobar el PR #{pr} sobre la cabeza {sha}."
+request_changes = "Pedir cambios en el PR #{pr} sobre la cabeza {sha}."
+
+[review.done]
+approve = "Aprobaste el PR #{pr} sobre {sha}. Para integrarlo, usa la web: {url}"
+request_changes = "Pediste cambios en el PR #{pr} sobre {sha}."
+exists = "Ya habías dejado esa revisión en el PR #{pr} sobre {sha}: no se creó otra."

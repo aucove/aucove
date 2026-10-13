@@ -1,0 +1,165 @@
+# Catalog of the init area: what `init` writes in the working tree and its messages
+# (05-operaciones §9.3; 02-convencion REQ-CONV-2). Same keys, placeholders and backtick
+# fragments as es/init.toml (REQ-ARCH-72..74).
+
+# Minimal files of a part that does not come in the template (REQ-CONV-2).
+[init.file]
+part_tex = '''
+% Part "{id}" (section class): only its owner, declared in roles.yaml, edits it.
+% Write one sentence per line and separate paragraphs with a blank line (02-convencion §4.3).
+% The section title and its label are in its outline file in tex/outline/, owned by the article editor:
+% \section and \chapter do not go here; use \subsection and lower levels (02-convencion REQ-CONV-94).
+'''
+outline = '''
+% Outline file of the article section "{title}" (editor class; 02-convencion §4.1.1).
+% The article editor writes it: the title, the opening, the order of the parts and the transitions.
+% If the section is split into subparts, add one \input per subpart, each on its own line.
+'''
+
+# Phase 2 summary (05 §10): what init will do and on what.
+[init.summary]
+head = "init will set up {repo} ({profile} profile):"
+config = "- Project: language {language}, format {format}, disclosure {disclosure}, mode {mode}."
+roles = "- roles.yaml: you ({lead}) become the lead, the only person and the owner of every part; add your team later."
+files = "- Files: {created} new, {updated} changed and {deleted} deleted; {where}."
+where_push = "they are pushed to `{base}` in one commit"
+where_pending = "the base is already protected: they stay in your working tree to deliver them from a task"
+no_files = "- Files: none changes."
+kept = "- Left as they are because they already had changes: {paths}."
+settings = "- GitHub: repository settings (squash only, with the PR title and body), Actions, collaborators and labels."
+rulesets = "- Protections: the rulesets of the base, the task branches and the workflows, and their verification."
+no_rulesets = "- Advisory profile: the forge cannot enforce rules; there will be no blocking protections."
+token = "Next I will ask for a short-lived GitHub administration token; it is neither shown nor stored."
+setup_task = "- Setup task: creates and accepts “{title}”, yours and with every part, to complete the plan, the people and the parts with the agent."
+
+# Advisory profile: the lost guarantees and the acceptance phrase (06-permisos §5, REQ-PERM-40).
+[init.advisory]
+table = '''
+Advisory profile: GitHub cannot enforce rules in this repository (Free and private). With this profile:
+- anyone with write access, or their agent, can push directly to the base or edit it on the web;
+- a PR can be merged without approval, including the article editor's;
+- the checks run and show red, but do not block;
+- nothing prevents force pushes or deleting the base.
+Kept: squash only and no auto-merge, Actions cannot approve PRs, the local layers and the audit, which flags every unreviewed merge with flag:bypass.
+'''
+phrase = "I accept the advisory profile"
+
+[init.bypass]
+text = "roles.yaml has no deputy: nobody can approve your PRs. If you confirm, you ({login}) become a bypass actor of the base ruleset, for PRs only, and the audit flags every merge without approval with flag:bypass (06-permisos §3.4). If not, your PRs stay blocked until you declare a deputy."
+
+# Label descriptions (06-permisos §4.5), in the project language (D-02).
+[init.label]
+task = "Project task"
+direction = "Direction change proposal"
+state_proposed = "Proposed; awaiting lead acceptance"
+state_expired = "Claim expired due to inactivity"
+flag_overlap = "Possible overlap (advisory)"
+flag_direction-change = "Possible direction change (advisory)"
+flag_blocked = "Blocked by another task or decision"
+flag_instructions = "Possible hidden instructions (advisory)"
+ack_direction = "Lead acknowledged the direction change"
+ack_overlap = "Lead or deputy confirmed the overlap"
+main-broken = "Base branch fails build or validation"
+flag_bypass = "Merged without meeting the approval matrix"
+
+[init.token]
+prompt = "GitHub administration token (Administration read and write permission; neither shown nor stored): "
+
+[init]
+commit = "Set up the project with init"
+
+# --dry-run effects (REQ-OPS-30).
+[init.effect]
+created = "Create `{path}`."
+updated = "Update `{path}`."
+deleted = "Delete `{path}`."
+commit = "Commit the files on `{base}`."
+push = "Push to `origin/{base}`."
+settings = "Repository settings, Actions and collaborators."
+labels = "Project labels."
+rulesets = "Rulesets of the base, the task branches and the workflows."
+setup_task = "Create and accept the task “{title}”."
+
+[init.regenerate]
+summary = "init --regenerate will write in your working tree of {repo}: {paths}."
+
+# What is left to do by hand (data.pending_steps).
+[init.pending]
+regenerate = "Deliver these files from a lead task (`task/<n>`)."
+files = "Create and claim a lead task and deliver from `task/<n>` the files that init left in your working tree."
+modified = "`{path}` was not translated or updated because it already had changes: review it by hand."
+license_unused = "No file uses `{path}` according to REUSE.toml, and REUSE fails on unused texts: delete it if no file declares it in its header."
+part_modified = "The part `{path}` is not in roles.yaml but has changes: delete it or declare it."
+unknown_value = "`{path}` could not be created because a template value is missing: copy it from the published template."
+retention = "Set the Actions artifact and log retention to {days} days on the web (Settings → Actions → General)."
+pull_request_target = "Public repository: allow `pull_request_target` in the repository Actions policy, on the web, so that PR validation runs."
+advisory_decision = "Record the acceptance of the advisory profile in a decision in `memory/decisions/` from your first task (06-permisos REQ-PERM-41)."
+bypass_declined = "Without a deputy or bypass, your PRs stay blocked until you declare a deputy in roles.yaml and run init again."
+invited = "`{login}` got an invitation as an outside collaborator: the right way is to invite them to the organization (06-permisos REQ-PERM-55)."
+org = "Organization settings that an owner should change (06-permisos §4.10): {changes}."
+setup_task = "Prepare the project in task #{task}, “{title}”: open your agent in the project folder and ask it to guide you through the plan, the people and the parts."
+
+# Readable view of the result.
+[init.render]
+head = "init on {repo} ({profile} profile):"
+files = "Files ({count}):"
+labels = "Labels created or updated: {names}."
+pushed = "The files were pushed to the base branch."
+pending = "Pending:"
+reminders = "Before working: everyone turns on the GitHub noreply email and signs the authorship and disclosure agreement (00-marco D-44 and D-49)."
+
+# The lead's setup task (00-marco D-70; 05-operaciones §9.3).
+[init.setup_task]
+title = "Prepare the project"
+summary = "Complete what init leaves as an example: the plan (`plan.md`), the people and their parts (`roles.yaml`), the constitution (`memory/constitution.md`), the data description (`data/README.md`) and, if needed, the project rules for agents (section 7 of `AGENTS.md`). The agent guides this task with questions."
+done_plan = "`plan.md` has the project's objective, questions, hypotheses, scope and methods."
+done_roles = "`roles.yaml` lists every person, the owner of each part and, in a group, the deputy."
+done_data = "`data/README.md` describes the raw data and where it lives."
+done_validate = "`{name} validate` passes."
+
+# Project licenses (11-trazabilidad §7.3; 00-marco D-64): the questions, LICENSE and REUSE.toml.
+[init.license]
+holder = "Copyright holder (person, group or institution) [{default}]: "
+ask = "License for {category} [{default}]. Options: {options}; or any current SPDX identifier or a `LicenseRef-*`: "
+invalid = "'{value}' is neither a current identifier of the SPDX list {version} nor a `LicenseRef-*`."
+text_path = "The package does not include the text of {id}. Path of the file with its text (empty to cancel): "
+text_bad = "Could not read {path} as a UTF-8 text file of up to 1 MiB."
+default_holder = "The {name} authors"
+summary = "- Licenses: text {text}, code {code} and data {data}; holder: {holder}. They go in project.yaml, LICENSE, LICENSES/ and REUSE.toml."
+open_text = "Before publishing the text under {id}, check the licensing and preprint policy of the target journal (11-trazabilidad REQ-TRACE-63)."
+
+[init.license.category]
+text = "text (manuscript, plan.md, memory and everything else)"
+code = "code"
+data = "data"
+
+# LICENSE: the plain-text summary of the three licenses (REQ-TRACE-61), in the project language.
+[init.license.file]
+head = "Licenses of {title}"
+generated = "This file is generated by `{name} init` from `licenses` in project.yaml. REUSE.toml says which license each file has."
+holder = "Copyright holder: {holder}."
+line = "- {label} ({paths}): {id}, in {file}."
+unused = "- {label} ({paths}): {id}. There are no files of this category yet; its text will go in {file} once there are."
+template = "The code files that come from the {name} template also belong to \"The {name} Authors\", and the generated skills (.claude/skills/ and .agents/skills/) are under MIT-0, in LICENSES/MIT-0.txt."
+all_rights_reserved = '''
+Copyright (c) {year} {holder}. All rights reserved.
+
+No one may copy, modify, distribute or publish this material without the written permission of the holder.
+'''
+
+[init.license.label]
+text = "Text"
+code = "Code"
+data = "Data"
+
+[init.license.paths]
+text = "the manuscript, plan.md, the memory and everything else"
+
+# Comments of the REUSE.toml that init generates.
+[init.reuse]
+head = "Generated by `{name} init` from `licenses` in project.yaml (11-trazabilidad §7.3). If you change the licenses, run init again."
+text = "text: the general rule"
+code = "code (02-convencion S-8)"
+template = "code that comes from the template: also by The {name} Authors"
+data = "data"
+generated = "generated skills: MIT-0"

@@ -1,0 +1,22 @@
+% tex/preamble.tex (clase editor): paquetes, su configuración y metadatos (02-convencion §4.1).
+% Las definiciones (\newcommand, \DeclareMathOperator...) van en tex/notation.tex.
+% No cargues paquetes que necesitan shell escape (REQ-CONV-23).
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage{lmodern}
+\fi
+% Idioma del documento; es independiente del idioma del framework y lo puedes cambiar.
+\usepackage[spanish]{babel}
+\usepackage{csquotes}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[backend=biber,style=authoryear]{biblatex}
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+\title{Título del documento}
+\author{Autoras y autores del proyecto}
+\date{\today}

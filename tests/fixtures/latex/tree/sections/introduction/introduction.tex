@@ -1,0 +1,15 @@
+% Parte introduction: válida. Un \cite{ausente} o un \def en un comentario no cuentan.
+% El título y la etiqueta sec:introduction están en tex/outline/introduction.tex,
+% porque una parte no lleva \section (REQ-CONV-94).
+
+This section cites the consolidated bibliography \parencite{knuthTeXbook1984}.
+It also cites its own pending entry \textcite[p.~3]{doeSurvey2021}.
+Several keys at once are fine \cites[see][12]{knuthTeXbook1984}{lamport1994}.
+The methods are in \autoref{sec:methods}, and Eq.~\eqref{eq:methods:model} is the model.
+Values like 3.5 or e.g. a list do not split the sentence.
+
+\begin{verbatim}
+\newcommand{\inside}{verbatim} \cite{notAKey} \label{sec:verbatim}. Second sentence.
+\end{verbatim}
+Inline code \verb|\def\x{1} \input{/etc/passwd}| is ignored too.
+\nocite{*}

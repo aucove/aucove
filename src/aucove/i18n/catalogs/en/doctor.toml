@@ -1,0 +1,230 @@
+# Catalog of the doctor area: messages and fixes of the doctor checks
+# (05-operaciones §9.2; 00-marco D-34 l). Keys doctor.<check>.<status> and their variants.
+# Same keys, placeholders and backtick spans as es/doctor.toml (REQ-ARCH-72..74).
+
+[doctor.common]
+skip_no_project = "Not applicable outside a project."
+fix_validate = "Run `{name} validate` to see the details."
+fix_policy = "Run `git fetch origin`; if it still fails, fix `project.yaml` and `roles.yaml` on the base branch."
+
+[doctor.python]
+ok = "Python {version}; the `{name}` launcher is at {launcher}."
+fail = "Python {version}: 3.11 or later is required."
+warn_launcher = "Python {version}, but the `{name}` launcher is not on the `PATH`: hooks will not be able to run it."
+warn_not_exe = "Python {version}, but the `{name}` launcher is not an `.exe`: {launcher}."
+warn_relative_path = "Also, the `PATH` has entries that depend on the current directory ({entries}): Claude Code resolves them against the project folder, so it would run a `{name}` placed there instead of the installed one."
+fix_python = "Install Python 3.11 or later."
+fix_launcher = "Install the core with `uv tool install \"{name}=={pin}\"`, run `uv tool update-shell` and restart the terminal."
+fix_relative_path = "Remove those entries from the `PATH` or replace them with absolute paths, then restart the terminal and Claude Code."
+
+[doctor.git]
+ok = "git {version} at {path}."
+fail = "git was not found outside the repository."
+fail_run = "git did not answer `git --version`."
+fix = "Install git and reopen the terminal."
+
+[doctor.project_root]
+ok = "Project at {path}."
+warn = "You are not inside a project: there is no `project.yaml` with `.git` from here upwards."
+fix = "Run `{name} doctor` inside the project repository or use `--root`."
+
+[doctor.project_yaml]
+ok = "`project.yaml` is valid."
+fail = "`project.yaml` is not valid; problems found: {n}."
+fail_unreadable = "`project.yaml` is not a regular file that can be read."
+
+[doctor.roles_yaml]
+ok = "`roles.yaml` is valid: people {people}, parts {sections}."
+warn = "`roles.yaml` is valid, with warnings: {n} (people {people}, parts {sections})."
+fail = "`roles.yaml` is not valid; problems found: {n}."
+fail_missing = "`roles.yaml` is missing or is not a regular file."
+
+[doctor.convention]
+ok = "Convention {convention} and core {installed}: compatible."
+warn = "Core {installed} satisfies `core`, but `core_pin` pins {pin}."
+fail = "Convention {convention} and core {installed}: incompatible."
+fail_policy = "The policy of the base branch could not be read (`{reason}`): compatibility is evaluated with its `project.yaml`."
+skip = "It cannot be checked without a valid `project.yaml`."
+
+[doctor.remote]
+ok = "`origin` points to {repo} and `{ref}` exists."
+fail = "There is no `origin` remote."
+warn_mismatch = "`origin` ({url}) does not point to {repo}, the repository in `project.yaml`."
+warn_ref = "`{ref}` is missing: `git fetch` has not been run yet."
+fix_missing = "Add the remote with `git remote add origin <url>`."
+fix_mismatch = "Check `git remote -v` against `project.yaml`."
+fix_ref = "Run `git fetch origin`."
+skip = "It cannot be checked without a valid `project.yaml`."
+skip_git = "It cannot be checked without git."
+
+# The forge checks (08-forja §7.5): why they are skipped.
+[doctor.forge]
+skip_offline = "Offline: the forge was not queried."
+skip_network = "Could not connect to the forge."
+skip_policy = "Without the policy of the base branch it is unknown which repository to query."
+skip_unsupported = "The forge of `project.yaml` cannot be queried (`{code}`)."
+skip_rate_limited = "The forge rate-limited the requests: run `{name} doctor` again later."
+skip_identity = "Without a verified identity the repository was not queried."
+skip_repo = "The repository could not be read on the forge."
+
+[doctor.identity]
+ok = "@{login}, with a {kind} token from `{source}` ({scope})."
+warn_kind = "This is not the recommended token: use a fine-grained one limited to this repository."
+warn_owner_wide = "The token sees every repository of the owner: limit it to this one."
+warn_workflow = "The token has the `workflow` scope: an agent could change the workflows."
+warn_git_email = "The email of your commits is not the GitHub noreply address, and the sealed history is never rewritten."
+warn_git_email_missing = "git has no email configured for your commits."
+warn_roles_email = "Your email in `roles.yaml` is not the GitHub noreply address: it goes into the `Signed-off-by` of your submissions."
+fail_no_token = "There is no forge token: it is not in {sources} and `gh auth token` gives none."
+fail_auth = "The forge rejected the token: it expired or was revoked."
+fail_other = "The identity could not be verified on the forge (`{kind}`)."
+fix_token = "Create the recommended token at {url} (pick the repository by hand) and keep it in `GH_TOKEN`."
+fix_git_email = "Turn on «Keep my email addresses private» on GitHub and run `git config user.email {email}`."
+fix_roles_email = "Ask the lead to change your `email` in `roles.yaml` to {email}."
+
+[doctor.identity.kind]
+fine_grained_pat = "fine-grained"
+classic_pat = "classic"
+oauth = "`gh` OAuth"
+app_user = "App user"
+app_installation = "App installation"
+proxy = "web session proxy"
+unknown = "unknown"
+
+[doctor.identity.scope]
+repo_restricted = "this repository only"
+owner_wide = "every repository of the owner"
+broad = "broad scope"
+unknown = "scope not measured"
+ci = "CI"
+
+[doctor.membership]
+ok = "You are `{role}` in `roles.yaml` and your permission on the repository is {permission}."
+ok_ci = "CI identity: its operations are authorized because they are CI."
+warn_not_member = "@{login} is not in `roles.yaml` on the base branch: you can read, but not claim or submit tasks."
+warn_inactive = "The account @{login} is inactive in `roles.yaml`: it cannot claim or submit tasks."
+warn_renamed = "Your login changed (formerly @{previous}) and `roles.yaml` on the base branch still has the old one."
+fail_permission = "You are `{role}` in `roles.yaml`, but your permission on the repository is {permission}: you cannot create `task/<n>` branches."
+fix_not_member = "Ask the lead to add you to `roles.yaml` and run `{name} init` again."
+fix_renamed = "Ask the lead to update your login in `roles.yaml` and run `{name} sync-roles`."
+fix_permission = "Accept the invitation to the repository, or ask the lead to run `{name} init` again."
+warn_collaborators = "People in `roles.yaml` without direct write access to the repository: {logins}."
+warn_outside = "These are outside collaborators, not members of the organization: {logins}; only a broad token works for them."
+fix_outside = "An owner invites them to the organization and, once they accept, the lead runs `{name} init` again."
+
+[doctor.forge_reachable]
+ok = "{repo}: {visibility} repository, default branch `{branch}`; your permission: {permission}."
+fail_base = "The base branch `{base}` is not the default branch of the repository (`{default}`)."
+fix_base = "Make `{base}` the default branch on GitHub, or change `forge.base_branch` in `project.yaml`."
+fail_not_found = "The forge does not show {repo}: it does not exist or the token has no access."
+fix_not_found = "Check `forge.repo` in `project.yaml` and that the token includes this repository ({url})."
+fail_permission = "The forge denied reading {repo}."
+fix_permission = "If the organization requires approving fine-grained tokens, ask an owner to approve yours (in the organization: Settings → Personal access tokens → Pending requests)."
+fail_other = "{repo} could not be read on the forge (`{kind}`)."
+warn_labels = "Forge labels are missing: {labels}."
+warn_workflow_repo = "The workflow token of the repository can write or approve PRs."
+warn_workflow_org = "The workflow token of the organization can write or approve PRs."
+warn_org = "Organization settings that differ from the recommended ones: {settings}."
+warn_actions = "The Actions policy ({level}) does not allow: {missing}."
+fix_owner = "An owner of the organization adjusts the settings (the one-page guide has the minimum ones)."
+
+[doctor.forge_reachable.visibility]
+public = "public"
+private = "private"
+internal = "internal"
+
+[doctor.profile]
+ok_enforced = "`enforced` profile: the base branch has the rules of `{ruleset}`, with the required checks {checks}."
+enforced = "`enforced` profile."
+advisory_line = "Advisory profile: the forge does not enforce approval; the audit records merges without review."
+warn_unknown = "It could not be determined whether the forge can enforce rules on this private repository: `advisory` is assumed."
+warn_not_accepted = "`project.yaml` does not record the acceptance of the `advisory` profile, which `init` writes."
+warn_upgrade = "The forge can now enforce rules, but `project.yaml` records the acceptance of `advisory`."
+warn_no_rules = "The base branch `{base}` has no rules applied."
+warn_missing = "The rules of the base branch lack: {missing}."
+warn_classic = "The base branch uses classic protection instead of the `{ruleset}` ruleset."
+warn_ruleset_missing = "The `{ruleset}` ruleset is missing."
+warn_ruleset_inactive = "The `{ruleset}` ruleset is not active (`{enforcement}`)."
+warn_ruleset_differs = "The rules of the `{ruleset}` ruleset are not the ones `init` applies."
+warn_bypass = "The `{ruleset}` ruleset has bypass actors that do not belong there: with a deputy or in individual use it has none, and without a deputy, only the lead for PRs."
+warn_task_ruleset = "The `{ruleset}` ruleset is missing or is not the one `init` applies: task branches are not protected against force pushes."
+warn_workflows_ruleset = "The `{ruleset}` ruleset is missing or not active: anyone with write access could change the workflows."
+fix_init = "The lead runs `{name} init` again."
+fix_unknown = "An owner of the organization can see the plan: ask them to run `{name} doctor`."
+
+[doctor.merge-settings]
+ok = "Merges are squash only, with the PR title and body, and the other repository settings are the ones `init` applies."
+fail = "The merge method is not the template's (squash only, with the PR title and body): {settings}."
+warn = "Repository settings that differ from the ones `init` applies: {settings}."
+skip_unreadable = "This token cannot see the merge settings: write access to the repository is needed."
+
+[doctor.half_states]
+ok = "Your tasks have no half-finished states."
+ok_expire = "`expire-claims` ran successfully on `{base}` in the last 2 days."
+warn = "Half-finished states (task, anomaly → operation that closes it): {items}."
+warn_expire_never = "`expire-claims` has no successful run on `{base}`: claims do not expire."
+warn_expire_stale = "The last successful run of `expire-claims` on `{base}` was {days} days ago: claims do not expire (on public repositories, GitHub disables scheduled workflows after 60 days without activity)."
+fix = "Repeat the given operation on that task (`{name} claim <n>`, `{name} release <n>` or `{name} submit` from its branch); what `expire-claims` gives is repaired by that workflow on its next run."
+fix_expire = "Check in Actions that the `expire-claims` workflow is enabled and that its runs pass; if GitHub disabled it, enable it."
+skip_board = "The task board could not be read."
+
+[doctor.claude_settings]
+skip = "This version does not generate `.claude/settings.json`."
+
+[doctor.mcp_config]
+ok = "`.mcp.json` declares only the `{name}` server, with `{name} mcp --stdio`."
+warn_missing = "`.mcp.json` is missing: Claude Code does not connect the `{name}` MCP server."
+fail_invalid = "`.mcp.json` is not JSON with `mcpServers`."
+fail_servers = "`.mcp.json` declares other MCP servers besides `{name}`, or does not declare the `{name}` one."
+fail_command = "The `{name}` server in `.mcp.json` is not `{name} mcp --stdio` in exec form."
+fix = "The lead sets it as in the template: only `{name}`, with `command` `{name}` and `args` `mcp`, `--stdio`."
+fix_missing = "The lead restores it with `{name} init`."
+
+[doctor.deputy]
+ok = "Deputy: @{deputy}."
+ok_individual = "Individual use (`mode: individual`): there is no deputy and none is needed."
+warn = "`roles.yaml` declares no deputy: the lead's PRs need a recorded bypass."
+fix = "Add `deputy` to `roles.yaml` and run `{name} sync-roles`."
+fail_policy = "The policy of the base branch could not be read (`{reason}`): the deputy comes from its `roles.yaml`."
+skip_project = "The policy of the base branch cannot be read without a valid `project.yaml`."
+
+[doctor.codeowners_sync]
+ok = "`.github/CODEOWNERS` and `.github/ISSUE_TEMPLATE/task.yml` match `roles.yaml`."
+fail = "Generated files that do not match `roles.yaml`: {paths}."
+fix = "Run `{name} sync-roles`."
+fail_forge = "The forge reports errors in `.github/CODEOWNERS` on `{base}`: {errors}."
+fix_forge = "Check that every login in `roles.yaml` exists and has write access to the repository (`{name} init` grants it); if a login changed, fix it and run `{name} sync-roles`."
+skip = "They cannot be regenerated without a valid `roles.yaml` and `project.yaml`."
+
+[doctor.generated_files]
+ok = "There are no files under `.claude/skills/` or `.agents/skills/`: this version does not generate skills."
+fail = "Files under `.claude/skills/` or `.agents/skills/` that this version does not generate: {n}."
+fix = "Remove them from the repository: this version of the core does not generate skills."
+skip = "The working tree could not be read."
+
+[doctor.cache]
+ok = "Local cache at {path}."
+ok_absent = "The local cache does not exist yet: it is created when used."
+fail = "The local cache {path} is not a normal folder."
+fix_fail = "Remove {path}: it is created again when used."
+warn_work = "The `work/` folder of the local cache holds recoverable work: entries {n}."
+fix_work = "Review `work/` and recover what you need before deleting it."
+warn_gitignore = "The local cache has no `.gitignore` with `*`."
+fix_gitignore = "Create a `.gitignore` with the line `*` in the local cache."
+
+[doctor.evidence_tools]
+ok = "The `evidence` extra is installed: `evidence verify` checks the TSA and OTS proofs."
+warn = "The `evidence` extra is missing (modules: {missing}): `evidence verify` leaves the TSA and OTS proofs in `skip`."
+fix = "Install the core with the extra: `uv tool install \"{name}[evidence]=={pin}\" --constraints requirements-lock.txt`, with the `requirements-lock.txt` of that version's Release."
+
+[doctor.render]
+header = "Core {version} · {root} · profile {profile}"
+no_project = "outside a project"
+line = "[{status}] {id}: {message}"
+fix = "fix: {fix}"
+
+[doctor.render.status]
+ok = "ok"
+warn = "warning"
+fail = "failed"
+skip = "skipped"

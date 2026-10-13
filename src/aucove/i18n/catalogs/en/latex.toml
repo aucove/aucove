@@ -1,0 +1,178 @@
+# Rules citations, labels-refs, latex-macros and latex-log, and the conv.latex.*, conv.main.*,
+# conv.outline.* and conv.bib.* findings of the convention rule (02-convencion §4, §5 and §12; 09-ci §4.1; D-33 g).
+# Area latex (D-32 f): latex.* keys and finding.<code>.* for the codes emitted by
+# ops/rules/latex.py and ops/rules/latex_log.py.
+
+# -- reasons why a rule could not be evaluated (unavailable) ----------------------------
+
+[latex.reason]
+no_tree = "there is no tree to validate (fork PR or no `--tree`)"
+timeout = "the analysis exceeded its time limit"
+unreadable = "the file cannot be read as UTF-8 text of 5 MB or less"
+no_log = "the build log was not found"
+log_unreadable = "the log is not a readable regular file"
+
+# -- citations (E_VALIDATION_CITATION) ---------------------------------------------------
+
+[latex.citation]
+bib_syntax = "{file} has an entry with invalid syntax"
+bib_missing_key = "{file} has an entry without a key"
+bib_unterminated = "{file} has an unterminated entry"
+resource_place = "{text} may only appear in `tex/main.tex`"
+resource = "{text} is not an accepted form; only `\\addbibresource{{../bib/references.bib}}` and `\\addbibresource{{../sections/<id>/pending.bib}}` are allowed"
+undefined = "key '{key}' is neither in `bib/references.bib` nor in `{pending}`"
+undefined_lead = "key '{key}' is neither in `bib/references.bib` nor in any `pending.bib`"
+
+# -- labels-refs (E_VALIDATION_LABEL) ----------------------------------------------------
+
+[latex.label]
+lead = "this file cannot define label '{label}', because labels go in parts and in the outline files of `tex/outline/`"
+malformed = "label '{label}' is not of the form type:id[:name], with type sec, fig, tab, eq, lst, alg, thm, itm or fn, and the id (that of the part or of the outline file) and the name made of lowercase letters, digits and hyphens"
+foreign = "label '{label}' uses part '{other}', but it is in the folder of '{section}'"
+foreign_outline = "label '{label}' uses id '{other}', but it is in the outline file of '{section}'"
+duplicate = "label '{label}' is also defined in {other}, line {number}"
+undefined_ref = "{command} points to '{label}', which no file defines"
+
+# -- convention: tex/main.tex (conv.main.*) ----------------------------------------------
+
+[latex.main]
+unknown_line = "line {text} is not part of the grammar"
+input_target = "{text} does not point to `preamble`, `notation`, an outline file (`outline/<id>`) or another `.tex` in `tex/`"
+part_input = "{text} includes a part, but `tex/main.tex` only includes outline files (`\\input{{outline/<id>}}`), and each of those includes its parts"
+repeated = "{text} appears more than once"
+order = "{text} is out of order (class, `\\input{{preamble}}`, `\\input{{notation}}`, bibliographies, `\\begin{{document}}`, body and `\\end{{document}}`)"
+missing = "line {text} is missing"
+undeclared = "{text} belongs to part '{section}', which is not in `roles.yaml`"
+undeclared_fix = "Remove {text} or declare part '{section}' in `roles.yaml`."
+duplicate = "{text} is repeated"
+duplicate_fix = "Keep a single {text} line."
+missing_bib = "`\\addbibresource{{../sections/{section}/pending.bib}}` is missing"
+missing_bib_fix = "Add `\\addbibresource{{../sections/{section}/pending.bib}}` after `\\addbibresource{{../bib/references.bib}}`."
+references_first = "{text} comes before `\\addbibresource{{../bib/references.bib}}`"
+references_first_fix = "Move `\\addbibresource{{../bib/references.bib}}` before every `pending.bib`."
+outline_unknown = "{text} points to `tex/outline/{outline}.tex`, which does not exist"
+outline_unknown_fix = "Create `tex/outline/{outline}.tex` or remove {text}."
+missing_outline = "`\\input{{outline/{outline}}}` is missing, although `tex/outline/{outline}.tex` exists"
+missing_outline_fix = "Add `\\input{{outline/{outline}}}` between `\\begin{{document}}` and `\\end{{document}}`, where that article section goes, or delete `tex/outline/{outline}.tex` if it is not needed."
+
+# -- convention: tex/outline/<id>.tex (conv.outline.*) ----------------------------------
+
+[latex.outline]
+head = "the file must start with `\\section{{...}}` and, on the next line, `\\label{{sec:{outline}}}`"
+heading = "{command} is extra, because the only sectioning command of an outline file is the `\\section` on its first line"
+input = "{text} is not an `\\input{{../sections/<id>/<id>}}` line; an outline file only includes parts, each on its own line"
+undeclared = "it includes part '{part}', which is not in `roles.yaml`"
+undeclared_fix = "Remove the line or declare part '{part}' in `roles.yaml`."
+duplicate = "part '{part}' is already included in {other}, line {number}"
+duplicate_fix = "Include part '{part}' only once in the whole of `tex/outline/`."
+missing_part = "no outline file includes part '{part}'"
+missing_part_fix = "Add `\\input{{../sections/{part}/{part}}}` to the outline file of its article section."
+
+# -- convention: .tex files (conv.latex.*) -----------------------------------------------
+
+[latex.forbidden]
+exec = "it runs external programs"
+io = "it reads or writes files"
+lua_engine = "Lua code is only allowed outside parts and outline files, and with `build.engine: lualatex`"
+carets = "the `^^` sequence writes characters in a hidden way"
+
+[latex.path]
+reader = "this command reads a file by path and is not allowed in a part"
+no_braces = "`\\input` must take its target in braces"
+missing = "the target in braces is missing"
+unsafe = "the path cannot be absolute or contain `~`, `|`, `\\` or any `..` other than the one of the prefix `../sections/{section}/`"
+prefix = "the path must start with `../sections/{section}/`"
+not_tex = "the target of `\\input` must be a `.tex` file, with or without the extension"
+figure = "the figure must be in `../sections/{section}/figures/` and be a `.pdf`, `.png`, `.jpg` or `.jpeg` file"
+outline = "an outline file only includes parts, with `\\input`; figures, tables and other files go in a part"
+
+# -- latex-log (E_VALIDATION_LATEX) ------------------------------------------------------
+
+[latex.log]
+error = "LaTeX error: {text}"
+fatal = "the build stopped on a fatal error"
+undefined_citation = "undefined citation '{key}'"
+undefined_reference = "undefined reference '{key}'"
+multiply_defined = "label '{key}' defined more than once"
+undefined_summary = "there are undefined citations or references"
+multiply_summary = "there are labels defined more than once"
+warning = "warning: {text}"
+truncated = "the log is larger than 5 MB and only its last 5 MB were analyzed"
+
+# -- findings ----------------------------------------------------------------------------
+
+[finding.E_VALIDATION_CITATION]
+message = "Invalid citation or bibliography: {detail}."
+hint = "Only cite keys from `bib/references.bib` or from your part's `pending.bib`, and declare the bibliography only with the two forms of `tex/main.tex`."
+
+[finding.E_VALIDATION_LABEL]
+message = "Invalid label or reference: {detail}."
+hint = "Define each label once, in a file of your part and with its id (for example, `fig:methods:pipeline`); every `\\ref` must point to an existing label."
+
+[finding.E_VALIDATION_MACRO]
+message = "Definition or catcode change {command} outside `tex/notation.tex`."
+hint = "Move the definition to `tex/notation.tex`; if a part needs it, ask the article editor to add it."
+
+[finding.E_VALIDATION_LATEX]
+message = "Build: {detail}"
+hint = "Fix the file and line shown; the full log is in the build artifact."
+
+[finding.conv.main.grammar]
+message = "`tex/main.tex` is outside the grammar: {detail}."
+hint = "Keep only the template lines in `tex/main.tex`: class, `\\input{{preamble}}`, `\\input{{notation}}`, bibliographies, `\\begin{{document}}`, the body and `\\end{{document}}`."
+
+[finding.conv.main.sections]
+message = "`tex/main.tex` does not match `roles.yaml` or `tex/outline/`: {detail}."
+hint = "{fix}"
+
+[finding.conv.outline.grammar]
+message = "Outline file outside the grammar: {detail}."
+hint = "An outline file has its `\\section{{...}}` and its `\\label{{sec:<id>}}`, the prose of the article editor and the `\\input{{../sections/<id>/<id>}}` lines of its parts (02-convencion §4.1.1)."
+
+[finding.conv.outline.parts]
+message = "`tex/outline/` does not match `roles.yaml`: {detail}."
+hint = "{fix}"
+
+[finding.conv.outline.missing]
+message = "The article does not include everything yet: {detail}."
+hint = "{fix} This is a task for the article editor."
+
+[finding.conv.latex.structure]
+message = "{command} is not allowed in this file: parts and outline files do not load packages or declare structure, and `tex/notation.tex` does not load packages or include files."
+hint = "Ask the article editor for the change: packages go in `tex/preamble.tex`, and the title of each section, in its file in `tex/outline/`."
+
+[finding.conv.latex.forbidden-command]
+message = "Forbidden command {command}: {reason}."
+hint = "Remove it; if you really need it, propose the change to the article editor."
+
+[finding.conv.latex.hidden-block]
+message = "Hidden text with {command} in a part or in an outline file."
+hint = "Delete the text that does not belong in the document; the git history keeps it."
+
+[finding.conv.latex.path-outside-section]
+message = "{command} with path '{target}': {detail}."
+hint = "Use paths relative to `tex/` inside your part folder, such as `../sections/<id>/figures/...`."
+
+[finding.conv.latex.sentence-per-line]
+message = "Possible second sentence on the line: '{excerpt}'."
+hint = "Write one sentence per line; if the period belongs to an abbreviation, ignore this warning."
+
+[finding.conv.latex.shell-package]
+message = "`tex/preamble.tex` loads package {package}, which needs shell escape."
+hint = "Remove it: the build disables shell escape and the package would not work."
+
+[finding.conv.bib.key-syntax]
+message = "Key '{key}' does not match `^[A-Za-z][A-Za-z0-9_:-]*$`."
+hint = "Change the key in Zotero (Better BibTeX) and export again, unless it is already cited in the base branch."
+
+[finding.conv.bib.forbidden-field]
+message = "Entry '{key}' has the `{field}` field, which the export must not include."
+hint = "Remove the field; in Better BibLaTeX, add it to the fields omitted on export."
+
+[finding.conv.bib.pending-consolidated]
+message = "Key '{key}' is already in `bib/references.bib`."
+hint = "Delete the entry from your `pending.bib`: the consolidated one wins."
+
+[finding.conv.bib.pending-conflict]
+message = "Key '{key}' has different content in {other}."
+hint = "Copy the same entry exported from Zotero into both `pending.bib` files, or ask the article editor to consolidate it."

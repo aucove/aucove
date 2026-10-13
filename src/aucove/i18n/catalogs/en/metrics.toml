@@ -1,0 +1,29 @@
+# Texts of `metrics` (05-operaciones §9.9; 12-mvp §5.2 and §5.3).
+# Parity with es/metrics.toml: same keys, placeholders and backtick fragments.
+
+[metrics.salt]
+message = "The pseudonymization salt is missing: `{variable}` is not set or does not have at least 64 hexadecimal characters, in an even number."
+hint = "Set `{variable}` to the pilot's shared salt (64 hexadecimal characters or more) or use `--no-pseudonymize` to export the logins as they are."
+
+[metrics.text]
+range = "Metrics from {since} to {until}, in calendar hours:"
+range_all = "Metrics up to {until}, in calendar hours:"
+line = "  {id} {label}: {value} {unit}"
+
+[metrics.label]
+M1 = "delivery time, median"
+M2_median = "time to first review, median"
+M2_p90 = "time to first review, p90"
+M3 = "reviews requesting changes per merged task, mean"
+M6 = "share of false overlap alarms"
+M6_missed = "undetected overlaps"
+M7 = "tasks with `ack:overlap`"
+M8 = "guard denials per submission, median"
+M11 = "merges without a valid approval"
+M12_count = "broken base branch Issues"
+M12_median = "time to close a broken base branch, median"
+
+[metrics.unit]
+h = "h"
+count = ""
+ratio = ""

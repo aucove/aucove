@@ -1,0 +1,18 @@
+id: a9-23-backslash-own-section
+description: >
+  Variante de barras hacia la sección propia: 'sections\methods\notes.tex' es, en git,
+  un archivo de la raíz (clase lead) que git para Windows no puede extraer. No pasa como
+  archivo de methods: scope lo rechaza como ruta inválida (02 §3.1, REQ-CONV-7).
+covers: [a9:backslash-variants]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: 'sections\methods\notes.tex'
+    content: |
+      Notas con barras invertidas en la sección propia.
+expect:
+  valid: false
+  checks: {scope: fail}
+  codes: [E_PERM_OUTSIDE_REPO]
+  mentions: ['sections\methods\notes.tex']

@@ -1,0 +1,4 @@
+description = "la fuente usa {{cli:}} con una operación H: el render falla (REQ-ARCH-80)"
+lang = "es"
+source = "bad/source-human-cli/source"
+expect = ["human-op", "regen"]

@@ -1,0 +1,30 @@
+# Fixture compartido: igual que basic.yaml, sin suplente.
+version: 1
+lead: ana
+people:
+  - login: ana
+    name: "Ana Pérez"
+    role: lead
+    account_type: team
+  - login: bruno
+    name: "Bruno Díaz"
+    role: researcher
+    account_type: team
+  - login: carla
+    name: "Carla Soto"
+    role: researcher
+    account_type: team
+  - login: dario
+    name: "Darío Luna"
+    role: researcher
+    account_type: none
+sections:
+  - id: introduction
+    title: "Introduction"
+    owner: ana
+  - id: methods
+    title: "Methods"
+    owner: carla
+  - id: results
+    title: "Results"
+    owner: bruno

@@ -1,0 +1,113 @@
+name: main-broken
+on:
+  push:
+    branches: [main]          # = project.yaml: forge.base_branch; lo escribe init
+permissions: {}
+concurrency: { group: "base-${{ github.ref }}", cancel-in-progress: false }
+jobs:
+  compile:
+    uses: ./.github/workflows/compile.yml
+    with: { mode: base }
+    permissions: { contents: read }
+  validate:
+    name: aucove/base-validate
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    permissions: { contents: read, pull-requests: read, issues: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false, fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo (core_pin del árbol, REQ-CI-12)
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ github.workspace }}/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove==${PIN}" --constraints lock.txt
+      - name: Validar la base
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          aucove validate --mode base --policy . --tree .
+          --report "$RUNNER_TEMP/base-validate.json" --format github
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with: { name: base-validate, path: "${{ runner.temp }}/base-validate.json", retention-days: 30 }
+  audit:
+    name: aucove/base-audit
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions: { contents: read, pull-requests: write, issues: write }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false, fetch-depth: 0 }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo (core_pin del árbol, REQ-CI-12)
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ github.workspace }}/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove==${PIN}" --constraints lock.txt
+      - name: Auditar la integración (06 §3.5) y el commit de squash (REQ-TRACE-41)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+          FORCED: ${{ github.event.forced }}
+        run: aucove ci audit --before "$BEFORE" --after "$GITHUB_SHA" --forced "$FORCED"
+  report:
+    name: aucove/base-report
+    needs: [compile, validate]
+    if: always()
+    runs-on: ubuntu-slim
+    timeout-minutes: 5
+    permissions: { contents: read, issues: write, pull-requests: read, actions: read }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: { name: base-validate, path: "${{ runner.temp }}/reports" }
+        continue-on-error: true
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: { pattern: "build-report-*", path: "${{ runner.temp }}/reports", merge-multiple: true }
+        continue-on-error: true
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+      - name: Instalar el núcleo (core_pin del árbol, REQ-CI-12)
+        working-directory: ${{ runner.temp }}
+        env: { POLICY_YAML: "${{ github.workspace }}/project.yaml", UV_NO_CONFIG: "1" }
+        run: |
+          set -euo pipefail
+          PIN="$(sed -nE 's/^core_pin:[[:space:]]*"([0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?)"[[:space:]]*(#.*)?$/\1/p' "$POLICY_YAML")"
+          test -n "$PIN"
+          curl -fsSL --proto '=https' -o lock.txt \
+            "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
+          uv tool install "aucove==${PIN}" --constraints lock.txt
+      - name: Abrir, actualizar o cerrar el Issue main-broken
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BUILD: ${{ needs.compile.outputs.outcome }}
+          BUILD_REASON: ${{ needs.compile.outputs.skip_reason }}
+          VALIDATE: ${{ needs.validate.result }}
+          PDF_URL: ${{ needs.compile.outputs.pdf_url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: >-
+          aucove ci base-report --policy . --sha "$GITHUB_SHA" --build "$BUILD" --build-reason "$BUILD_REASON"
+          --validate "$VALIDATE" --pdf-url "$PDF_URL" --run-url "$RUN_URL"
+          --reports "$RUNNER_TEMP/reports" --summary "$GITHUB_STEP_SUMMARY"
+      - name: Veredicto (un run con la base rota no cuenta como verde, REQ-CI-33)
+        if: always()
+        env:
+          BUILD: ${{ needs.compile.outputs.outcome }}
+          BUILD_REASON: ${{ needs.compile.outputs.skip_reason }}
+          VALIDATE: ${{ needs.validate.result }}
+        run: '{ test "$BUILD" = success || test "$BUILD_REASON" = format-none; } && test "$VALIDATE" = success'

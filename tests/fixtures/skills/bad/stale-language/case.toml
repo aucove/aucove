@@ -1,0 +1,5 @@
+description = "repositorio en en con los skills generados en es: la regeneración los reemplaza (REQ-ARCH-86)"
+lang = "en"
+base = "rendered/es"
+source = "source"
+expect = ["human-op", "name-catalog", "regen"]

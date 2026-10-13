@@ -1,0 +1,25 @@
+id: a9-01-new-decision-researcher
+description: Una investigadora agrega una decisión nueva desde su tarea (clase append).
+covers: [a9:new-decision]
+task: {number: 17, claimant: carla, sections: [methods]}
+pr: {author: carla}
+changes:
+  - status: added
+    path: memory/decisions/2026-09-30-17-sampling.md
+    content: |
+      ---
+      id: 2026-09-30-17-sampling
+      title: "Muestreo por conglomerados"
+      date: "2026-09-30"
+      author: carla
+      origin: agent
+      task: 17
+      status: accepted
+      summary: "Se usa un muestreo por conglomerados en la ola 2025."
+      ---
+
+      Se usa un muestreo por conglomerados en la ola 2025.
+checks: [scope, decisions-immutable]
+expect:
+  valid: true
+  checks: {scope: pass, decisions-immutable: pass}

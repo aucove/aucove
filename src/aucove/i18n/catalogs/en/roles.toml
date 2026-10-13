@@ -1,0 +1,73 @@
+# Catalog of the roles area: texts of check-path, sync-roles and the roles-sync
+# and generated-sync rules, and finding.<code>.* of E_VALIDATION_ROLES_OUT_OF_SYNC and
+# E_VALIDATION_GENERATED. Same keys, placeholders and backtick spans as
+# es/roles.toml (REQ-ARCH-72..74).
+
+# --- validate findings (09-ci §4.1) ---
+
+[finding.E_VALIDATION_ROLES_OUT_OF_SYNC]
+message = "The generated file does not match its regeneration from `roles.yaml` and `project.yaml`: {reason}."
+hint = "Run `aucove sync-roles` and add the result to your PR."
+
+[finding.E_VALIDATION_GENERATED]
+message = "This file is under `.claude/skills/` or `.agents/skills/`, but this version of the core does not generate skills."
+hint = "Remove the file from the change: the core will generate skills in a later version."
+
+# Reasons of roles-sync (placeholder {reason} of the finding) and of unavailable.
+[roles.reason]
+differs = "the content is different"
+missing = "the file is missing"
+not_regular = "it is not a regular file (a link or another kind of entry)"
+roles_missing = "`roles.yaml` is missing or is not a regular file"
+roles_invalid = "`roles.yaml` is not valid, so it cannot be regenerated"
+project_missing = "`project.yaml` is missing or is not a regular file"
+project_invalid = "`project.yaml` is not valid, so the language is unknown"
+render_failed = "regenerating from `roles.yaml` is not possible"
+codeowners_error = "the forge reports an error in `CODEOWNERS`: {error}"
+codeowners_more = "the forge reports {n} more errors in `CODEOWNERS`"
+no_tree = "there is no content to compare"
+forge_unavailable = "there is no forge access to read the `CODEOWNERS` errors"
+forge_error = "the forge did not respond while reading the `CODEOWNERS` errors"
+
+# --- check-path (05-operaciones §9.8; 06-permisos §2.4) ---
+
+[roles.check_path.reason]
+outside_repo = "The path is outside the repository, inside `.git`, or has a name Windows does not allow (`CON`, `AUX`, `NUL`, `COM1`…, a trailing dot or space, `:`, or a short name such as `GIT~1`)."
+symlink = "The path goes through a symbolic link or a junction."
+not_a_member = "Your account does not match any active person in `roles.yaml` of the base branch (matched by `forge_id` when declared, otherwise by login)."
+no_identity = "Your forge login is unknown (there is no identity in the local cache), so no write can be authorized."
+local_path = "It is a file local to this machine and it is not versioned."
+generated_path = "It is a generated file: it is regenerated with `aucove sync-roles`, not by hand."
+not_on_task_branch = "There is no active task: switch to its `task/<n>` branch or pass `--task`."
+claim_not_held = "Task #{task} is not claimed by you."
+invalid_transition = "Task #{task} is in state {state}, which does not allow writes."
+outside_task_section = "Part {section} is not declared in task #{task}."
+outside_task_notes = "Session notes are not edited during the session: `aucove submit` writes them."
+outside_task_other = "The path is not within the scope of task #{task}."
+append_only = "The decision already exists in the base branch: decisions are neither modified nor deleted."
+section_not_owned = "Part {section} belongs to @{owner}."
+lead_only_path = "Only the lead or the deputy can change this path."
+editor_only_path = "Only the article editor can change this path."
+policy_unavailable = "There is no valid policy of the base branch."
+internal = "Internal error while evaluating the path: it is denied for safety."
+confirm = "It is a control path: the gate must ask the person for confirmation before writing."
+
+[roles.check_path.render]
+basis = "Base {ref} · identity {identity} · task {task}"
+unknown = "unknown"
+none = "none"
+allowed = "allowed"
+denied = "denied"
+confirm = "allowed with confirmation"
+line = "{verdict}: {file} ({cls})"
+
+# --- sync-roles (05-operaciones §9.4) ---
+
+[roles.sync.plan]
+write = "Regenerate {file} from roles.yaml"
+
+[roles.sync.render]
+file = "{action}: {file}"
+updated = "updated"
+unchanged = "unchanged"
+would_update = "would update"

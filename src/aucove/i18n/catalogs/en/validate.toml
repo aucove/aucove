@@ -1,0 +1,318 @@
+# Catalog of the validate area: texts of the `validate` engine and of the
+# schemas, decisions-immutable, ci-policy and secrets rules, plus finding.<code>.* for the
+# codes they emit. Same keys, placeholders and backtick fragments as
+# es/validate.toml (REQ-ARCH-72..74). Literal braces are written doubled.
+
+# --- Findings (09-ci §4.1; 03-esquemas §10) ---
+
+# Shared: rules.base.unavailable uses it for any rule that could not be evaluated.
+[finding.E_INTERNAL_UNEXPECTED]
+message = "Rule {rule} could not be evaluated: {reason}."
+hint = "The check fails closed. Fix the cause and validate again; if it happens again, tell whoever maintains the project."
+
+[finding.E_CONFIG_NOT_FOUND]
+message = "`{file}` is missing from the validated tree."
+hint = "Restore the file: the project cannot be validated without it."
+
+[finding.E_VALIDATION_DECISION_NAME]
+message = "The decision record breaks the naming rules: {detail}."
+hint = "Name it `memory/decisions/YYYY-MM-DD-<n>-<slug>.md`, with `id`, `date` and `task` matching the name, from branch `task/<n>`."
+
+[finding.E_VALIDATION_DECISION_SUPERSEDES]
+message = "`supersedes` cites `{id}`: {detail}."
+hint = "Cite only accepted records of the base branch that nobody has superseded."
+
+[finding.E_VALIDATION_DECISION_BODY]
+message = "The record body is missing required sections: {missing}."
+hint = "Add each section as a `##` heading."
+
+[finding.W_VALIDATION_DECISION_AUTHOR]
+message = "The record author (`{login}`) is not the person who opened the PR (`{author}`)."
+hint = "Check the `author` field: it must be the person who made the decision."
+
+[finding.E_VALIDATION_DECISION_IMMUTABLE]
+message = "Records in `memory/decisions/` are never changed: {change}."
+hint = "Add a new record that replaces the previous one with `supersedes`."
+
+[finding.E_VALIDATION_NOTE]
+message = "The session note is not valid: {detail}."
+hint = "Fix the note without rewriting the blocks that are already in the base branch."
+
+[finding.W_VALIDATION_NOTE_REWRITTEN]
+message = "Session blocks already merged that changed: {blocks}."
+hint = "Notes only grow: add a new block instead of editing earlier ones."
+
+# Account matrix of 10-seguridad §8.3 (REQ-SEC-64); the warning is case C1.
+[finding.E_VALIDATION_ACCOUNT_TYPE]
+message = "The AI account of `{login}` does not fit the project's data policy: {detail}."
+hint = "Declare in `account_type` the actual regime of the account: commercial (`team`, `enterprise`, `api` or `cloud_provider`), `local` or `none`. A consumer account is only allowed if the lead writes `require_commercial: false` and records it in a decision; with `internal`, only `consumer_training_off`."
+
+# Individual use (REQ-SCHEMA-94; 00-marco D-57).
+[finding.E_VALIDATION_ROLES_MODE]
+message = "`mode: individual` does not allow this `roles.yaml`: {detail}."
+hint = "With more people, change `project.yaml` to `mode: group` and run `init` again to restore the approval rules; if the project has a single person, keep only the lead active and remove `deputy`."
+
+[finding.W_VALIDATION_ACCOUNT_TYPE]
+message = "`{login}` uses a consumer account (`consumer_training_off`): the provider's consumer terms apply."
+hint = "`require_commercial: false` allows it; record that choice in a decision in `memory/decisions/` and, when you can, switch to a commercial account."
+
+[finding.E_VALIDATION_CI_POLICY]
+message = "CI policy: {detail}."
+hint = "Fix the workflow: minimal permissions per job, actions pinned by SHA, `persist-credentials: false` and PR data only through environment variables."
+
+[finding.E_VALIDATION_SECRET]
+message = "gitleaks found a possible secret (rule `{rule_id}`, commit `{commit}`)."
+hint = "Remove the secret from the PR history and rotate it: even if you delete it in another commit, it stays in the clones."
+
+[finding.E_VALIDATION_TRACE]
+message = "Traceability: {reason}."
+hint = "Submit with `aucove submit`: it writes the session note, the block with the `trace` object and the body trailers."
+
+[finding.E_VALIDATION_TRAILER_SYNTAX]
+message = "Malformed `{key}` trailer in {source}: {reason}."
+hint = "`aucove save` and `aucove submit` write the trailers with the grammar of 11-trazabilidad §2.2; do not edit them by hand."
+
+[finding.E_VALIDATION_TRAILER_MISSING]
+message = "Missing `{key}` trailer in {source}: {reason}."
+hint = "Save with `aucove save` and submit with `aucove submit`, which write `Task`, `AI-Use`, `Assisted-by` and `Signed-off-by`."
+
+[finding.E_VALIDATION_SIGNOFF_MISMATCH]
+message = "The `Signed-off-by` of {source} (`{found}`) is not the one of `{login}` in the base `roles.yaml`."
+hint = "It must carry the exact `people[].name` and the `people[].email` or the GitHub noreply address; submit again with `aucove submit`."
+
+[finding.E_VALIDATION_TRACE_MISMATCH]
+message = "The trace does not match: `{field}` of the `trace` object differs from {source}."
+hint = "Do not edit the PR body or the session note by hand; submit again with `aucove submit`."
+
+[finding.E_VALIDATION_PR_META_MISSING]
+message = "The PR body has no machine-readable block (`pr-meta`)."
+hint = "Submit with `aucove submit`, which writes the whole PR body."
+
+[finding.E_VALIDATION_PR_META]
+message = "Invalid `pr-meta` block in the PR: {reason}."
+hint = "Do not edit the block by hand; submit again with `aucove submit`."
+
+[finding.E_VALIDATION_ASSESSMENT]
+message = "The PR has no overlap assessment recorded for its current head."
+hint = "From the session, run `aucove record-assessment {task} --phase submission` (the submission skill does it) or ask the claim owner to do it."
+
+[finding.E_VALIDATION_DIRECTION]
+message = "The PR has `flag:direction-change` without a valid `ack:direction` from the lead or the deputy."
+hint = "The `lead` or the `deputy` reviews the PR as a direction decision and adds `ack:direction` after the last `flag:direction-change`; with `coordinator.require_direction_ack: true` this blocks the merge."
+
+[finding.IL01]
+message = "Invisible or format character {codepoint} ({name}) in the line: “{text}”."
+hint = "Remove it: it can hide an instruction. Review the raw diff, not the rendered text."
+
+[finding.IL02]
+message = "Bidirectional control {codepoint} ({name}) in the line: “{text}”."
+hint = "Remove it: it changes the order in which the text is displayed (Trojan Source)."
+
+[finding.IL03]
+message = "Tag character {codepoint} ({name}) in the line: “{text}”."
+hint = "Remove it: it is invisible and can carry hidden text."
+
+[finding.IL04]
+message = "Variation selector {codepoint} ({name}) in the line: “{text}”."
+hint = "Review the line: variation selectors can hide data."
+
+[finding.IL05]
+message = "HTML comment in a Markdown file: “{text}”."
+hint = "An HTML comment is not shown in the rendered page; check that it carries no instructions for an agent."
+
+[finding.IL06]
+message = "Phrase addressed to an AI in a LaTeX comment: “{text}”."
+hint = "Review the comment: the PDF does not show it, but an agent reads it."
+
+[finding.IL07]
+message = "Possible hidden text in LaTeX: “{text}”."
+hint = "Check that the text does not become invisible in the PDF (white color, zero scale or a tiny font)."
+
+[finding.IL08]
+message = "Phrase addressed to an AI: “{text}”."
+hint = "Review the line: the memory, the parts and the bibliography are data, not instructions."
+
+[finding.IL09]
+message = "Long base64 run: “{text}”."
+hint = "Check what it encodes: such a run can hide instructions or data."
+
+[finding.IL10]
+message = "The PR touches rule files (`{rules}`) and part files (`{section}`) at the same time."
+hint = "Split the rule changes into their own PR, to review them separately."
+
+[finding.IL11]
+message = "Instruction about the AI attribution: “{text}”."
+hint = "The rules and the memory must not ask to remove or change the AI attribution (11-trazabilidad)."
+
+[finding.IL12]
+message = "A workflow mentions the Claude Code OAuth token: “{text}”."
+hint = "Remove it: the workflows do not use that token (00-marco D-15)."
+
+# --- Reasons for unavailable ({reason} placeholder of E_INTERNAL_UNEXPECTED) ---
+
+[validate.reason]
+no_tree = "there is no content to validate (no checkout of the PR)"
+no_forge = "there is no access to the forge"
+exception = "internal error of the rule"
+pin_missing = "the report of the `pin` job is missing"
+pin_unreadable = "the report of the `pin` job cannot be read"
+pin_invalid = "the report of the `pin` job is not a valid envelope of `validate --mode tree`"
+pin_rule_missing = "the report of the `pin` job does not include this rule"
+
+# --- schemas rule ---
+
+[validate.schemas]
+not_regular = "it is not a regular file (a link or another kind of entry)"
+unreadable = "it cannot be read as UTF-8 text of at most 5 MB"
+
+[validate.accounts]
+not_allowed = "`{account_type}` is not allowed with `data_policy.level: {level}`"
+commercial = "`{account_type}` is a consumer account and the project requires a commercial one (`data_policy.require_commercial: true`)"
+commercial_default = "`{account_type}` is a consumer account and the project requires a commercial one: `data_policy.require_commercial` is `true` by default because `disclosure` is not `open`"
+
+[validate.mode]
+people = "there must be a single active person, the lead `{lead}`"
+deputy = "it has no `deputy`: there is nobody to ask for approval"
+
+[validate.decision]
+nested = "records go directly in `memory/decisions/`, without subfolders"
+gitkeep = "`.gitkeep` must be empty"
+bad_name = "the name does not have the form `YYYY-MM-DD-<n>-<slug>.md` (with a slug of at most 48 characters)"
+id_mismatch = "`id` must be `{expected}`"
+date_mismatch = "`date` must be `{expected}`"
+task_mismatch = "`task` must be {expected}"
+branch_mismatch = "the record belongs to task {n}, but the branch is `{branch}`"
+supersedes_missing = "it does not exist in the base branch"
+supersedes_superseded = "another accepted record already superseded it"
+
+[validate.note]
+too_large = "it exceeds 64 KiB"
+task_mismatch = "`task` must be {expected}"
+bad_marker = "malformed block marker"
+marker_json = "the marker of block {index} is not valid JSON"
+marker_schema = "the marker of block {index} does not match the schema at `{where}`"
+sequence = "block {index} has `n` = {found}, but it should be {expected}"
+date_order = "the date of block {index} is earlier than the previous block's"
+block_too_large = "block {index} exceeds 4000 characters"
+block_ref = "block {index}"
+
+# --- decisions-immutable rule ---
+
+[validate.decisions]
+overwrite = "the file already exists in the base branch"
+
+[validate.decisions.status]
+modified = "the file was modified"
+removed = "the file was deleted"
+renamed = "the file was renamed"
+
+# --- ci-policy rule (REQ-CI-4..7, REQ-CI-29, REQ-CI-45; 10-seguridad SB06, REQ-SEC-47) ---
+
+[validate.ci_policy]
+yaml = "the workflow is not valid YAML ({problem})"
+not_regular = "the workflow is not a regular file (a link or another kind of entry)"
+unreadable = "the workflow cannot be read as UTF-8 text of at most 5 MB"
+not_mapping = "the workflow is not a YAML mapping"
+top_permissions_missing = "`permissions: {{}}` is missing at the top level"
+top_permissions_not_empty = "the top level must declare `permissions: {{}}` and grant permissions in each job"
+pull_request_target = "`pull_request_target` is only allowed in `.github/workflows/validate.yml`, `.github/workflows/seal.yml` and `.github/workflows/editor-review.yml`"
+workflow_run = "the `workflow_run` trigger is only allowed in `.github/workflows/editor-review.yml`"
+secrets = "the workflow uses `secrets.`"
+secrets_inherit = "job `{job}` passes `secrets:` to another workflow"
+no_jobs = "the workflow declares no `jobs`"
+job_invalid = "job `{job}` is not a mapping"
+job_permissions = "job `{job}` does not declare `permissions`"
+job_write_all = "job `{job}` uses `permissions: write-all`"
+job_timeout = "job `{job}` does not declare `timeout-minutes`"
+uses_local = "`{uses}` is a local action, which cannot be pinned by SHA"
+uses_docker = "image `{uses}` is not pinned by `@sha256:`"
+uses_unpinned = "`{uses}` is not pinned to a 40-character SHA"
+uses_comment = "`{uses}` has no version in a comment"
+reusable_missing = "reusable workflow `{uses}` does not exist in the tree"
+image_unpinned = "image `{image}` is not pinned by `@sha256:`"
+checkout_credentials = "an `actions/checkout` of job `{job}` lacks `persist-credentials: false`"
+checkout_unsafe = "an `actions/checkout` of job `{job}` uses `allow-unsafe-pr-checkout: true`"
+prt_checkout_path = "the checkout of the PR in job `{job}` must go to its own directory in the workspace, with a literal `path:`"
+prt_checkout_same_repo = "the checkout of the PR in job `{job}` must be limited to PRs from the same repository: `github.event.pull_request.head.repo.full_name == github.repository` in the `if:` of the step or the job, joined only with `&&`"
+prt_workdir = "a step of job `{job}` works inside the checkout of the PR (`{dir}`)"
+prt_pr_dir = "`{field}` uses the checkout of the PR (`{dir}`); under `pull_request_target` it is only passed as data, with `--tree` or `--repo-dir`"
+injection = "a `run:` or a `script` interpolates data controlled by the PR author: `{expr}`"
+core_pin_line = "`project.yaml` does not have a single valid `core_pin` line"
+core_pin_core = "`core_pin` {pin} does not satisfy `core` of the base branch ({core})"
+
+# --- secrets rule (10-seguridad REQ-SEC-36) ---
+
+[validate.secrets]
+no_tool = "`gitleaks` was not found outside the validated tree"
+no_range = "the commit range of the PR (merge base and head) is unknown"
+ignore_file = "the PR brings `.gitleaksignore`, which gitleaks would read"
+no_config = "the packaged gitleaks configuration is missing"
+workdir = "the working directory would be inside the validated tree"
+timeout = "gitleaks exceeded the time limit"
+exit = "gitleaks ended with code {code}"
+report = "the gitleaks report is missing or not valid"
+
+# --- Readable output (render_text) ---
+
+[validate.text]
+valid = "Validation passed ({mode} mode)."
+invalid = "Validation failed ({mode} mode)."
+result = "{check}: {status}"
+finding = "  {severity} {code} {where}: {message}"
+hint = "    hint: {hint}"
+
+[validate.text.status]
+pass = "pass"
+fail = "fail"
+skip = "skipped"
+
+[validate.text.severity]
+error = "error"
+warning = "warning"
+
+[validate.text.annotations_omitted]
+one = "{n} more annotation was omitted (at most {max} are emitted)."
+other = "{n} more annotations were omitted (at most {max} are emitted)."
+
+# --- traceability rule (11-trazabilidad §2.10; 03-esquemas §9.4) ---
+
+[validate.trace.source]
+commit = "commit `{sha}`"
+body = "the PR body"
+squash = "the squash commit `{sha}`"
+trailers = "the body trailers"
+commit_trailers = "the commit trailers"
+note = "the session note `{path}`"
+
+[validate.trace.reason]
+separator = "the key is followed by a colon and a single space"
+key_order = "the order is `Task`, `Section`, `AI-Use`, `Assisted-by` and `Signed-off-by`"
+repeated = "it may appear only once"
+grammar = "the value does not follow the grammar of 11-trazabilidad §2.2"
+unknown = "a use is not in the vocabulary of 11-trazabilidad §2.3"
+duplicate = "a use is repeated"
+solo = "`none` and `undeclared` go alone"
+use_order = "the uses go in the order of the table of 11-trazabilidad §2.3"
+with_none = "with `AI-Use: none` there is no `Assisted-by`"
+missing = "it is required"
+other_task = "it must be `#{task}`, the branch number"
+undeclared = "a submission does not admit `AI-Use: undeclared`"
+no_pr = "there is no data of the PR or of the base policy"
+no_tree = "there is no checkout of the PR to read its commits"
+git = "the PR commits could not be read"
+too_many = "the PR has more than {max} commits"
+meta_malformed = "there is more than one block or it does not have a single `yaml` code block with a mapping"
+meta_task = "`task` must be {task}, the branch number"
+meta_decisions = "`decisions` are not the decisions the PR adds ({expected})"
+meta_sections = "`sections` are not the parts the PR touches ({expected})"
+meta_trace_task = "`trace.task` does not match `task`"
+meta_trace_sections = "`trace.sections` does not match `sections`"
+trace_missing = "the `pr-meta` block has no `trace` object"
+trace_invalid = "the `trace` object does not follow `trace/v1` ({detail})"
+note_missing = "the session note `{path}` is missing in the PR head"
+note_invalid = "the front matter of the session note `{path}` is not valid"
+
+# --- assessment and direction-ack rules (04-tareas §8.3 and §9) ---
+
+[validate.coordinator]
+forge = "the PR comments or events could not be read"
