@@ -159,9 +159,13 @@ SECRETS_ALLOWED_IN: frozenset[str] = frozenset({".github/workflows/nightly.yml",
 def test_ci_policy_rule_has_no_findings_on_framework_workflows() -> None:
     files = framework_workflows()
     assert ".github/workflows/ci.yml" in files
-    secrets_message = translator("en")("validate.ci_policy.secrets")
+    t = translator("en")
+    secrets_message = t("validate.ci_policy.secrets")
+    # release.yml hereda los secretos solo en el job que llama a nightly.yml (test_release_workflows).
+    inherit_message = t("validate.ci_policy.secrets_inherit", job="live")
     findings = [f for f in ci_policy_findings(files)
-                if not (f.path in SECRETS_ALLOWED_IN and secrets_message in f.message)]
+                if not (f.path in SECRETS_ALLOWED_IN and secrets_message in f.message)
+                and not (f.path == ".github/workflows/release.yml" and inherit_message in f.message)]
     assert findings == [], [f"{f.path}:{f.line}: {f.message}" for f in findings]
 
 

@@ -39,6 +39,10 @@ jobs:
     uses: ./.github/workflows/nightly.yml
     permissions:
       contents: read
+    # Un job que llama a otro workflow no declara environment: los secretos del environment
+    # forge-tests le llegan al job live de nightly.yml solo si este job los hereda. Fuera de
+    # forge-tests y template-publish no hay secretos, y release.yml solo corre con una etiqueta.
+    secrets: inherit
 
   build:
     needs: [ci, live]

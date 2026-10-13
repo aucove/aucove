@@ -33,6 +33,9 @@ SECRET_JOBS: dict[Path, dict[str, str]] = {
     RELEASE: {"template": "template-publish"},
     NIGHTLY: {"live": "forge-tests"},
 }
+# El único job que hereda secretos (secrets: inherit): el que llama a nightly.yml desde release.yml,
+# porque un job con uses: no puede declarar environment y sin heredar no le llegan los de forge-tests.
+INHERITS_SECRETS: dict[Path, dict[str, str]] = {RELEASE: {"live": "./.github/workflows/nightly.yml"}}
 
 
 def load(path: Path) -> dict[Any, Any]:
@@ -135,7 +138,11 @@ def test_secrets_only_in_protected_environment_jobs_and_never_on_prs(path: Path)
             assert uses_secrets and job["environment"] == allowed[name], name
         else:
             assert not uses_secrets, name
-        assert "secrets" not in job, name  # nada de secrets: inherit
+        inherited = INHERITS_SECRETS.get(path, {}).get(name)
+        if inherited is None:
+            assert "secrets" not in job, name  # nada de secrets: inherit
+        else:
+            assert job.get("uses") == inherited and job.get("secrets") == "inherit", name
     top = {k: v for k, v in doc.items() if k != "jobs"}
     assert not any("secrets." in s for s in strings(top))
 
