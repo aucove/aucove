@@ -379,14 +379,14 @@ Nota verificada: con *required reviewers*, en planes Free, Pro y Team los enviro
 
 ### 6.2 Releases del núcleo
 
-- **REQ-SEC-40.** El núcleo DEBE publicarse en PyPI solo por Trusted Publishing, desde un workflow que use un environment `pypi` con *required reviewers* y *prevent self-review*, sin tokens de API de PyPI guardados. En Free, Pro y Team, los *required reviewers* de un environment solo existen en repos públicos: por eso el release y los jobs con credenciales salen del repositorio público del framework, el repo limpio que se crea antes del primer release (00-marco D-29 y D-54; 12-mvp REQ-MVP-62).
+- **REQ-SEC-40.** El núcleo DEBE publicarse en PyPI solo por Trusted Publishing, desde un workflow que use un environment `pypi` con *required reviewers* y, desde que haya dos mantenedores, *prevent self-review* (00-marco D-71), sin tokens de API de PyPI guardados. En Free, Pro y Team, los *required reviewers* de un environment solo existen en repos públicos: por eso el release y los jobs con credenciales salen del repositorio público del framework, el repo limpio que se crea antes del primer release (00-marco D-29 y D-54; 12-mvp REQ-MVP-62).
 - **REQ-SEC-41.** El workflow de publicación DEBE separar el job de build del de publicación y conceder `id-token: write` solo a este último.
 - **REQ-SEC-42.** Toda release DEBE llevar attestations PEP 740 (activas por defecto en `pypa/gh-action-pypi-publish`), y NO DEBE usarse `attestations: false`.
 - **REQ-SEC-43.** Toda release DEBE publicar un SBOM (CycloneDX JSON) de las dependencias de ejecución, atestado con `actions/attest` y adjunto a la GitHub Release.
 - **REQ-SEC-44.** El repo del núcleo DEBE versionar `uv.lock`, y cada release DEBE publicar un `requirements-lock.txt` con versiones exactas y hashes, generado desde ese lock.
 - **REQ-SEC-45.** El comando de instalación documentado (01-arquitectura) DEBE fijar la versión exacta del núcleo y aplicar `requirements-lock.txt` con `--constraints` (01 §5.1); el setup script de la nube queda exento como riesgo residual.
 - **REQ-SEC-52.** La documentación DEBE explicar cómo verificar una release con `pypi-attestations verify pypi --repository <url-del-repo> pypi:<wheel>` y `gh attestation verify <archivo> -R <org>/<repo>`.
-- **REQ-SEC-83.** El environment `template-publish` DEBE tener *required reviewers*, *prevent self-review* y *deployment tags* `v*`.
+- **REQ-SEC-83.** El environment `template-publish` DEBE tener *required reviewers*, *deployment tags* `v*` y, desde que haya dos mantenedores, *prevent self-review* (00-marco D-71).
 
 Ejemplo del job de publicación (acciones fijadas por SHA; los SHA son ilustrativos):
 
@@ -682,7 +682,7 @@ Se revierte con un PR nuevo: una decisión que reemplaza a la anterior, o una co
 - **REQ-SEC-76.** Cada repositorio del framework (núcleo y plantilla) DEBE tener un `SECURITY.md` con: versiones con soporte, canal privado de reporte, qué incluir en el reporte, plazos de respuesta y alcance (incluye la plantilla, los workflows y las skills generadas).
 - **REQ-SEC-77.** Los repositorios del framework DEBEN tener activado el *private vulnerability reporting* de GitHub (disponible en repos públicos).
 - **REQ-SEC-78.** Mientras el núcleo sea 0.x, solo la última versión menor DEBE recibir arreglos de seguridad. Desde 1.0, también la versión menor anterior durante 6 meses.
-- **REQ-SEC-79.** Los mantenedores DEBEN usar 2FA, y la publicación DEBE requerir la aprobación de un mantenedor distinto del que la dispara (*prevent self-review*, REQ-SEC-40).
+- **REQ-SEC-79.** Los mantenedores DEBEN usar 2FA, y la publicación DEBE requerir una aprobación manual en el environment `pypi`: con dos o más mantenedores, la de uno distinto del que la dispara (*prevent self-review*, REQ-SEC-40); con uno solo, la suya, con los controles de 00-marco D-71.
 - **REQ-SEC-80.** Una vulnerabilidad confirmada de severidad alta o crítica DEBERÍA corregirse en 30 días como máximo; se publica como GitHub Security Advisory (con CVE si procede), con una divulgación coordinada de 90 días como máximo.
 - **REQ-SEC-81.** Los repositorios del framework DEBERÍAN ejecutar OpenSSF Scorecard y publicar su resultado.
 

@@ -107,20 +107,28 @@ dueña. Hace falta `gh` con sesión iniciada por una persona administradora.
   dar `true`).
 - Evidencia:
 
-## 8. Environment `pypi` y proyecto en PyPI (REQ-SEC-40 y REQ-SEC-79): una vez
+## 8. Environment `pypi` y proyecto en PyPI (REQ-SEC-40 y REQ-SEC-79): una vez y al cambiar los mantenedores
 
-- [ ] El environment `pypi` tiene *Required reviewers*, con al menos un mantenedor
-  distinto de quien lanza el release, y *Prevent self-review* activado.
+- [ ] El environment `pypi` tiene *Required reviewers* y no admite el bypass de
+  administradores (*Allow administrators to bypass configured protection rules*
+  desmarcado). Con dos o más mantenedores, el revisor es al menos uno distinto de quien lanza
+  el release, con *Prevent self-review* activado. Con uno solo, el revisor es esa persona,
+  sin *Prevent self-review* (00-marco D-71).
 - [ ] Sus *Deployment branches and tags* admiten solo las etiquetas `v*`: `release.yml` corre
   con la etiqueta del release.
 - [ ] En PyPI, el único publicador del proyecto es el Trusted Publisher de `OWNER/REPO`,
   con el workflow `release.yml` y el environment `pypi`. No hay tokens de API de PyPI
   guardados en GitHub.
-- [ ] Desde la primera publicación, el proyecto tiene en PyPI al menos dos colaboradores,
-  cada uno con 2FA.
-- Comando: `gh api repos/OWNER/REPO/environments/pypi --jq '{name, protection_rules, deployment_branch_policy}'`
-  (una regla `required_reviewers` con `prevent_self_review: true` y una de ramas o
-  etiquetas) y
+- [ ] El ruleset de etiquetas `release-tags` (patrón `v*`, con *Restrict creations*,
+  *Restrict updates* y *Restrict deletions*, y solo el rol *Repository admin* en la lista de
+  bypass) impide que alguien sin administración cree o mueva una etiqueta de versión
+  (00-marco D-71).
+- [ ] Desde la primera publicación, cada mantenedor es colaborador del proyecto en PyPI, con
+  2FA. Con dos o más mantenedores, son al menos dos.
+- Comando: `gh api repos/OWNER/REPO/environments/pypi --jq '{name, can_admins_bypass, protection_rules, deployment_branch_policy}'`
+  (`can_admins_bypass: false`, una regla `required_reviewers` con `prevent_self_review` en
+  `true` desde que haya dos mantenedores, y una de ramas o etiquetas),
+  `gh api repos/OWNER/REPO/rulesets --jq '.[] | {name, target, enforcement}'` y
   `gh secret list --repo OWNER/REPO` (sin tokens de PyPI). En PyPI: captura de
   *Publishing* y de *Collaborators* del proyecto.
 - Evidencia:
@@ -158,8 +166,10 @@ dueña. Hace falta `gh` con sesión iniciada por una persona administradora.
   (01-arquitectura REQ-ARCH-30; lo comprueba `tests/unit/test_readme_version.py`), y los avisos
   de `docs/` sobre lo que una versión preliminar todavía no trae siguen siendo ciertos.
 - [ ] Un mantenedor crea en `main` la etiqueta anotada (`git tag -a vX.Y.Z -m "aucove vX.Y.Z"`)
-  y la sube, y otro aprueba el despliegue al environment `pypi` (REQ-SEC-79). Con una versión
-  final, otro aprueba también el de `template-publish` (REQ-SEC-83).
+  y la sube, y otro aprueba el despliegue al environment `pypi` (REQ-SEC-79). Con un solo
+  mantenedor, lo aprueba él mismo después de revisar que la corrida es la de su etiqueta y que
+  el build terminó bien (00-marco D-71). Con una versión final, el de `template-publish` se
+  aprueba igual (REQ-SEC-83).
 - Comando: `gh run list --repo OWNER/REPO --workflow ci.yml --branch main --limit 1 --json databaseId,conclusion,headSha,url`,
   después `gh run view <id> --repo OWNER/REPO --json jobs --jq '.jobs[] | {name, conclusion}'`.
 - Evidencia:
@@ -182,8 +192,9 @@ dueña. Hace falta `gh` con sesión iniciada por una persona administradora.
   `contents: write` y `workflows: write` (REQ-ARCH-10), y sus credenciales viven en el
   environment `template-publish`: el secreto `TEMPLATE_APP_PRIVATE_KEY` y la variable
   `TEMPLATE_APP_CLIENT_ID`.
-- [ ] El environment `template-publish` tiene *Required reviewers*, *Prevent self-review* y
-  solo las etiquetas `v*` en *Deployment branches and tags* (10-seguridad REQ-SEC-83).
+- [ ] El environment `template-publish` tiene *Required reviewers*, sin el bypass de
+  administradores, y solo las etiquetas `v*` en *Deployment branches and tags*. Con dos o más
+  mantenedores, también *Prevent self-review* (10-seguridad REQ-SEC-83; 00-marco D-71).
 - Comando: `gh api repos/OWNER/aucove-template --jq '{full_name, is_template, default_branch}'`
   y `gh api repos/OWNER/REPO/environments/template-publish --jq '{name, protection_rules, deployment_branch_policy}'`.
 - Evidencia:

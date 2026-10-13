@@ -71,6 +71,8 @@ Cada nota resume una decisión de diseño: qué se decidió y por qué. Su ident
 
 **D-69. Las versiones preliminares se publican en PyPI.** Igual que las finales: desde el repo público, por Trusted Publishing con el environment `pypi` (10-seguridad REQ-SEC-40), con `requirements-lock.txt` y `sbom.cdx.json` en su GitHub Release preliminar (01-arquitectura §5.1). Así la plantilla, sus workflows (09-ci REQ-CI-12) y el README instalan una rc sin cambios. Una versión preliminar no actualiza la rama principal de la plantilla (01-arquitectura REQ-ARCH-8).
 
+**D-71. Mantenedor único.** Mientras el framework tenga un solo mantenedor, no hay una segunda persona que apruebe sus publicaciones. Los environments `pypi` y `template-publish` tienen a esa persona como *required reviewer*, sin *prevent self-review* y sin el bypass de administradores, así que cada publicación espera una aprobación manual suya en GitHub (10-seguridad REQ-SEC-40, REQ-SEC-79 y REQ-SEC-83). La compensan la 2FA de la organización, Trusted Publishing sin tokens de PyPI, las reglas de despliegue y un ruleset que solo deja a los administradores crear, mover o borrar las etiquetas `v*`, las atestaciones de cada versión y el CI y las pruebas live en verde antes del build (01-arquitectura §2.3). El riesgo residual es que una misma persona dispara y aprueba la publicación. En cuanto haya un segundo mantenedor, se agrega como revisor de los dos environments, se activa *prevent self-review* y se suma como colaborador del proyecto en PyPI.
+
 **DC-19.** Reemplazada por D-69.
 
 **DC-23. Subcomandos internos.** `ci build-plan|comment|base-report|audit|pin-plan|seal` son internos, como `hook`: no emiten el sobre ni tienen herramienta MCP. Su contrato lo define 09-ci. `ci review-context` queda reservado.
