@@ -4,6 +4,17 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
+## [Unreleased]
+
+### Changed
+
+- New logo: an open book with the aucove graph on its pages. The central vertex, in amber, is the shared repository and sits on the spine.
+- The `requirements-lock.txt` of the next release pins `mcp` and `mcp-types` 2.3.0 (were 2.2.0) and `tzdata` 2026.5 (was 2026.4).
+
+### Fixed
+
+- GitHub adapter: when a branch or tag write is rejected or its response is lost, the confirmation read is repeated after 0.5 and 1 s if GitHub still shows the previous state of the ref, since GitHub can serve it for a moment after a write. Before, claiming a task that someone had claimed a moment earlier could fail with a validation error instead of reporting that the task is already claimed, deleting a branch that was just deleted could fail instead of reporting that it did not exist, and an update whose response was lost could fail as a timeout although it was applied.
+
 ## [0.1.0rc1] - 2026-10-12
 
 First public version of the framework. `0.1.0rc1` is a preliminary release; the Claude Code hooks and skills, the published template repository and the devcontainer arrive with `0.1.0`.

@@ -161,7 +161,8 @@ dueña. Hace falta `gh` con sesión iniciada por una persona administradora.
   y `core` derivado con REQ-ARCH-44). `release.yml` falla si la etiqueta no es `v` más esa
   versión (`tools/release.py check-tag`).
 - [ ] `CHANGELOG.md` tiene la sección `## [X.Y.Z] - AAAA-MM-DD`, porque las notas de la GitHub
-  Release salen de ahí (`tools/release.py notes` falla sin ella).
+  Release salen de ahí (`tools/release.py notes` falla sin ella). Entre versiones, los cambios se
+  anotan en `## [Unreleased]`, y al preparar el release esa sección toma el número y la fecha.
 - [ ] El README y la guía de uso (`docs/`) instalan y verifican esa versión exacta
   (01-arquitectura REQ-ARCH-30; lo comprueba `tests/unit/test_readme_version.py`), y los avisos
   de `docs/` sobre lo que una versión preliminar todavía no trae siguen siendo ciertos.
