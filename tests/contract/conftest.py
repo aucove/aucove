@@ -36,7 +36,16 @@ from typing import Protocol, TypeVar
 import pytest
 
 from aucove import _meta
-from aucove.forge.base import FileChange, ForgeAdapter, ForgeError, PullRequest, RepoRef, Review
+from aucove.forge.base import (
+    FileChange,
+    ForgeAdapter,
+    ForgeError,
+    PullRequest,
+    Ref,
+    RefNamespace,
+    RepoRef,
+    Review,
+)
 from aucove.forge.fake import ADAPTER_METHODS, Fault, FakeClock, FakeForge
 
 T = TypeVar("T")
@@ -60,7 +69,7 @@ SANDBOX_RULESET = "ct-sandbox-base"
 # En un repo público, GitHub abre Issues aunque el token no tenga el permiso Issues (CT-AUTH-01;
 # 00-marco D-68). En uno privado, no.
 OPEN_WITHOUT_PERMISSION = frozenset({"create_issue"})
-LIVE_WAIT_S = 30.0  # las listas de GitHub tardan unos segundos en reflejar una escritura
+LIVE_WAIT_S = 30.0  # lo que GitHub puede tardar en reflejar una escritura en sus listas o en una ref
 
 
 @dataclass(frozen=True)
@@ -149,7 +158,8 @@ class Sandbox:
         """Relee hasta que ``ready`` se cumpla o venza el plazo; con el falso, una sola lectura.
 
         Las listas de GitHub (Issues, actividad de refs) tardan unos segundos en reflejar una
-        escritura (00-marco D-68). Devuelve la última lectura: la prueba la verifica después.
+        escritura (00-marco D-68), y a veces también la ref recién creada, movida o borrada
+        (CT-REF-04). Devuelve la última lectura: la prueba la verifica después.
         """
         value = read()
         if self.fake is not None:
@@ -159,6 +169,14 @@ class Sandbox:
             time.sleep(2)
             value = read()
         return value
+
+    def settled_ref(self, branch: str, expected: Ref | None, *, namespace: RefNamespace = "heads") -> Ref | None:
+        """La ref después de una escritura propia: relee hasta ver ``expected`` (``None``: borrada).
+
+        Justo después de crear, mover o borrar una ref, GitHub a veces devuelve todavía el valor
+        anterior (CT-REF-04). Con el falso, una sola lectura; la prueba compara después.
+        """
+        return self.eventually(lambda: self.forge.get_ref(branch, namespace=namespace), lambda ref: ref == expected)
 
     def workflow_fixture(self) -> str:
         """Commit sobre la base que agrega ``.github/workflows/x.yml`` (CT-GIT-03).

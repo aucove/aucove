@@ -21,6 +21,7 @@ from aucove.forge.base import (
     ForgeNotFound,
     ForgeValidationError,
     MergeConflict,
+    Ref,
     RefConflict,
 )
 from aucove.forge.fake import FakeForge
@@ -79,6 +80,7 @@ def test_compare_with_branch_names(sandbox: Sandbox) -> None:
     branch = sandbox.branch("cmp")
     c1 = sandbox.claim_commit()
     sandbox.forge.create_ref(branch, c1)
+    assert sandbox.settled_ref(branch, Ref(branch, c1)) == Ref(branch, c1)  # compare lee la rama por su nombre
     result = sandbox.forge.compare(sandbox.base_branch, branch)
     assert result.base == sandbox.base_branch and result.head == branch
     assert result.ahead_by == 1
@@ -108,7 +110,7 @@ def test_ct_git_01_commit_files(sandbox: Sandbox) -> None:
         )
     with pytest.raises(ForgeValidationError):  # borrar una ruta ausente: 422 de GitHub (00-marco D-68)
         sandbox.forge.commit_files(branch, expected_head=sha, changes=[FileChange("notes/absent.md", None)], message="x")
-    assert sandbox.forge.get_ref(branch).sha == sha  # type: ignore[union-attr]
+    assert sandbox.settled_ref(branch, Ref(branch, sha)) == Ref(branch, sha)
 
 
 def test_ct_git_02_merge_into(sandbox: Sandbox) -> None:
@@ -120,7 +122,8 @@ def test_ct_git_02_merge_into(sandbox: Sandbox) -> None:
     sandbox.forge.update_ref(branch, ours)
     other = sandbox.content_commit({"notes/d.md": b"d\n"})
     merged = sandbox.forge.merge_into(branch, other, message="ct: merge")
-    assert merged is not None and sandbox.forge.get_ref(branch).sha == merged  # type: ignore[union-attr]
+    assert merged is not None
+    assert sandbox.settled_ref(branch, Ref(branch, merged)) == Ref(branch, merged)
     assert sandbox.forge.get_file("notes/d.md", merged) is not None and sandbox.forge.get_file("notes/c.md", merged)
     theirs = sandbox.content_commit({"notes/c.md": b"theirs\n"})
     with pytest.raises(MergeConflict):

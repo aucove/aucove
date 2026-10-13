@@ -1,6 +1,11 @@
 # SPDX-FileCopyrightText: 2026 The aucove Authors
 # SPDX-License-Identifier: Apache-2.0
-"""CT-REF-01..04: refs y su creación concurrente (08-forja §4.4, §10.3; REQ-FORGE-28..31)."""
+"""CT-REF-01..04: refs y su creación concurrente (08-forja §4.4, §10.3; REQ-FORGE-28..31).
+
+Justo después de escribir una ref, GitHub a veces devuelve el valor anterior. Por eso las pruebas
+releen con ``settled_ref`` lo que escribieron antes de compararlo, y antes de un paso que el
+adaptador confirma con un GET (el 409 o el 422 de crear, mover o borrar una ref, §4.4).
+"""
 
 from __future__ import annotations
 
@@ -18,7 +23,7 @@ def test_ct_ref_01_create_new_ref(sandbox: Sandbox) -> None:
     sha = sandbox.claim_commit()
     ref = sandbox.forge.create_ref(branch, sha)
     assert ref == Ref(branch, sha)
-    assert sandbox.forge.get_ref(branch) == Ref(branch, sha)
+    assert sandbox.settled_ref(branch, ref) == ref
     assert sandbox.forge.delete_ref(branch) is True
 
 
@@ -29,6 +34,7 @@ def test_ct_ref_02_create_existing_ref(sandbox: Sandbox) -> None:
     second = sandbox.claim_commit()
     assert first != second
     sandbox.forge.create_ref(branch, first)
+    assert sandbox.settled_ref(branch, Ref(branch, first)) == Ref(branch, first)
     with pytest.raises(RefAlreadyExists) as info:
         sandbox.forge.create_ref(branch, second)
     exc = info.value
@@ -72,8 +78,8 @@ def test_ct_ref_03_concurrent_creation_has_one_winner(sandbox: Sandbox) -> None:
     assert winner.sha in shas
     assert all(loss.existing == winner for loss in losses)
     # La ref, leída dos veces, apunta al commit del ganador.
-    assert sandbox.forge.get_ref(branch) == winner
-    assert sandbox.forge.get_ref(branch) == winner
+    assert sandbox.settled_ref(branch, winner) == winner
+    assert sandbox.settled_ref(branch, winner) == winner
     assert sandbox.forge.delete_ref(branch) is True
 
 
@@ -83,19 +89,22 @@ def test_ct_ref_04_update_and_delete(sandbox: Sandbox) -> None:
     c1 = sandbox.claim_commit()
     sibling = sandbox.claim_commit()  # hijo de la base, no desciende de c1
     sandbox.forge.create_ref(branch, c1)
+    at_c1 = Ref(branch, c1)
+    assert sandbox.settled_ref(branch, at_c1) == at_c1
 
     with pytest.raises(RefConflict) as info:
         sandbox.forge.update_ref(branch, sibling)
     assert info.value.current == c1
-    assert sandbox.forge.get_ref(branch) == Ref(branch, c1)
+    assert sandbox.settled_ref(branch, at_c1) == at_c1
 
     c2 = sandbox.claim_commit(parent=c1)
-    assert sandbox.forge.update_ref(branch, c2) == Ref(branch, c2)
-    assert sandbox.forge.get_ref(branch) == Ref(branch, c2)
+    at_c2 = Ref(branch, c2)
+    assert sandbox.forge.update_ref(branch, c2) == at_c2
+    assert sandbox.settled_ref(branch, at_c2) == at_c2
 
     assert sandbox.forge.delete_ref(branch) is True
+    assert sandbox.settled_ref(branch, None) is None
     assert sandbox.forge.delete_ref(branch) is False
-    assert sandbox.forge.get_ref(branch) is None
 
 
 def test_get_ref_missing_is_none(sandbox: Sandbox) -> None:
@@ -108,8 +117,9 @@ def test_list_refs_by_prefix(sandbox: Sandbox) -> None:
     for name in ("b", "a", "c"):
         sha = sandbox.claim_commit()
         created.append(sandbox.forge.create_ref(prefix + name, sha))
-    listed = sandbox.forge.list_refs(prefix)
-    assert listed == sorted(created, key=lambda r: r.branch)
+    expected = sorted(created, key=lambda r: r.branch)
+    listed = sandbox.eventually(lambda: sandbox.forge.list_refs(prefix), lambda refs: refs == expected)
+    assert listed == expected
     assert sandbox.forge.list_refs(sandbox.branch("nothing-here/")) == []
     for ref in created:
         assert sandbox.forge.delete_ref(ref.branch) is True
@@ -126,9 +136,10 @@ def test_tag_namespace(sandbox: Sandbox) -> None:
     tag = sandbox.branch("archive/task-1-1")
     sha = sandbox.claim_commit()
     assert sandbox.forge.create_ref(tag, sha, namespace="tags") == Ref(tag, sha)
-    assert sandbox.forge.get_ref(tag, namespace="tags") == Ref(tag, sha)
+    assert sandbox.settled_ref(tag, Ref(tag, sha), namespace="tags") == Ref(tag, sha)
     assert sandbox.forge.get_ref(tag) is None  # no es una rama
     assert sandbox.forge.delete_ref(tag, namespace="tags") is True
+    assert sandbox.settled_ref(tag, None, namespace="tags") is None
     assert sandbox.forge.delete_ref(tag, namespace="tags") is False
 
 
