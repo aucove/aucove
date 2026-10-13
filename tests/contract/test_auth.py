@@ -212,14 +212,30 @@ def test_ct_cap_02_private_free_repo_is_advisory(repo_sandbox: Callable[[str], F
     assert caps.evidence
 
 
+ETAG_ATTEMPTS = 5  # GET condicionales de CT-ETAG-01, hasta que uno no baje la cuota
+
+
 def test_ct_etag_01_conditional_get_is_free(live_sandbox: Sandbox) -> None:
-    """CT-ETAG-01 (live, H3): un GET repetido da 304 sin consumir x-ratelimit-remaining (08 §7.4, REQ-FORGE-52)."""
+    """CT-ETAG-01 (live, H3): un GET repetido da 304 sin consumir x-ratelimit-remaining (08 §7.4, REQ-FORGE-52).
+
+    La cuota es de la cuenta: cualquier otra petición con el mismo token entre dos respuestas
+    también la baja. Un 304 que consumiera la cuota la bajaría en todos los intentos, así que
+    basta uno en que no baje.
+    """
     probe = live_sandbox.http_probe()
     first = live_sandbox.forge.get_ref(live_sandbox.base_branch)
-    remaining = probe.rate_remaining()
-    assert live_sandbox.forge.get_ref(live_sandbox.base_branch) == first
-    assert probe.last_status() == 304
-    assert probe.rate_remaining() == remaining
+    before = probe.rate_remaining()
+    drops: list[int] = []
+    for _ in range(ETAG_ATTEMPTS):
+        assert live_sandbox.forge.get_ref(live_sandbox.base_branch) == first
+        assert probe.last_status() == 304
+        after = probe.rate_remaining()
+        assert min(before, after) > 0  # las dos respuestas traen la cabecera
+        drops.append(before - after)
+        if after == before:
+            break
+        before = after
+    assert 0 in drops, drops  # cuánto bajó la cuota con cada 304
 
 
 # --- Solo con el falso -------------------------------------------------------------

@@ -251,6 +251,8 @@ def test_live_job_runs_the_contract_suite_against_both_sandboxes(nightly: Mappin
     job = jobs(nightly)["live"]
     assert job["environment"] == "forge-tests"
     assert job["strategy"]["matrix"] == {"sandbox": ["public", "private"]}
+    # Un sandbox después del otro, y los dos aunque el primero falle: las mismas cuentas, la misma cuota.
+    assert job["strategy"]["max-parallel"] == 1 and job["strategy"]["fail-fast"] is False
     assert "vars.CONTRACT_REPO_PUBLIC" in job["env"]["AUCOVE_CONTRACT_REPO"]
     assert "vars.CONTRACT_REPO_PRIVATE" in job["env"]["AUCOVE_CONTRACT_REPO"]
     test_step = job["steps"][-1]

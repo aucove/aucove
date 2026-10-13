@@ -3,9 +3,9 @@
 # en un PR. Mismas reglas que ci.yml: permissions: {} arriba y mínimos por job,
 # timeout-minutes, todo uses: fijado por SHA con la versión en un comentario y checkout sin
 # credenciales.
-# - live: la suite de contrato contra GitHub real (T2) en los dos repos sandbox, con los
-#   tokens de las cuentas de prueba, que solo existen como secretos del environment
-#   forge-tests (12-mvp REQ-MVP-28; guía de mantenimiento, punto 9).
+# - live: la suite de contrato contra GitHub real (T2) en los dos repos sandbox, uno después
+#   del otro, con los tokens de las cuentas de prueba, que solo existen como secretos del
+#   environment forge-tests (12-mvp REQ-MVP-28; guía de mantenimiento, punto 9).
 # - template-drift: la rama principal de aucove-template es, byte a byte tras pasar CRLF a
 #   LF, el render de la última etiqueta estable (REQ-ARCH-11). Mientras no haya una versión
 #   final, no hay plantilla publicada (REQ-ARCH-8) y el job solo lo avisa. No corre desde
@@ -36,6 +36,9 @@ jobs:
     name: live (${{ matrix.sandbox }})
     strategy:
       fail-fast: false
+      # De a un sandbox: los dos usan las mismas cuentas, y la cuota de la API (la que mide
+      # CT-ETAG-01) y los límites secundarios son por cuenta (08-forja §7.3 y §10.3).
+      max-parallel: 1
       matrix:
         sandbox: [public, private]
     runs-on: ubuntu-latest
