@@ -1,24 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-labelledby="t">
   <title id="t">aucove</title>
-  <!-- Una red pequeña: las personas, unidas por el repo común (el nodo central) y por las revisiones entre ellas. -->
+  <!-- Un libro abierto con el grafo de aucove en sus páginas: el vértice central, en el lomo, es el repo
+       común, y los tres vértices, quienes trabajan en él. -->
   <circle cx="64" cy="64" r="62" fill="#5A3BB4"/>
-  <g stroke="#FFFFFF" stroke-width="5" stroke-linecap="round">
-    <line x1="66.5" y1="64" x2="39" y2="41.5"/>
-    <line x1="66.5" y1="64" x2="86.5" y2="31.5"/>
-    <line x1="66.5" y1="64" x2="101.5" y2="74"/>
-    <line x1="66.5" y1="64" x2="66.5" y2="99"/>
-    <line x1="66.5" y1="64" x2="29" y2="84"/>
-    <line x1="39" y1="41.5" x2="86.5" y2="31.5"/>
-    <line x1="101.5" y1="74" x2="66.5" y2="99"/>
-    <line x1="29" y1="84" x2="39" y2="41.5"/>
+  <g transform="translate(64 63)">
+    <!-- El libro: dos capas de hojas en abanico y las dos páginas. El trazo morado, pintado bajo el
+         relleno (paint-order), separa cada hoja de la de atrás. -->
+    <g fill="#FFFFFF" stroke="#5A3BB4" stroke-width="3.4" stroke-linejoin="round" paint-order="stroke">
+      <path d="M -0.9 -6 C -16 -15 -34 -20 -52 -19 L -52 25 C -32 25 -14 28 -0.9 33 Z"/>
+      <path d="M 0.9 -6 C 16 -15 34 -20 52 -19 L 52 25 C 32 25 14 28 0.9 33 Z"/>
+      <path d="M -0.9 -12 C -14 -22 -30 -26 -46 -25 L -46 21 C -28 21 -12 24 -0.9 29 Z"/>
+      <path d="M 0.9 -12 C 14 -22 30 -26 46 -25 L 46 21 C 28 21 12 24 0.9 29 Z"/>
+      <path d="M -0.9 -20 C -12 -29 -26 -33 -40 -31 L -40 17 C -24 17 -10 20 -0.9 25 Z"/>
+      <path d="M 0.9 -20 C 12 -29 26 -33 40 -31 L 40 17 C 24 17 10 20 0.9 25 Z"/>
+    </g>
+    <!-- El grafo: una Y con el vértice central en el lomo; una arista baja por el lomo. -->
+    <g stroke="#5A3BB4" stroke-width="3.6" stroke-linecap="round">
+      <line x1="0" y1="2" x2="-23" y2="-14"/>
+      <line x1="0" y1="2" x2="23" y2="-14"/>
+      <line x1="0" y1="2" x2="0" y2="22"/>
+    </g>
+    <g fill="#5A3BB4">
+      <circle cx="-23" cy="-14" r="4.6"/>
+      <circle cx="23" cy="-14" r="4.6"/>
+      <circle cx="0" cy="22" r="4.6"/>
+    </g>
+    <circle cx="0" cy="2" r="7.5" fill="#F5B841" stroke="#5A3BB4" stroke-width="2.4" paint-order="stroke"/>
+    <circle cx="0" cy="2" r="3" fill="#5A3BB4"/>
   </g>
-  <g fill="#FFFFFF">
-    <circle cx="39" cy="41.5" r="7.5"/>
-    <circle cx="86.5" cy="31.5" r="6.5"/>
-    <circle cx="101.5" cy="74" r="7.5"/>
-    <circle cx="66.5" cy="99" r="6.5"/>
-    <circle cx="29" cy="84" r="6.5"/>
-    <circle cx="66.5" cy="64" r="11"/>
-  </g>
-  <circle cx="66.5" cy="64" r="4.5" fill="#5A3BB4"/>
 </svg>
