@@ -7,7 +7,7 @@ Instrucciones para agentes de IA que trabajan en el repositorio del framework *a
 - **No agregues `Signed-off-by`.** Solo lo agrega la persona, con `git commit -s`, después de revisar y probar el cambio (11-trazabilidad REQ-TRACE-66 y REQ-TRACE-67).
 - **Agrega el trailer `Assisted-by: <tool>:<model>`** a todo commit que redactes o en el que hayas ayudado (REQ-TRACE-68). `tool` es un slug en minúsculas (`claude-code`, `codex`, `antigravity-cli`, `gemini-cli`, `opencode`, `goose` u `other`) y `model`, el identificador del modelo tal como lo da su fuente, o `unknown`. Una línea por herramienta y modelo, ordenadas y sin duplicados, en el último párrafo del mensaje y antes de `Signed-off-by`. Ejemplo: `Assisted-by: claude-code:claude-opus-5-5`.
 - **No agregues `Co-authored-by`** para una herramienta o un modelo de IA: la IA no es autora.
-- No hagas commits, `push` ni `git config` si la persona no te lo pide.
+- No hagas commits, `push` ni `git config`. Deja el cambio verificado y el mensaje del commit listos: la persona revisa, firma con `git commit -s` y sube.
 
 ## Fuente de verdad
 
@@ -35,4 +35,5 @@ Instrucciones para agentes de IA que trabajan en el repositorio del framework *a
 - Never add `Signed-off-by`; only the person adds it with `git commit -s` after reviewing and testing the change.
 - Add `Assisted-by: <tool>:<model>` (for example, `Assisted-by: claude-code:claude-opus-5-5`) to every commit you write or help with, in the last paragraph and before `Signed-off-by`.
 - Never add `Co-authored-by` for an AI tool or model.
+- Do not commit, push or run `git config`: leave the verified change and the commit message ready; the person reviews, signs with `git commit -s` and pushes.
 - Follow the specification, the SPDX header rule (11-trazabilidad REQ-TRACE-56) and `reuse lint`; see [CONTRIBUTING.md](CONTRIBUTING.md).

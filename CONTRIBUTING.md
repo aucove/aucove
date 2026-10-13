@@ -23,8 +23,8 @@ Todo commit de un PR a este repositorio lleva la línea `Signed-off-by` del [Dev
 
 Puedes usar herramientas de IA, con estas reglas (11-trazabilidad REQ-TRACE-67):
 
-1. **Los agentes de IA NO DEBEN agregar `Signed-off-by`.** Solo lo agrega la persona, porque el DCO es una declaración suya.
-2. **La persona revisa y prueba todo lo generado y responde por ello**, igual que si lo hubiera escrito ella.
+1. **Los agentes de IA NO DEBEN agregar `Signed-off-by`.** Solo lo agrega la persona, porque el DCO es una declaración suya. El agente tampoco ejecuta `git commit -s` en su nombre: deja el cambio y el mensaje listos, y la persona revisa, firma y sube.
+2. **La persona revisa y prueba todo lo generado y responde por ello**, igual que si lo hubiera escrito ella. La plantilla de los PR pide confirmarlo.
 3. **Los commits asistidos llevan `Assisted-by: <tool>:<model>`**, una línea por herramienta y modelo, con la gramática de 11-trazabilidad §2.2:
 
    ```abnf
@@ -38,6 +38,7 @@ Puedes usar herramientas de IA, con estas reglas (11-trazabilidad REQ-TRACE-67):
    - El separador es el primer `:`; el modelo puede contener más `:`.
    - Ordena las líneas por herramienta y luego por modelo, sin duplicados.
 4. **La IA no figura como `Co-authored-by`.** Si tu herramienta agrega ese trailer, quítalo. En este repositorio, `.claude/settings.json` fija `"attribution": {"commit": ""}` para que Claude Code no lo agregue (REQ-TRACE-68).
+5. **Cuida la procedencia de lo generado.** Con `Signed-off-by` también certificas que el cambio se puede publicar bajo la licencia del repositorio, y un modelo puede reproducir código ajeno. Si tu herramienta permite bloquear las sugerencias que coinciden con código público, actívalo. No aceptes bloques largos que no entiendas ni puedas explicar. Si un fragmento viene de otra fuente, respeta su licencia y dilo en el PR. `reuse lint` revisa las licencias declaradas, pero no detecta código copiado.
 
 Los trailers van en el último párrafo del mensaje, separados del texto por una línea en blanco, con `Assisted-by` antes de `Signed-off-by`:
 
@@ -120,8 +121,8 @@ Every commit in a pull request to this repository carries the `Signed-off-by` li
 
 You may use AI tools, under these rules (11-trazabilidad REQ-TRACE-67):
 
-1. **AI agents MUST NOT add `Signed-off-by`.** Only the person adds it, because the DCO is their own statement.
-2. **The person reviews and tests everything that was generated and is responsible for it**, as if they had written it.
+1. **AI agents MUST NOT add `Signed-off-by`.** Only the person adds it, because the DCO is their own statement. Nor does the agent run `git commit -s` on the person's behalf: it leaves the change and the message ready, and the person reviews, signs and pushes.
+2. **The person reviews and tests everything that was generated and is responsible for it**, as if they had written it. The pull request template asks you to confirm it.
 3. **Assisted commits carry `Assisted-by: <tool>:<model>`**, one line per tool and model, following the grammar of 11-trazabilidad §2.2:
 
    ```abnf
@@ -135,6 +136,7 @@ You may use AI tools, under these rules (11-trazabilidad REQ-TRACE-67):
    - The separator is the first `:`; the model may contain more `:` characters.
    - Sort the lines by tool and then by model, without duplicates.
 4. **AI is not listed as `Co-authored-by`.** If your tool adds that trailer, remove it. In this repository, `.claude/settings.json` sets `"attribution": {"commit": ""}` so that Claude Code does not add it (REQ-TRACE-68).
+5. **Mind the provenance of generated code.** With `Signed-off-by` you also certify that the change can be released under the repository's license, and a model can reproduce someone else's code. If your tool can block suggestions that match public code, turn that on. Do not accept long blocks you do not understand or cannot explain. If a fragment comes from another source, respect its license and say so in the pull request. `reuse lint` checks the declared licenses, but it does not detect copied code.
 
 Trailers go in the last paragraph of the message, separated from the text by a blank line, with `Assisted-by` before `Signed-off-by`:
 

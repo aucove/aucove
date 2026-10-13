@@ -116,6 +116,8 @@ aucove is in its first version, and we want to improve it together with the peop
 - **Help with the documentation**: improve the guides, or translate them into other languages.
 - **Weigh in on the design.** The open questions of the specification are in [`spec/13-preguntas-abiertas.md`](spec/13-preguntas-abiertas.md), in Spanish.
 
+aucove itself is developed with the help of AI agents. Commits made with AI declare it with `Assisted-by` (the tool and the model), and the person who signs them with `Signed-off-by` reviewed the change and takes responsibility for it. The AI is not listed as a co-author, because it cannot be an author or answer for the code.
+
 To report a vulnerability, follow [SECURITY.md](SECURITY.md) instead of opening an Issue. Participation is governed by [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
 ### Verifying a release
@@ -276,6 +278,8 @@ aucove está en su primera versión y queremos mejorarlo junto con quienes lo us
 - **Envía cambios** con un pull request. Lee antes [CONTRIBUTING.md](CONTRIBUTING.md): todo commit lleva `Signed-off-by` (DCO) y la ayuda de una IA se declara con `Assisted-by`.
 - **Ayuda con la documentación**: mejora las guías o tradúcelas a otros idiomas.
 - **Opina sobre el diseño.** Las preguntas abiertas de la especificación están en [`spec/13-preguntas-abiertas.md`](spec/13-preguntas-abiertas.md).
+
+aucove mismo se desarrolla con ayuda de agentes de IA. Los commits hechos con IA lo declaran con `Assisted-by` (la herramienta y el modelo), y la persona que los firma con `Signed-off-by` revisó el cambio y responde por él. La IA no figura como coautora, porque no puede ser autora ni responder por el código.
 
 Para reportar una vulnerabilidad, sigue [SECURITY.md](SECURITY.md) en lugar de abrir un Issue. La convivencia se rige por [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
