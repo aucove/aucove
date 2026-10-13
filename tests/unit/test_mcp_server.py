@@ -288,6 +288,8 @@ def test_a_cancelled_call_is_never_answered(monkeypatch: pytest.MonkeyPatch) -> 
 def test_stdio_process_speaks_only_json_rpc_and_ends_on_eof(tmp_path: Path) -> None:
     """Conversa como un cliente: cada petición espera su respuesta; luego EOF y el proceso sale."""
     env = {k: v for k, v in os.environ.items() if not k.startswith(P)}
+    # El paquete puede no estar instalado en el venv (en CI solo está el lanzador): src/ primero.
+    env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(REPO_ROOT / "src"), env.get("PYTHONPATH")]))
     started = time.monotonic()
     proc = subprocess.Popen(
         [sys.executable, "-m", f"{_meta.NAME}.entry", "mcp", "--stdio"],
@@ -339,7 +341,8 @@ def test_the_sdk_is_imported_only_by_the_mcp_package() -> None:
         "import sys; import aucove.mcp.tools; "
         "print(any(m == 'mcp' or m.startswith('mcp.') for m in sys.modules))"
     )
-    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True, timeout=120)
+    env = dict(os.environ, PYTHONPATH=str(REPO_ROOT / "src"))
+    out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True, timeout=120, env=env)
     assert out.stdout.strip() == "False"
 
 

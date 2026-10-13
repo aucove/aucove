@@ -68,9 +68,14 @@ def decision(name: str, *, title: str, date: str, status: str = "accepted", summ
     return f"memory/decisions/{name}.md", text
 
 
+# Las variables que un runner de CI define y que hacen negar las operaciones solo humanas
+# (06-permisos §6; 05-operaciones REQ-OPS-49): la persona de las pruebas está en su terminal.
+CI_SIGNALS = frozenset({"CI", "GITHUB_ACTIONS"})
+
+
 def clean_env(env: Mapping[str, str]) -> dict[str, str]:
     drop = (_meta.ENV_PREFIX, "CLAUDE_CODE_", "CLAUDECODE", "GEMINI_CLI")  # sin agente detectado (11 §2.6)
-    return {k: v for k, v in env.items() if not k.upper().startswith(drop)}
+    return {k: v for k, v in env.items() if not k.upper().startswith(drop) and k.upper() not in CI_SIGNALS}
 
 
 def at(minutes: float) -> datetime:
