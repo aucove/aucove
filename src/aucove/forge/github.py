@@ -17,6 +17,10 @@ Política (§7)
 - Reintentos solo de §7.3: 5xx, timeouts y conexión se reintentan si la petición es
   idempotente (0.5, 1 y 2 s con ±50 % de jitter; en CI, 5 veces). Un ``POST`` que no es
   idempotente no se repite: el método busca su efecto (§4.4 y §4.7, REQ-FORGE-35).
+- El GET de confirmación de una escritura rechazada o dudosa (§4.4) relee la ref a los
+  0.5 y a 1 s si no muestra lo que esa respuesta hace esperar: justo después de escribir,
+  GitHub a veces devuelve todavía la ref anterior (CT-REF-04). La escritura no se repite
+  (REQ-FORGE-29).
 - Límites: ``retry-after``, ``x-ratelimit-remaining: 0`` y el límite secundario según la
   tabla de §7.3; un ``RateLimited`` bloquea el token en todo el proceso hasta
   ``reset_at`` (REQ-FORGE-51).
@@ -161,6 +165,7 @@ _SECONDARY_WAITS_CI = (60.0, 120.0, 240.0)
 _RETRY_AFTER_MAX_S = 10  # interactivo: se espera un retry-after de hasta 10 s, una vez
 _PRIMARY_WAIT_MAX = timedelta(minutes=15)  # CI: se espera el reset si falta eso o menos
 _SECONDARY_RESET = timedelta(seconds=60)
+_CONFIRM_WAITS = (0.5, 1.0)  # relecturas del GET de confirmación (§4.4; CT-REF-04)
 
 _FAILED = frozenset({"failure", "timed_out", "cancelled", "action_required"})
 _PASSED = frozenset({"success", "neutral", "skipped"})
@@ -433,6 +438,19 @@ def _push_outcome(rc: int, out: str, ref: str) -> Literal["accepted", "rejected"
         if flag in " *+=-":
             return "accepted"
     return "accepted" if rc == 0 else "unknown"
+
+
+# Lo que la respuesta de una escritura hace esperar del GET de confirmación (§4.4).
+def _present(ref: Ref | None) -> bool:
+    return ref is not None
+
+
+def _absent(ref: Ref | None) -> bool:
+    return ref is None
+
+
+def _at(sha: str) -> Callable[[Ref | None], bool]:
+    return lambda ref: ref is not None and ref.sha == sha
 
 
 def parse_repo(value: object) -> RepoRef:
@@ -1457,6 +1475,22 @@ class GitHubAdapter:
         refs = [self._ref_of(d, namespace) for d in items if isinstance(d, dict)]
         return sorted((r for r in refs if r.branch.startswith(prefix)), key=lambda r: r.branch)
 
+    def _confirm_ref(self, branch: str, namespace: RefNamespace, expected: Callable[[Ref | None], bool]) -> Ref | None:
+        """GET de confirmación de una escritura rechazada o dudosa (§4.4).
+
+        Si la ref leída no cumple ``expected``, lo que la respuesta de la escritura hace esperar,
+        relee a los 0.5 y a 1 s y se queda con la última lectura: justo después de escribir,
+        GitHub a veces devuelve todavía la ref anterior (CT-REF-04). Solo repite el GET, nunca la
+        escritura (REQ-FORGE-29).
+        """
+        ref = self.get_ref(branch, namespace=namespace)
+        for wait in _CONFIRM_WAITS:
+            if expected(ref):
+                break
+            self._pause(wait)
+            ref = self.get_ref(branch, namespace=namespace)
+        return ref
+
     def create_ref(self, branch: str, sha: str, *, namespace: RefNamespace = "heads") -> Ref:
         self._check_namespace(namespace)
         if self._web and self.write_mode == "git":
@@ -1469,14 +1503,14 @@ class GitHubAdapter:
         except _HttpError as e:
             if e.status not in (409, 422):
                 raise self._classify("create_ref", e) from e
-            existing = self.get_ref(branch, namespace=namespace)  # GET de confirmación (§4.4)
+            existing = self._confirm_ref(branch, namespace, _present)  # GET de confirmación (§4.4)
             if existing is not None and existing.sha == sha:
                 return existing  # ya existe con el sha pedido: éxito (REQ-FORGE-28)
             if existing is not None:
                 raise RefAlreadyExists(e.message, existing=existing, http_status=e.status) from e
             raise ForgeValidationError(f"create_ref: HTTP {e.status}: {e.message}", http_status=e.status) from e
         except (NetworkTimeout, ForgeUnavailable) as cause:  # respuesta ambigua (REQ-FORGE-29)
-            existing = self.get_ref(branch, namespace=namespace)
+            existing = self._confirm_ref(branch, namespace, _present)
             if existing is not None and existing.sha == sha:
                 return existing
             if existing is not None:
@@ -1506,7 +1540,7 @@ class GitHubAdapter:
             raise
         except Exception as exc:  # noqa: BLE001 - git falló o no respondió: resultado ambiguo
             outcome, cause = "unknown", exc
-        existing = self.get_ref(branch, namespace=namespace)  # GET de confirmación (REQ-FORGE-28)
+        existing = self._confirm_ref(branch, namespace, _present)  # GET de confirmación (REQ-FORGE-28)
         if existing is not None and existing.sha == sha:
             return existing
         if existing is not None:
@@ -1527,7 +1561,7 @@ class GitHubAdapter:
             return self._ref_of(self._obj(resp, "update_ref"), "heads")
         except _HttpError as e:
             if e.status == 422:  # no es avance rápido, o la regla de la base lo impide
-                existing = self.get_ref(branch)
+                existing = self._confirm_ref(branch, "heads", _present)
                 if existing is not None and existing.sha == sha:
                     return existing  # idempotente con el mismo sha (§4.7)
                 raise RefConflict(e.message, current=existing.sha if existing else None, http_status=422) from e
@@ -1535,7 +1569,7 @@ class GitHubAdapter:
                 raise ForgeUnavailable(e.message, http_status=409) from e
             raise self._classify("update_ref", e) from e
         except (NetworkTimeout, ForgeUnavailable):
-            existing = self.get_ref(branch)
+            existing = self._confirm_ref(branch, "heads", _at(sha))
             if existing is not None and existing.sha == sha:
                 return existing
             raise
@@ -1552,7 +1586,7 @@ class GitHubAdapter:
             outcome = "unknown"
         if outcome == "accepted":
             return Ref(branch, sha)
-        existing = self.get_ref(branch)
+        existing = self._confirm_ref(branch, "heads", _present if outcome == "rejected" else _at(sha))
         if existing is not None and existing.sha == sha:
             return existing
         if outcome == "rejected":
@@ -1568,14 +1602,14 @@ class GitHubAdapter:
             return True
         except _HttpError as e:
             if e.status in (404, 422):
-                if self.get_ref(branch, namespace=namespace) is None:
+                if self._confirm_ref(branch, namespace, _absent) is None:
                     return False
                 raise ForgeValidationError(f"delete_ref: HTTP {e.status}: {e.message}", http_status=e.status) from e
             if e.status == 409:
                 raise ForgeUnavailable(e.message, http_status=409) from e
             raise self._classify("delete_ref", e) from e
         except (NetworkTimeout, ForgeUnavailable):
-            if self.get_ref(branch, namespace=namespace) is None:
+            if self._confirm_ref(branch, namespace, _absent) is None:
                 return True  # la respuesta se perdió, pero el borrado se aplicó
             raise
 
@@ -1740,12 +1774,12 @@ class GitHubAdapter:
                 raise ForgeUnavailable(e.message, http_status=409) from e
             if e.status != 422:
                 raise self._classify("commit_files", e) from e
-            current = self.get_ref(branch)
+            current = self._confirm_ref(branch, "heads", _present)
             if current is not None and current.sha == new_sha:
                 return new_sha  # hubo un reintento (§4.5, paso 5)
             raise RefConflict(e.message, current=current.sha if current else None, http_status=422) from e
         except (NetworkTimeout, ForgeUnavailable):
-            current = self.get_ref(branch)
+            current = self._confirm_ref(branch, "heads", _at(new_sha))
             if current is not None and current.sha == new_sha:
                 return new_sha
             raise

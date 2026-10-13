@@ -348,7 +348,8 @@ def test_post_is_never_retried_blindly() -> None:
     api = Api().on("POST", "git/refs", 502).on("GET", "git/ref/heads/task/1", 404)
     with pytest.raises(ForgeUnavailable):
         make(api).create_ref("task/1", SHA_A)
-    assert len(api.calls("POST")) == 1 and len(api.calls("GET")) == 1
+    assert len(api.calls("POST")) == 1  # el POST no se repite
+    assert len(api.calls("GET")) == 3  # el GET de confirmación y sus dos relecturas (§4.4)
 
 
 def test_operation_time_budget() -> None:
@@ -682,8 +683,10 @@ def test_create_ref_existing_with_same_sha_is_success() -> None:
 
 def test_create_ref_invalid_and_missing() -> None:
     api = Api().on("POST", "git/refs", 422).on("GET", "git/ref/heads/task/1", 404)
+    adapter = make(api)
     with pytest.raises(ForgeValidationError):
-        make(api).create_ref("task/1", SHA_A)
+        adapter.create_ref("task/1", SHA_A)
+    assert len(api.calls("GET")) == 3 and adapter.waits == [0.5, 1.0]  # dos relecturas y se rinde (§4.4)
 
 
 def test_create_ref_timeout_is_confirmed() -> None:
@@ -722,6 +725,37 @@ def test_delete_ref() -> None:
     api = Api().on("DELETE", "git/refs/heads/task/1", 422).on("GET", "git/ref/heads/task/1", ref_json("task/1", SHA_A))
     with pytest.raises(ForgeValidationError):
         make(api).delete_ref("task/1")
+
+
+def test_confirmation_rereads_a_ref_that_does_not_show_the_write_yet() -> None:
+    """§4.4: justo después de escribir, GitHub a veces devuelve todavía la ref anterior (CT-REF-04)."""
+    api = Api().on("POST", "git/refs", 422).on("GET", "git/ref/heads/task/1", 404, ref_json("task/1", SHA_B))
+    adapter = make(api)
+    with pytest.raises(RefAlreadyExists) as info:
+        adapter.create_ref("task/1", SHA_A)
+    assert info.value.existing == Ref("task/1", SHA_B)  # REQ-FORGE-28, aunque el primer GET no la viera
+    assert len(api.calls("POST")) == 1 and len(api.calls("GET")) == 2  # se repite el GET, no el POST
+    assert adapter.waits == [0.5]
+    api = Api().on("PATCH", "git/refs/heads/task/1", 422)
+    api.on("GET", "git/ref/heads/task/1", 404, ref_json("task/1", SHA_C))
+    with pytest.raises(RefConflict) as conflict:
+        make(api).update_ref("task/1", SHA_B)
+    assert conflict.value.current == SHA_C
+    api = Api().on("DELETE", "git/refs/heads/task/1", 422)
+    api.on("GET", "git/ref/heads/task/1", ref_json("task/1", SHA_A), 404)
+    assert make(api).delete_ref("task/1") is False
+
+
+def test_confirmation_of_a_lost_response_rereads_too() -> None:
+    api = Api().on("POST", "git/refs", Reply(raise_=httpx2.ReadTimeout("lost")))
+    api.on("GET", "git/ref/heads/task/1", 404, ref_json("task/1", SHA_A))
+    assert make(api).create_ref("task/1", SHA_A) == Ref("task/1", SHA_A)
+    api = Api().on("PATCH", "git/refs/heads/task/1", Reply(raise_=httpx2.ReadTimeout("lost")))
+    api.on("GET", "git/ref/heads/task/1", ref_json("task/1", SHA_A), ref_json("task/1", SHA_B))
+    assert make(api).update_ref("task/1", SHA_B) == Ref("task/1", SHA_B)
+    api = Api().on("DELETE", "git/refs/heads/task/1", 502)
+    api.on("GET", "git/ref/heads/task/1", ref_json("task/1", SHA_A), 404)
+    assert make(api).delete_ref("task/1") is True
 
 
 def test_ref_activity_since_last_creation() -> None:
@@ -785,6 +819,13 @@ def test_commit_files_retry_already_applied() -> None:
     api = Api().on("GET", f"git/commits/{SHA_A}", {"sha": SHA_A, "tree": {"sha": "t" * 40}})
     api.on("POST", "git/trees", Reply(201, {"sha": "e" * 40})).on("POST", "git/commits", Reply(201, {"sha": SHA_B}))
     api.on("PATCH", "git/refs/heads/task/1", 422).on("GET", "git/ref/heads/task/1", ref_json("task/1", SHA_B))
+    assert make(api).commit_files("task/1", expected_head=SHA_A, changes=[FileChange("a", b"x")], message="m") == SHA_B
+
+
+def test_commit_files_rereads_a_branch_that_does_not_show_the_write_yet() -> None:
+    api = Api().on("GET", f"git/commits/{SHA_A}", {"sha": SHA_A, "tree": {"sha": "t" * 40}})
+    api.on("POST", "git/trees", Reply(201, {"sha": "e" * 40})).on("POST", "git/commits", Reply(201, {"sha": SHA_B}))
+    api.on("PATCH", "git/refs/heads/task/1", 422).on("GET", "git/ref/heads/task/1", 404, ref_json("task/1", SHA_B))
     assert make(api).commit_files("task/1", expected_head=SHA_A, changes=[FileChange("a", b"x")], message="m") == SHA_B
 
 
@@ -1171,6 +1212,12 @@ def test_web_claim_lost_race() -> None:
     with pytest.raises(RefAlreadyExists) as info:
         make(api, env=WEB, run_git=git).create_ref("task/1", SHA_B)
     assert info.value.existing.sha == SHA_C
+
+
+def test_web_claim_rereads_a_pushed_ref_that_is_not_visible_yet() -> None:
+    api = Api().on("GET", "git/ref/heads/task/1", 404, ref_json("task/1", SHA_B))
+    git = Git((0, b"To origin\n*\tSHA:refs/heads/task/1\t[new branch]\nDone\n", b""))
+    assert make(api, env=WEB, run_git=git).create_ref("task/1", SHA_B) == Ref("task/1", SHA_B)
 
 
 def test_web_update_by_push_without_force() -> None:
