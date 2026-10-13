@@ -76,6 +76,7 @@ job ci           : la matriz completa de ci.yml sobre el commit etiquetado (work
 job live         : nightly.yml: las pruebas live, antes de cada versión (08-forja REQ-FORGE-64)
 job build        : needs ci, live
                    python tools/release.py check-tag --tag vX.Y.Z   (la etiqueta es la versión del paquete; dice si es preliminar)
+                   python tools/release.py pypi-readme --repo OWNER/REPO --ref vX.Y.Z   (el README es la descripción de PyPI: sus rutas relativas, absolutas a la etiqueta)
                    uv build --build-constraints <grupo dev de uv.lock> --require-hashes -> dist/*.whl, dist/*.tar.gz
                    uv export --frozen --no-dev --no-emit-project --extra evidence --format requirements.txt -o assets/requirements-lock.txt
                    uv export --frozen --no-dev --no-emit-project --extra evidence --format cyclonedx1.5 -o assets/sbom.cdx.json

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "aucove"
 dynamic = ["version"]
-description = "Núcleo de un framework para equipos de investigación que trabajan con IA en git, con evidencia verificable de autoría y LaTeX opcional."
+description = "Verifiable collaborative authorship for research teams that work with AI on a shared git repository, with optional LaTeX."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0 AND MIT-0 AND CC0-1.0"
@@ -36,6 +36,13 @@ evidence = ["rfc3161-client>=1.0,<2", "opentimestamps>=0.4.5,<0.5", "tzdata>=202
 
 [project.scripts]
 aucove = "aucove.entry:main"
+
+# Los enlaces de la barra lateral de PyPI.
+[project.urls]
+Homepage = "https://github.com/aucove/aucove"
+Documentation = "https://github.com/aucove/aucove/blob/main/docs/en/README.md"
+Issues = "https://github.com/aucove/aucove/issues"
+Changelog = "https://github.com/aucove/aucove/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [

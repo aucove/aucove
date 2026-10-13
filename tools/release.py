@@ -7,6 +7,7 @@ Uso::
     python tools/release.py check-tag --tag vX.Y.Z
     python tools/release.py sbom-version --file assets/sbom.cdx.json --version X.Y.Z
     python tools/release.py notes --version X.Y.Z --repo OWNER/REPO [--previous vA.B.C]
+    python tools/release.py pypi-readme --repo OWNER/REPO --ref vX.Y.Z [--file README.md]
 
 - ``check-tag``: la etiqueta que dispara el release DEBE ser ``v`` más la versión del
   paquete (``[tool.hatch.version] path`` de ``pyproject.toml``), con la forma de 00-marco
@@ -18,6 +19,10 @@ Uso::
   ``CHANGELOG.md``. Si no existe o está vacía, falla: se escribe antes de etiquetar
   (guía de mantenimiento, punto 10). Agrega cómo verificar los archivos (REQ-SEC-52) y, en
   una versión final con ``--previous``, el enlace a los cambios de la plantilla.
+- ``pypi-readme``: el README es la descripción del paquete en PyPI, donde sus rutas relativas
+  al repo no llevan a ningún lado. Antes de ``uv build`` las reescribe como URL absolutas a la
+  etiqueta: las imágenes a ``raw.githubusercontent.com``, los archivos a ``blob/`` y las
+  carpetas a ``tree/``. Solo cambia la copia del job; el README del repo queda igual.
 
 Solo usa la biblioteca estándar, para correr en los jobs del release sin instalar nada.
 Sale con 0 si todo va bien y con 1 ante cualquier error, que va a stderr.
@@ -38,6 +43,12 @@ VERSION_RE = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+(?:(?:a|b|rc)[0-9]+)?")  # 00-ma
 PRERELEASE_RE = re.compile(r"(?:a|b|rc)[0-9]+$")
 _DUNDER_VERSION = re.compile(r'^__version__ = "([^"]+)"', re.M)
 _SECTION = re.compile(r"^## \[(?P<name>[^\]]+)\]", re.M)
+REPO_RE = re.compile(r"[A-Za-z0-9-]+/[A-Za-z0-9._-]+")
+# Un atributo src= o href= de HTML, o un enlace o una imagen de Markdown: [texto](ruta), ![alt](ruta).
+_LINK = re.compile(r'(?P<attr>\b(?:src|href)=")(?P<html>[^"]+)(?=")'
+                   r"|(?P<bang>!?)\[(?P<label>[^\]]*)\]\((?P<md>[^)\s]+)\)")
+_FENCE = re.compile(r"^```.*?^```[^\n]*$", re.M | re.S)
+_SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.-]*:")
 
 
 class ReleaseError(Exception):
@@ -125,6 +136,36 @@ def release_notes(changelog: str, *, name: str, version: str, repo: str, previou
     return "\n".join(lines) + "\n"
 
 
+def pypi_readme(text: str, *, repo: str, ref: str) -> str:
+    """El README con sus rutas relativas como URL absolutas a ``ref`` en GitHub (la descripción de PyPI).
+
+    Las imágenes van a ``raw.githubusercontent.com``, los archivos a ``blob/<ref>`` y las carpetas
+    (``spec/``) a ``tree/<ref>``. Quedan igual las URL con esquema, las anclas (``#english``) y lo
+    que esté dentro de un bloque de código. Aplicarla dos veces da lo mismo.
+    """
+    if not REPO_RE.fullmatch(repo) or not ref or any(c.isspace() for c in ref):
+        raise ReleaseError(f"repo o ref inválidos: {repo!r}, {ref!r}")
+    fences = [m.span() for m in _FENCE.finditer(text)]
+
+    def absolute(path: str, *, image: bool) -> str:
+        if path.startswith(("#", "/")) or _SCHEME.match(path):
+            return path
+        if image:
+            return f"https://raw.githubusercontent.com/{repo}/{ref}/{path}"
+        file, sep, anchor = path.partition("#")
+        kind = "tree" if file.endswith("/") else "blob"
+        return f"https://github.com/{repo}/{kind}/{ref}/{file}{sep}{anchor}"
+
+    def replace(m: re.Match[str]) -> str:
+        if any(start <= m.start() < end for start, end in fences):
+            return m.group(0)
+        if m.group("attr"):
+            return m.group("attr") + absolute(m.group("html"), image=m.group("attr").startswith("src"))
+        return f'{m.group("bang")}[{m.group("label")}]({absolute(m.group("md"), image=bool(m.group("bang")))})'
+
+    return _LINK.sub(replace, text)
+
+
 def _cmd_check_tag(args: argparse.Namespace) -> None:
     version, prerelease = check_tag(args.tag, package_version())
     print(f"version={version}")
@@ -146,6 +187,12 @@ def _cmd_notes(args: argparse.Namespace) -> None:
                                    previous=args.previous or None))
 
 
+def _cmd_pypi_readme(args: argparse.Namespace) -> None:
+    path = Path(args.file)
+    text = pypi_readme(path.read_text(encoding="utf-8"), repo=args.repo, ref=args.ref)
+    path.write_text(text, encoding="utf-8", newline="\n")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="release.py", description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -161,6 +208,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     notes.add_argument("--repo", required=True)
     notes.add_argument("--previous", default="")
     notes.set_defaults(func=_cmd_notes)
+    readme = sub.add_parser("pypi-readme", help="el README de PyPI, con enlaces absolutos a la etiqueta")
+    readme.add_argument("--repo", required=True)
+    readme.add_argument("--ref", required=True)
+    readme.add_argument("--file", default=str(ROOT / "README.md"))
+    readme.set_defaults(func=_cmd_pypi_readme)
     args = parser.parse_args(argv)
     try:
         args.func(args)

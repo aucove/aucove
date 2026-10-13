@@ -71,6 +71,13 @@ jobs:
         run: python3 tools/release.py check-tag --tag "$TAG" >> "$GITHUB_OUTPUT"
       - name: uv.lock al día (REQ-SEC-44)
         run: uv lock --check
+      # El README es la descripción del paquete en PyPI, donde sus rutas relativas no llevan a ningún
+      # lado: esta copia, la que entra en el paquete, las lleva a la etiqueta. El repo no cambia.
+      - name: README de PyPI con enlaces absolutos a la etiqueta (01-arquitectura §2.3)
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: python3 tools/release.py pypi-readme --repo "$REPO" --ref "$TAG"
       - name: Rueda y sdist (hatchling de uv.lock, verificado por hash)
         run: |
           uv export --quiet --frozen --only-group dev --no-emit-project --output-file "$RUNNER_TEMP/uv-build-constraints.txt"

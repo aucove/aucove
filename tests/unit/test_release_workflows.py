@@ -197,6 +197,10 @@ def test_build_job_checks_the_tag_and_builds_with_hashed_constraints(release: Ma
     tag_step = next(s for s in job["steps"] if s.get("id") == "version")
     assert tag_step["env"] == {"TAG": "${{ github.ref_name }}"}  # por env, nunca interpolado en run
     assert "uv lock --check" in text
+    readme = 'python3 tools/release.py pypi-readme --repo "$REPO" --ref "$TAG"'
+    assert text.index(readme) < text.index("uv build ")  # la descripción de PyPI, antes del build
+    readme_step = next(s for s in job["steps"] if "pypi-readme" in str(s.get("run", "")))
+    assert readme_step["env"] == {"REPO": "${{ github.repository }}", "TAG": "${{ github.ref_name }}"}
     assert "uv export --quiet --frozen --only-group dev --no-emit-project" in text
     assert 'uv build --build-constraints "$RUNNER_TEMP/uv-build-constraints.txt" --require-hashes' in text
     assert ("--no-dev --no-emit-project --extra evidence --format requirements.txt "
