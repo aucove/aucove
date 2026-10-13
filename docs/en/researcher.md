@@ -26,7 +26,7 @@ git config --global user.email "<number>+<your-username>@users.noreply.github.co
 
 ### 2. Install git, your agent and aucove
 
-git and your AI agent (for example Claude Code, Codex, Gemini CLI or GitHub Copilot) install like any other program. aucove installs with a command that pins the exact version and its dependencies: it is in the [installation section of the README](../../README.md#installation). Then close and reopen the terminal and your agent.
+git and your AI agent (for example Claude Code, Codex, Gemini CLI or GitHub Copilot) install like any other program. aucove installs in two steps, first uv and then aucove, with commands that pin the exact version and its dependencies: they are in the [installation section of the README](../../README.md#installation). Then close and reopen the terminal and your agent.
 
 ### 3. Create your GitHub token
 

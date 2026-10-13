@@ -68,22 +68,38 @@ Your agent opens in the project folder, a clone of the group's repository, and c
 
 ### Installation
 
-Install it once per computer, with [uv](https://docs.astral.sh/uv/), the exact version and the dependencies pinned in the `requirements-lock.txt` of its Release (01-arquitectura §5.1).
+Install it once per computer, in two steps: first [uv](https://docs.astral.sh/uv/), the tool that installs it, and then aucove itself, in its exact version and with the dependencies pinned in the `requirements-lock.txt` of its Release (01-arquitectura §5.1).
 
-On Windows (PowerShell 5.1 or 7):
+**1. uv.** Skip this step if `uv --version` already works in your terminal.
+
+On Windows, in PowerShell 5.1 or 7:
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+On macOS or Linux, in bash or zsh:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+If your institution blocks these scripts, use `winget install --id=astral-sh.uv -e` on Windows or `brew install uv` on macOS. **Then close the terminal and open a new one**, so that it finds the `uv` command.
+
+**2. aucove**, in the new terminal.
+
+On Windows, in PowerShell:
+
+```powershell
 $lock = New-TemporaryFile
 Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc1/requirements-lock.txt -OutFile $lock.FullName
 $env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc1" --constraints $lock.FullName
 uv tool update-shell
 ```
 
-On macOS or Linux:
+On macOS or Linux, in bash or zsh:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
 LOCK="$(mktemp)"
 curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc1/requirements-lock.txt
 UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc1" --constraints "$LOCK"
@@ -91,6 +107,8 @@ uv tool update-shell
 ```
 
 Then restart the terminal and your agent. `aucove doctor` checks the installation, the GitHub token and the project, and says what to fix.
+
+To verify evidence seals on your computer (`aucove evidence verify`), install it with the `evidence` extra: in the `uv tool install` command, write `"aucove[evidence]==0.1.0rc1"`, and add `--force` if aucove is already installed. CI seals every submission without it.
 
 ### Getting started
 
@@ -231,22 +249,38 @@ Tu agente se abre en la carpeta del proyecto, que es un clon del repo del grupo,
 
 ### Instalación
 
-aucove se instala una vez por computadora, con [uv](https://docs.astral.sh/uv/), en su versión exacta y con las dependencias fijadas en el `requirements-lock.txt` de su Release (01-arquitectura §5.1).
+aucove se instala una vez por computadora, en dos pasos: primero [uv](https://docs.astral.sh/uv/), la herramienta que lo instala, y después aucove, en su versión exacta y con las dependencias fijadas en el `requirements-lock.txt` de su Release (01-arquitectura §5.1).
 
-En Windows (PowerShell 5.1 o 7):
+**1. uv.** Sáltate este paso si `uv --version` ya funciona en tu terminal.
+
+En Windows, en PowerShell 5.1 o 7:
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+En macOS o Linux, en bash o zsh:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Si tu institución bloquea esos scripts, usa `winget install --id=astral-sh.uv -e` en Windows o `brew install uv` en macOS. **Después cierra la terminal y abre una nueva**, para que encuentre el comando `uv`.
+
+**2. aucove**, en la terminal nueva.
+
+En Windows, en PowerShell:
+
+```powershell
 $lock = New-TemporaryFile
 Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc1/requirements-lock.txt -OutFile $lock.FullName
 $env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc1" --constraints $lock.FullName
 uv tool update-shell
 ```
 
-En macOS o Linux:
+En macOS o Linux, en bash o zsh:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
 LOCK="$(mktemp)"
 curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc1/requirements-lock.txt
 UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc1" --constraints "$LOCK"
@@ -254,6 +288,8 @@ uv tool update-shell
 ```
 
 Después, reinicia la terminal y tu agente. `aucove doctor` comprueba la instalación, el token de GitHub y el proyecto, y dice qué arreglar.
+
+Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc1"` y agrega `--force` si aucove ya estaba instalado. El CI sella cada entrega sin él.
 
 ### Primeros pasos
 
