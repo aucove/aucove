@@ -85,7 +85,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "httpx2", specifier = ">=2.13,<3" },
-    { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.23,<5" },
+    { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.26.0,<5" },
     { name = "mcp", specifier = ">=2.2,<3" },
     { name = "opentimestamps", marker = "extra == 'evidence'", specifier = ">=0.4.5,<0.5" },
     { name = "packaging", specifier = ">=24" },
