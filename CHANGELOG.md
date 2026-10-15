@@ -20,7 +20,7 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 - `evidence verify` always reports a `signature` check. Records sealed with `0.1.0rc1` stay valid and show as unsigned.
 - The administration token that `init` asks for also needs read access to Secrets and Environments, to check where the project key is kept.
 - New logo: an open book with the aucove graph on its pages. The central vertex, in amber, is the shared repository and sits on the spine.
-- The `requirements-lock.txt` of the next release pins `mcp` and `mcp-types` 2.3.0 (were 2.2.0) and `tzdata` 2026.5 (was 2026.4).
+- The `requirements-lock.txt` of the next release pins `mcp` and `mcp-types` 2.3.0 (were 2.2.0), `tzdata` 2026.5 (was 2026.4) and `cryptography` 50.0.2 (was 50.0.1), whose wheels are built with OpenSSL 4.0.3.
 - The package summary on PyPI is in English, and the PyPI page links to the repository, the user guide, the issues and the changelog.
 - The workflows of the template and of the framework use `actions/upload-artifact` 7.0.2 (was 7.0.1) and `actions/download-artifact` 8.0.2 (was 8.0.1).
 
