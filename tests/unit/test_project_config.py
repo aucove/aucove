@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
+import base64
 import os
 import re
 import tomllib
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -15,6 +17,7 @@ from aucove import _meta
 from aucove.config import project as project_mod
 from aucove.config import schemas
 from aucove.config.project import DEFAULTS, ROOT_DEFAULTS, core_pin_line, default_require_commercial, parse_project
+from aucove.domain.signing import key_blob
 from aucove.i18n import Translator
 from tests.conftest import FIXTURES, REPO_ROOT
 
@@ -198,6 +201,94 @@ def test_evidence_key_is_reserved() -> None:
     """03 §3.2: la clave ``evidence`` está reservada (el sellado no se configura en v0.1)."""
     cfg, findings = parse_project(MINIMAL + "evidence:\n  tsa: []\n")
     assert cfg is None and _codes(findings) == [("E_VALIDATION_SCHEMA", "/evidence")]
+
+
+# -- evidence_signing (00-marco D-72; 03 §3.2; REQ-SCHEMA-96) ---------------------------------------
+
+KEY_A = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHO4TeimWDqbJtD9DZ0jEQ7osipbPsIQKXvEpl+4J8Ve"
+KEY_B = "ssh-ed25519 " + base64.b64encode(key_blob(b"\x02" * 32)).decode("ascii")
+
+
+def signing_block(*keys: str, mode: str = "ci") -> str:
+    return f"evidence_signing:\n  mode: {mode}\n" + ("  keys:\n" + "".join(keys) if keys else "")
+
+
+def key_item(key_id: str, public: str, since: str = "2026-02-01T00:00:00Z", until: str | None = None) -> str:
+    text = f'    - id: {key_id}\n      public_key: "{public}"\n      since: "{since}"\n'
+    return text + (f'      until: "{until}"\n' if until is not None else "")
+
+
+def test_without_evidence_signing_nobody_signs() -> None:
+    cfg, findings = parse_project(MINIMAL)
+    assert findings == [] and cfg is not None
+    assert (cfg.evidence_signing.mode, cfg.evidence_signing.keys) == ("none", ())
+    none_cfg, findings = parse_project(MINIMAL + signing_block(mode="none"))
+    assert findings == [] and none_cfg is not None and none_cfg.evidence_signing.mode == "none"
+
+
+def test_evidence_signing_gives_the_mode_and_the_keys() -> None:
+    text = MINIMAL + signing_block(
+        key_item("ci-2025", KEY_A + " ana@laptop", "2025-01-01T00:00:00Z", "2026-02-01T00:00:00Z"),
+        key_item("ci-2026", KEY_B),
+    )
+    cfg, findings = parse_project(text)
+    assert findings == [] and cfg is not None
+    signing_cfg = cfg.evidence_signing
+    assert signing_cfg.mode == "ci" and [k.id for k in signing_cfg.keys] == ["ci-2025", "ci-2026"]
+    assert signing_cfg.keys[0].until == datetime(2026, 2, 1, tzinfo=timezone.utc)
+    assert signing_cfg.keys[1].until is None and signing_cfg.keys[1].public_key == KEY_B
+    # sin comillas, las fechas siguen siendo texto (REQ-SCHEMA-3)
+    bare = MINIMAL + signing_block(key_item("ci", KEY_A).replace('"2026-02-01T00:00:00Z"', "2026-02-01T00:00:00Z"))
+    cfg, findings = parse_project(bare)
+    assert findings == [] and cfg is not None and cfg.evidence_signing.keys[0].id == "ci"
+
+
+@pytest.mark.parametrize(
+    ("keys", "pointer", "reason"),
+    [
+        ((key_item("ci", KEY_A), key_item("ci", KEY_B)), "/evidence_signing/keys/1/id", "duplicate_id"),
+        ((key_item("a", KEY_A), key_item("b", KEY_A + " otra copia")), "/evidence_signing/keys/1/public_key",
+         "duplicate_key"),
+        ((key_item("a", KEY_A, until="2026-02-01T00:00:00Z"),), "/evidence_signing/keys/0/until",
+         "until_not_after_since"),
+        ((key_item("a", KEY_A, until="2025-02-01T00:00:00Z"),), "/evidence_signing/keys/0/until",
+         "until_not_after_since"),
+    ],
+)
+def test_evidence_key_rules_are_config_invalid(keys: tuple[str, ...], pointer: str, reason: str,
+                                               t_es: Translator) -> None:
+    cfg, findings = parse_project(MINIMAL + signing_block(*keys), t=t_es)
+    assert cfg is None and _codes(findings) == [("E_CONFIG_INVALID", pointer)]
+    assert t_es(f"config.project.evidence_key.{reason}") in findings[0].message
+
+
+@pytest.mark.parametrize(
+    ("block", "pointer"),
+    [
+        (signing_block(mode="ci"), "/evidence_signing"),  # ci o admin sin llaves
+        (signing_block(mode="admin"), "/evidence_signing"),
+        ("evidence_signing:\n  mode: ci\n  keys: []\n", "/evidence_signing/keys"),
+        (signing_block(key_item("a", KEY_A), mode="siempre"), "/evidence_signing/mode"),
+        (signing_block(key_item("a", "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC")), "/evidence_signing/keys/0/public_key"),
+        (signing_block(key_item("Ana", KEY_A)), "/evidence_signing/keys/0/id"),
+        (signing_block(key_item("a", KEY_A, "2026-02-01")), "/evidence_signing/keys/0/since"),
+        (signing_block(key_item("a", KEY_A, "2026-02-01T00:00:00+00:00")), "/evidence_signing/keys/0/since"),
+        (signing_block(key_item("a", KEY_A) + "      revoked: true\n"), "/evidence_signing/keys/0"),
+        ("evidence_signing:\n  mode: ci\n  llave: x\n", "/evidence_signing"),
+    ],
+)
+def test_evidence_signing_schema_errors(block: str, pointer: str) -> None:
+    cfg, findings = parse_project(MINIMAL + block)
+    assert cfg is None
+    schema = [p or "" for code, p in _codes(findings) if code == "E_VALIDATION_SCHEMA"]
+    assert any(p.startswith(pointer) for p in schema), _codes(findings)
+
+
+def test_more_than_fifty_keys_is_a_schema_error() -> None:
+    keys = [key_item(f"k{i}", "ssh-ed25519 " + base64.b64encode(key_blob(bytes([i + 1]) * 32)).decode("ascii"))
+            for i in range(51)]
+    cfg, findings = parse_project(MINIMAL + signing_block(*keys))
+    assert cfg is None and ("E_VALIDATION_SCHEMA", "/evidence_signing/keys") in _codes(findings)
 
 
 def test_effective_config_is_read_only() -> None:

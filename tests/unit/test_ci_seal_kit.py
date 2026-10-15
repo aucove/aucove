@@ -198,8 +198,12 @@ def test_templates_are_plain_markdown_with_known_markers(lang: str) -> None:
     assert "\r" not in text and text.endswith("\n") and not text.endswith("\n\n")
     assert set(ci_seal._PLACEHOLDER_RE.findall(text)) == {
         "name", "version", "kind", "commit", "attempt", "artifact", "manifest_sha256", "tsa_table", "tsa_commands",
+        # la firma del proyecto (11-trazabilidad §8.6 y §8.10; 00-marco D-72)
+        "sealed", "namespace", "key_id", "key", "verify_time", "open_section",
     }
-    assert sorted(m["name"] for m in ci_seal._BLOCK_RE.finditer(text)) == ["no-tsa", "tsa"]
+    assert sorted(m["name"] for m in ci_seal._BLOCK_RE.finditer(text)) == [
+        "no-signature", "no-tsa", "signature", "signature", "signature", "signature", "signature", "tsa",
+    ]
     assert "fecha cierta" not in text.lower() and "certain date" not in text.lower()  # REQ-TRACE-75
     assert "sección" not in text.lower()
 
@@ -207,9 +211,13 @@ def test_templates_are_plain_markdown_with_known_markers(lang: str) -> None:
 def test_both_languages_cover_the_same_commands() -> None:
     es, en = (TEMPLATES[lang].read_text(encoding="utf-8") for lang in ("es", "en"))
     assert ci_seal._BLOCK_RE.findall(es) and len(es.splitlines()) == len(en.splitlines())
-    for needle in ("```sh", "ots --no-bitcoin verify manifest.json.ots", "ots info manifest.json.ots",
+    for needle in ("```sh", "ots --no-bitcoin verify {{sealed}}.ots", "ots info {{sealed}}.ots",
                    "python open_commitments.py manifest.json openings.json", "`Verification: OK`",
-                   'uvx --from "{{name}}[evidence]=={{version}}" {{name}} evidence verify .'):
+                   'uvx --from "{{name}}[evidence]=={{version}}" {{name}} evidence verify .',
+                   "evidence verify . --keys",
+                   "ssh-keygen -Y verify -f allowed_signers -I {{key_id}} -n {{namespace}} -s manifest.json.sig",
+                   "-O verify-time={{verify_time}} < manifest.json",
+                   "ssh-keygen -Y check-novalidate -n {{namespace}} -s manifest.json.sig < manifest.json"):
         assert es.count(needle) == en.count(needle) >= 1, needle
 
 

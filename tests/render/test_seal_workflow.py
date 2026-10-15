@@ -134,10 +134,12 @@ def test_jobs_names_conditions_runners_and_permissions(render: Render) -> None:
 
 def test_no_write_to_contents_identity_tokens_secrets_or_attestations(render: Render) -> None:
     text = render.text
-    for forbidden in ("contents: write", "id-token", "secrets.", "secrets:", "attest", "sigstore", "cosign",
+    for forbidden in ("contents: write", "id-token", "secrets:", "attest", "sigstore", "cosign",
                       "git push", "update-ref", "git commit", "write-all", "workflow_run",
                       "allow-unsafe-pr-checkout"):
         assert forbidden not in text.lower(), forbidden
+    # El único secreto es la llave del proyecto, en el paso que sella de integration (REQ-CI-61).
+    assert text.count("secrets.") == 1
     for job in jobs(render.doc).values():
         assert set(job["permissions"].values()) <= {"read", "write"}
         assert {k for k, v in job["permissions"].items() if v == "write"} == {"pull-requests"}
@@ -151,6 +153,23 @@ def test_actions_are_pinned_by_sha_with_their_version(render: Render) -> None:
         for step in job["steps"]:
             if action(step) == "actions/checkout":
                 assert step["with"]["persist-credentials"] is False
+
+
+def test_only_integration_signs_with_the_project_key(render: Render) -> None:
+    """REQ-CI-61 (00-marco D-72): el job integration declara el environment de la llave, sin
+    despliegues, y la pasa solo al paso de ``ci seal``; submission no la recibe nunca."""
+    env_name = f"{NAME}-evidence"
+    var = f"{_meta.ENV_PREFIX}EVIDENCE_KEY"
+    integration = jobs(render.doc)["integration"]
+    assert integration["environment"] == {"name": env_name, "deployment": False}
+    assert "environment" not in jobs(render.doc)["submission"]
+    assert "env" not in integration and "env" not in render.doc
+    holders = [s for s in steps(render.doc, "integration") if var in (s.get("env") or {})]
+    (holder,) = holders
+    assert holder["env"][var] == "${{ secrets." + var + " }}"
+    assert f"{NAME} ci seal --kind integration" in holder["run"]
+    for step in steps(render.doc, "submission"):
+        assert var not in (step.get("env") or {})
 
 
 # -- el PR se lee como datos (REQ-CI-29) -------------------------------------------------
@@ -281,7 +300,8 @@ def test_ci_policy_rule_has_no_findings_on_the_render(render: Render) -> None:
     assert run_ci_policy({".github/workflows/seal.yml": render.text}) == []
     # Con otro nombre, pull_request_target ya no se admite (SB06).
     findings = run_ci_policy({".github/workflows/seal-copy.yml": render.text})
-    assert [f.path for f in findings] == [".github/workflows/seal-copy.yml"]
+    # y tampoco la llave del proyecto: ni su environment ni su secreto (SB10)
+    assert [f.path for f in findings] == [".github/workflows/seal-copy.yml"] * 3
 
 
 def test_text_encoding(render: Render) -> None:

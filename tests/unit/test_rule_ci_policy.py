@@ -12,6 +12,7 @@ from types import MappingProxyType
 import pytest
 import yaml
 
+from aucove import _meta
 from aucove.config.base import BaseSnapshot
 from aucove.config.project import parse_project
 from aucove.config.roles import parse_roles
@@ -200,11 +201,57 @@ def test_untrusted_interpolation_in_github_script_and_safe_uses() -> None:
 def test_secrets_are_forbidden() -> None:
     text = GOOD.replace("      - run: echo ok\n", "      - run: echo ok\n        env: { T: \"${{ secrets.TOKEN }}\" }\n")
     (finding,) = run({WF: text})
-    assert detail("secrets") in finding.message
+    assert detail("secrets", secret=f"{_meta.ENV_PREFIX}EVIDENCE_KEY") in finding.message
     inherit = GOOD + "  call:\n    uses: ./.github/workflows/ci.yml\n    permissions: {}\n    secrets: inherit\n"
     assert detail("secrets_inherit", job="call") in messages(run({WF: inherit}))
     token = GOOD.replace("      - run: echo ok\n", "      - run: echo ok\n        env: { T: \"${{ github.token }}\" }\n")
     assert run({WF: token}) == []
+
+
+SEAL = ".github/workflows/seal.yml"
+KEY_VAR = f"{_meta.ENV_PREFIX}EVIDENCE_KEY"
+KEY_ENV = f"{_meta.NAME}-evidence"
+SIGNING = (
+    "name: seal\n"
+    "on:\n"
+    "  push:\n"
+    "    branches: [main]\n"
+    "permissions: {}\n"
+    "jobs:\n"
+    "  integration:\n"
+    "    runs-on: ubuntu-slim\n"
+    "    timeout-minutes: 10\n"
+    f"    environment: {{ name: {KEY_ENV}, deployment: false }}\n"
+    "    permissions: { contents: read }\n"
+    "    steps:\n"
+    "      - name: Sellar\n"
+    "        env:\n"
+    f"          {KEY_VAR}: ${{{{ secrets.{KEY_VAR} }}}}\n"
+    f"        run: {_meta.NAME} ci seal --kind integration\n"
+)
+
+
+def test_the_project_key_only_in_the_seal_step_of_integration() -> None:
+    """SB10 (10-seguridad; 09-ci REQ-CI-61; 00-marco D-72): la llave del proyecto solo la recibe el
+    paso de ``ci seal`` del job integration de seal.yml, con su environment."""
+    assert run({SEAL: SIGNING}) == []
+    # en otro workflow, el environment y el secreto son hallazgos
+    other = messages(run({WF: SIGNING}))
+    assert detail("evidence_environment", job="integration", environment=KEY_ENV) in other
+    assert detail("secrets", secret=KEY_VAR) in other
+    # otro job de seal.yml no puede declarar el environment
+    renamed = SIGNING.replace("  integration:\n", "  submission:\n")
+    assert detail("evidence_environment", job="submission", environment=KEY_ENV) in messages(run({SEAL: renamed}))
+    # el secreto en otro paso, en el env del job o con otro nombre de variable
+    elsewhere = SIGNING.replace(f"        run: {_meta.NAME} ci seal --kind integration\n", "        run: echo hola\n")
+    assert detail("secrets", secret=KEY_VAR) in messages(run({SEAL: elsewhere}))
+    renamed_var = SIGNING.replace(f"          {KEY_VAR}: ", "          OTRA: ")
+    assert detail("secrets", secret=KEY_VAR) in messages(run({SEAL: renamed_var}))
+    whole = SIGNING.replace(f"${{{{ secrets.{KEY_VAR} }}}}", "${{ toJSON(secrets) }}")
+    assert detail("secrets", secret=KEY_VAR) in messages(run({SEAL: whole}))
+    # un environment con expresión podría resolver al de la llave
+    dynamic = SIGNING.replace(f"name: {KEY_ENV}", 'name: "${{ github.event_name }}"')
+    assert detail("environment_expression", job="integration") in messages(run({SEAL: dynamic}))
 
 
 def test_pull_request_target_only_in_validate_yml_and_seal_yml() -> None:

@@ -23,6 +23,18 @@ red) y en la forja solo crea ese comentario.
   de ``get_pull_request``, porque las listas no lo traen (08 §4.2). Pide las dos primeras
   TSA del catálogo que respondan y OpenTimestamps (REQ-CI-53).
 
+Firma del proyecto (REQ-CI-61; 11-trazabilidad §8.10; 00-marco D-72): en ``integration``,
+con ``evidence_signing.mode: ci`` en la política, la llave privada llega en
+``<PREFIJO>EVIDENCE_KEY`` (el secreto del environment ``<nombre>-evidence``) y solo vive en
+memoria. Si su llave pública es una llave de la política que vale ahora, firma los bytes de
+``manifest.json`` (``manifest.json.sig``), verifica la firma y sella la firma: las pruebas
+son de ella (``sealed``). Si la variable falta (``no_secret``), si la llave no es del
+proyecto o ya no vale (``key_mismatch``) o si no se pudo leer o firmar (``sign_failed``),
+sella el manifiesto igual, sin firma, porque la fecha va primero: el motivo va al resumen y
+a una anotación ``::warning::`` en stdout, antes de ``records`` y ``status``, y la salida no
+cambia. Nunca escribe la llave ni el texto de un error al leerla. En ``submission``, o con
+``mode`` ``admin`` o ``none``, no firma ni lee la variable.
+
 La carpeta lleva ``VERIFY.md`` y ``open_commitments.py`` (REQ-TRACE-82), de
 ``_data/evidence/``. ``VERIFY.md`` es un archivo generado: va en el idioma de la política
 (``project.yaml: language``), nunca en el de ``<PREFIJO>LANG`` (REQ-ARCH-70); la línea
@@ -34,7 +46,8 @@ visible con la hora en UTC y en la del centro de México. Su ``op_id`` es el SHA
 nuevo y el mismo nunca duplica. Sin PR solo quedan el artefacto y el resumen; si no se
 puede comentar, el resumen lo dice y la salida no cambia (REQ-CI-54).
 
-Salida: ``records=<k>`` y ``status=complete|partial|failed`` en stdout (REQ-CI-55); 0 si
+Salida: ``records=<k>`` y ``status=complete|partial|failed`` en stdout (REQ-CI-55), después
+de la anotación de un registro sin firma, si la hay; 0 si
 cada registro tiene al menos una prueba ``ok`` (también sin registros, cuando no había
 nada que sellar), 1 si no o si la carpeta no se pudo escribir, y 3 en un error de uso;
 nunca 2. El resumen da cada motivo con su texto y, entre acentos graves, su código
@@ -61,6 +74,7 @@ import time
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, TextIO
 
@@ -77,9 +91,10 @@ from .result import OpError
 if TYPE_CHECKING:
     import argparse
 
+    from ..domain.signing import EvidenceKey
     from ..evidence.catalog import Catalog
     from ..evidence.manifest import BuiltManifest
-    from ..evidence.record import Proof, Record
+    from ..evidence.record import Proof, Record, Signature
     from ..forge.base import ForgeAdapter, PullRequest
     from ..vcs.git import Git
     from .context import OpContext
@@ -91,11 +106,14 @@ __all__ = [
     "OUTPUT_KEYS",
     "PROOF_TEXTS",
     "SKIPPED_TEXTS",
+    "UNSIGNED_REASONS",
+    "UNSIGNED_TEXTS",
     "WORKFLOW_FILE",
     "Outcome",
     "ProofRow",
     "Sealers",
     "comment_body",
+    "fill_template",
     "evidence_json",
     "evidence_marker",
     "files_lang",
@@ -108,6 +126,12 @@ __all__ = [
     "request_proofs",
     "seal",
     "sealers_from_env",
+    "sign_manifest",
+    "tsa_commands",
+    "tsa_row",
+    "unsigned_text",
+    "verify_time",
+    "warning_line",
 ]
 
 KINDS: tuple[str, ...] = ("submission", "integration")
@@ -118,6 +142,9 @@ TSA_WANTED: Mapping[str, int] = {"submission": 0, "integration": 2}  # REQ-CI-53
 MAX_HISTORY = 100  # commits de primer padre que se miran para la base (REQ-CI-52)
 MAX_ATTEMPT = 999  # el nombre del artefacto admite a1..a999
 FAKE_VAR = "EVIDENCE_FAKE"  # <PREFIJO>EVIDENCE_FAKE, solo con <PREFIJO>TESTING=1
+KEY_VAR = "EVIDENCE_KEY"  # <PREFIJO>EVIDENCE_KEY: la llave privada del proyecto (REQ-CI-61)
+# Por qué un registro de integración con mode: ci quedó sin firma (REQ-CI-61).
+UNSIGNED_REASONS: tuple[str, ...] = ("no_secret", "key_mismatch", "sign_failed")
 EVIDENCE_DATA = Path(__file__).resolve().parent.parent / "_data" / "evidence"
 OPEN_SCRIPT_SOURCE = "open_commitments.py"
 
@@ -237,8 +264,11 @@ def _failure_text(exc: BaseException) -> str:
     return f"internal: {type(exc).__name__}"
 
 
-def request_proofs(data: bytes, kind: str, sealers: Sealers) -> tuple[list[Proof], list[ProofRow]]:
-    """Pruebas de los bytes ``data`` del manifiesto: TSA (solo ``integration``) y OpenTimestamps.
+def request_proofs(
+    data: bytes, kind: str, sealers: Sealers, *, subject: str = "manifest.json"
+) -> tuple[list[Proof], list[ProofRow]]:
+    """Pruebas de los bytes ``data`` del archivo sellado ``subject`` (el manifiesto o su firma):
+    TSA (solo ``integration``) y OpenTimestamps.
 
     Cada prueba que no se obtiene queda en el registro con ``status: error``, también sin
     el extra ``evidence`` (``missing_extra``): así el registro dice qué se pidió. Las RFC
@@ -258,12 +288,12 @@ def request_proofs(data: bytes, kind: str, sealers: Sealers) -> tuple[list[Proof
             batch = tsa.stamp(data, catalog=catalog, wanted=wanted, transport=sealers.transport, sleep=sealers.sleep)
         except Exception as exc:  # noqa: BLE001 - un cliente roto no tumba el sello: queda como error
             for entry in catalog.sealing()[:wanted]:
-                proofs.append(Proof.failed("rfc3161", entry.id, _failure_text(exc)))
+                proofs.append(Proof.failed("rfc3161", entry.id, _failure_text(exc), subject=subject))
                 rows.append(ProofRow("rfc3161", entry.id, "error", "internal"))
         else:
             if batch.status == "skip":
                 for entry in catalog.sealing()[:wanted]:
-                    proofs.append(Proof.failed("rfc3161", entry.id, "missing_extra"))
+                    proofs.append(Proof.failed("rfc3161", entry.id, "missing_extra", subject=subject))
                     rows.append(ProofRow("rfc3161", entry.id, "error", "missing_extra"))
             for got in batch.proofs:
                 if got.status == "ok" and got.tsr is not None and got.gen_time is not None:
@@ -271,13 +301,13 @@ def request_proofs(data: bytes, kind: str, sealers: Sealers) -> tuple[list[Proof
                     revocation = Revocation(got.revocation.type, got.revocation.der) if got.revocation else None
                     proofs.append(Proof.rfc3161(
                         got.source, got.tsr, when, revocation=revocation,
-                        chain_pem=got.chain_pem, root_pem=got.root_pem,
+                        chain_pem=got.chain_pem, root_pem=got.root_pem, subject=subject,
                     ))
                     rows.append(ProofRow(
                         "rfc3161", got.source, "ok", got.reason, when, got.revocation.type if got.revocation else None,
                     ))
                 else:
-                    proofs.append(Proof.failed("rfc3161", got.source, got.error or got.reason))
+                    proofs.append(Proof.failed("rfc3161", got.source, got.error or got.reason, subject=subject))
                     rows.append(ProofRow("rfc3161", got.source, "error", got.reason))
     try:
         if sealers.calendars is None:
@@ -285,16 +315,48 @@ def request_proofs(data: bytes, kind: str, sealers: Sealers) -> tuple[list[Proof
         else:
             stamp = ots.stamp(data, transport=sealers.transport, calendars=sealers.calendars)
     except Exception as exc:  # noqa: BLE001
-        proofs.append(Proof.failed("ots", OTS_SOURCE, _failure_text(exc)))
+        proofs.append(Proof.failed("ots", OTS_SOURCE, _failure_text(exc), subject=subject))
         rows.append(ProofRow("ots", OTS_SOURCE, "error", "internal"))
     else:
         if stamp.status == "ok" and stamp.ots is not None:
-            proofs.append(Proof.ots(stamp.ots))
+            proofs.append(Proof.ots(stamp.ots, subject=subject))
             rows.append(ProofRow("ots", OTS_SOURCE, "ok", stamp.reason))
         else:
-            proofs.append(Proof.failed("ots", OTS_SOURCE, stamp.error or stamp.reason))
+            proofs.append(Proof.failed("ots", OTS_SOURCE, stamp.error or stamp.reason, subject=subject))
             rows.append(ProofRow("ots", OTS_SOURCE, "error", stamp.reason))
     return proofs, rows
+
+
+def sign_manifest(
+    data: bytes, keys: Sequence[EvidenceKey], env: Mapping[str, str], now: datetime
+) -> tuple[Signature | None, str | None]:
+    """Firma del proyecto sobre los bytes exactos de ``manifest.json`` (REQ-CI-61): ``(firma, None)``
+    o ``(None, motivo)``, con un motivo de ``UNSIGNED_REASONS``.
+
+    La llave privada sale solo de ``<PREFIJO>EVIDENCE_KEY`` y queda en memoria; su llave pública
+    debe estar en ``keys`` (las de la política) y valer en ``now``. La firma se verifica antes de
+    usarla. Nunca lanza por la llave ni deja su texto en ningún mensaje.
+    """
+    from ..domain.signing import find_key
+    from ..evidence import sshsig
+    from ..evidence.record import SIG_FILE, Signature
+
+    secret = env.get(_meta.ENV_PREFIX + KEY_VAR) or ""
+    if not secret.strip():
+        return None, "no_secret"
+    try:
+        key = sshsig.load_private_key(secret)
+    except sshsig.SigningError:
+        return None, "sign_failed"
+    known = find_key(keys, key.public_key)
+    if known is None or not known.valid_at(now):
+        return None, "key_mismatch"
+    try:
+        armored = key.sign(data)
+        checked = sshsig.verify(armored, data)
+    except (sshsig.SignatureError, ValueError):
+        return None, "sign_failed"
+    return Signature(SIG_FILE, checked.hash, checked.fingerprint, known.id, armored), None
 
 
 # -- kit del árbitro: VERIFY.md y open_commitments.py (11-trazabilidad §8.6) -------------
@@ -325,7 +387,8 @@ def _attime(time_utc: str | None) -> str:
     return str(int(parse_utc(time_utc).timestamp()))
 
 
-def _tsa_row(proof: Proof, catalog: Catalog | None) -> str:
+def tsa_row(proof: Proof, catalog: Catalog | None) -> str:
+    """Fila de la tabla de sellos de ``VERIFY.md``: la TSA, la fecha, ``-attime`` y las huellas de la raíz."""
     name, where = _tsa_name(proof.source, catalog)
     file_sha = hashlib.sha256(proof.root_pem).hexdigest() if proof.root_pem else _NOTHING
     link = f"<{where}>" if where.startswith("https://") else where
@@ -335,8 +398,9 @@ def _tsa_row(proof: Proof, catalog: Catalog | None) -> str:
     )
 
 
-def _tsa_commands(proof: Proof, catalog: Catalog | None) -> str:
-    from ..evidence.record import MANIFEST_FILE, chain_file, root_file, tsr_file
+def tsa_commands(proof: Proof, catalog: Catalog | None, sealed: str) -> str:
+    """Órdenes de OpenSSL para comprobar el sello de ``proof`` sobre el archivo ``sealed``."""
+    from ..evidence.record import chain_file, root_file, tsr_file
 
     name, _where = _tsa_name(proof.source, catalog)
     root = root_file(proof.source)
@@ -345,21 +409,34 @@ def _tsa_commands(proof: Proof, catalog: Catalog | None) -> str:
             f"# {name} ({proof.source})",
             f"sha256sum {root}",
             f"openssl x509 -in {root} -noout -fingerprint -sha256",
-            f"openssl ts -verify -data {MANIFEST_FILE} -in {tsr_file(proof.source)} -CAfile {root}"
+            f"openssl ts -verify -data {sealed} -in {tsr_file(proof.source)} -CAfile {root}"
             f" -untrusted {chain_file(proof.source)} -attime {_attime(proof.time_utc)}",
         )
     )
+
+
+def verify_time(stamps: Sequence[Proof]) -> str:
+    """``verify-time`` de ``ssh-keygen`` (``AAAAMMDDhhmmssZ``): el ``genTime`` más antiguo de los sellos."""
+    from ..evidence.timefmt import parse_utc
+
+    times = [parse_utc(p.time_utc) for p in stamps if p.time_utc]
+    return min(times).strftime("%Y%m%d%H%M%SZ") if times else _NOTHING
 
 
 def render_verify(record: Record, lang: str, catalog: Catalog | None = None) -> str:
     """``VERIFY.md`` del registro en ``lang`` (``es`` o ``en``): la guía en lenguaje llano.
 
     Rellena la plantilla de ``_data/evidence/VERIFY.<lang>.md``: los marcadores ``{{x}}``
-    y los bloques ``<!-- tsa -->`` (con sellos RFC 3161) y ``<!-- no-tsa -->`` (sin ellos).
-    Las órdenes de OpenSSL van con los archivos y el ``-attime`` de cada sello obtenido.
+    y los bloques ``<!-- tsa -->`` (con sellos RFC 3161) y ``<!-- no-tsa -->`` (sin ellos), y
+    ``<!-- signature -->`` y ``<!-- no-signature -->`` (con la firma del proyecto o sin ella).
+    Las órdenes de OpenSSL van con el archivo sellado y el ``-attime`` de cada sello obtenido;
+    la de ``ssh-keygen``, con el ``verify-time`` del sello más antiguo.
     """
     template = (EVIDENCE_DATA / f"VERIFY.{lang if lang in LANGS else 'en'}.md").read_text(encoding="utf-8")
+    from ..domain.signing import NAMESPACE
+
     stamps = [p for p in record.proofs if p.type == "rfc3161" and p.status == "ok"]
+    signature = record.signature
     values = {
         "name": _meta.NAME,
         "version": _meta.__version__,
@@ -368,16 +445,29 @@ def render_verify(record: Record, lang: str, catalog: Catalog | None = None) -> 
         "attempt": str(record.run_attempt),
         "artifact": record.artifact,
         "manifest_sha256": record.manifest_sha256,
-        "tsa_table": "\n".join(_tsa_row(p, catalog) for p in stamps),
-        "tsa_commands": "\n\n".join(_tsa_commands(p, catalog) for p in stamps),
+        "tsa_table": "\n".join(tsa_row(p, catalog) for p in stamps),
+        "tsa_commands": "\n\n".join(tsa_commands(p, catalog, record.sealed) for p in stamps),
+        "sealed": record.sealed,
+        "namespace": NAMESPACE,
+        "key_id": signature.key_id if signature is not None else _NOTHING,
+        "key": signature.key if signature is not None else _NOTHING,
+        "verify_time": verify_time(stamps),
+        "open_section": "5" if signature is not None else "4",
     }
 
+    blocks = {"tsa": bool(stamps), "no-tsa": not stamps, "signature": signature is not None,
+              "no-signature": signature is None}
+    return fill_template(template, values, blocks)
+
+
+def fill_template(template: str, values: Mapping[str, str], blocks: Mapping[str, bool]) -> str:
+    """Rellena una plantilla del kit: los marcadores ``{{x}}`` con ``values`` y cada bloque
+    ``<!-- nombre -->…<!-- /nombre -->`` con su cuerpo si ``blocks[nombre]`` es verdadero."""
+
     def block(m: re.Match[str]) -> str:
-        if m["name"] == "tsa":
-            return m["body"] if stamps else ""
-        if m["name"] == "no-tsa":
-            return "" if stamps else m["body"]
-        raise ValueError(f"bloque desconocido en la plantilla de VERIFY.md: {m['name']}")
+        if m["name"] not in blocks:
+            raise ValueError(f"bloque desconocido en la plantilla de VERIFY.md: {m['name']}")
+        return m["body"] if blocks[m["name"]] else ""
 
     return _PLACEHOLDER_RE.sub(lambda m: values[m[1]], _BLOCK_RE.sub(block, template))
 
@@ -397,12 +487,14 @@ def kit_files(record: Record, lang: str, catalog: Catalog | None = None) -> dict
 
 @dataclass(frozen=True)
 class _Policy:
-    """Lo que el sello usa de ``--policy``: idioma, rama base y repositorio."""
+    """Lo que el sello usa de ``--policy``: idioma, rama base, repositorio y la firma del proyecto."""
 
     readable: bool
     language: str | None = None
     branch: str | None = None
     repository: str | None = None
+    signing: str = "none"  # evidence_signing.mode (D-72)
+    keys: tuple[EvidenceKey, ...] = ()
 
 
 def read_policy(policy_dir: str) -> _Policy:
@@ -420,7 +512,10 @@ def read_policy(policy_dir: str) -> _Policy:
         return _Policy(False)
     language = cfg.language if cfg.language in LANGS else None
     repo = cfg.forge_repo if isinstance(cfg.forge_repo, str) else None
-    return _Policy(True, language, _valid_branch(cfg.base_branch), github_repository({"GITHUB_REPOSITORY": repo or ""}))
+    return _Policy(
+        True, language, _valid_branch(cfg.base_branch), github_repository({"GITHUB_REPOSITORY": repo or ""}),
+        signing=cfg.evidence_signing.mode, keys=cfg.evidence_signing.keys,
+    )
 
 
 def files_lang(policy: _Policy) -> Lang:
@@ -517,6 +612,8 @@ class Outcome:
     out_failed: bool = False
     comment: str | None = None  # 'created' | 'unchanged' | 'failed' | 'no_forge' | 'no_pr'
     comment_error: str | None = None
+    signing: bool = False  # integration con mode: ci: se intentó la firma del proyecto (REQ-CI-61)
+    unsigned: str | None = None  # motivo de UNSIGNED_REASONS si se intentó y no se firmó
     notes: list[tuple[str, dict[str, object]]] = field(default_factory=list)
 
     @property
@@ -682,7 +779,7 @@ def _write_folder(out: Path, record: Record, extra: Mapping[str, bytes]) -> Path
 def _run(args: argparse.Namespace, ctx: OpContext, o: Outcome, policy: _Policy, sealers: Sealers,
          t: Translator) -> None:
     from ..evidence.catalog import load_catalog
-    from ..evidence.record import Record
+    from ..evidence.record import MANIFEST_FILE, Record
     from ..evidence.tsa import seal_status
 
     forge = _Forge(ctx, o.notes)
@@ -691,11 +788,18 @@ def _run(args: argparse.Namespace, ctx: OpContext, o: Outcome, policy: _Policy, 
         return
     built, run_env = found
     o.built = built
-    proofs, o.rows = request_proofs(built.data, o.kind, sealers)
+    signature = None
+    if o.kind == "integration" and policy.signing == "ci":  # REQ-CI-61: primero se firma
+        o.signing = True
+        signature, o.unsigned = sign_manifest(built.data, policy.keys, ctx.inv.env, ctx.inv.now())
+    if signature is not None and signature.data is not None:
+        proofs, o.rows = request_proofs(signature.data, o.kind, sealers, subject=signature.file)
+    else:
+        proofs, o.rows = request_proofs(built.data, o.kind, sealers, subject=MANIFEST_FILE)
     record = Record(
         kind=o.kind, commit=args.commit, pr=o.pr, task=o.task, plan=built.plan, manifest_sha256=built.sha256,
         run_id=run_env.run_id, run_attempt=run_env.attempt, proofs=tuple(proofs), manifest=built.data,
-        openings=built.openings,
+        openings=built.openings, signature=signature,
     )
     o.record = record
     tsa_ok = sum(p.type == "rfc3161" and p.status == "ok" for p in proofs)
@@ -759,9 +863,51 @@ def visible_line(o: Outcome, t: Translator) -> str:
         "attempt": record.run_attempt, "status": o.status, "ok": ok, "total": len(record.proofs),
         "utc": utc, "artifact": record.artifact,
     }
-    if local is None:
-        return t("ci.seal.comment.line_utc", **common)
-    return t("ci.seal.comment.line", local=local, **common)
+    line = t("ci.seal.comment.line_utc", **common) if local is None else t("ci.seal.comment.line", local=local, **common)
+    signing = _signing_text(o, t, signed="ci.seal.comment.signed", unsigned="ci.seal.comment.unsigned")
+    return f"{line} {signing}" if signing else line
+
+
+def _signing_text(o: Outcome, t: Translator, *, signed: str, unsigned: str) -> str | None:
+    """Si el registro va firmado, con el ``id`` de la llave, o por qué no; ``None`` sin firma que
+    intentar (``submission``, o ``mode`` ``admin`` o ``none``)."""
+    if not o.signing or o.record is None:
+        return None
+    signature = o.record.signature
+    if signature is not None:
+        return t(signed, key_id=signature.key_id, key=signature.key)
+    code = o.unsigned or "sign_failed"
+    return t(unsigned, reason=code, text=unsigned_text(t, code))
+
+
+def unsigned_text(t: Translator, code: str) -> str:
+    """Texto del motivo ``code`` de un registro sin firma, con el secreto y el environment de
+    la plantilla (``<PREFIJO>EVIDENCE_KEY`` y ``<nombre>-evidence``, 00-marco §5.13)."""
+    from ..domain.signing import NAMESPACE
+
+    for family in UNSIGNED_TEXTS:
+        text = t.get(family + code, var=_meta.ENV_PREFIX + KEY_VAR, environment=NAMESPACE)
+        if text is not None:
+            return text
+    return code
+
+
+def warning_line(o: Outcome, t: Translator) -> str | None:
+    """Anotación ``::warning::`` de Actions de un registro de integración que quedó sin firma (REQ-CI-61).
+
+    Mensaje y título van escapados como datos y propiedad de un comando de flujo: ningún
+    salto de línea puede empezar otro comando.
+    """
+    if not o.signing or o.record is None or o.record.signature is not None:
+        return None
+
+    def data(text: str) -> str:
+        return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+    title = data(f"{_meta.NAME}/seal-{o.kind}").replace(":", "%3A").replace(",", "%2C")
+    code = o.unsigned or "sign_failed"
+    text = t("ci.seal.warning.unsigned", reason=code, text=unsigned_text(t, code))
+    return f"::warning title={title}::{data(text)}\n"
 
 
 def _publish(forge: ForgeAdapter, number: int, body: str, op: str) -> tuple[str, str | None]:
@@ -796,6 +942,7 @@ PROOF_TEXTS: Mapping[str, tuple[str, ...]] = {
     "ots": ("ci.seal.proof_reason.", "evidence.check.ots."),
 }
 SKIPPED_TEXTS: tuple[str, ...] = ("evidence.skipped.",)
+UNSIGNED_TEXTS: tuple[str, ...] = ("ci.seal.unsigned.",)  # por qué no se firmó (REQ-CI-61)
 
 
 def reason_text(t: Translator, code: str, families: Sequence[str]) -> str:
@@ -863,6 +1010,9 @@ def _record_lines(o: Outcome, t: Translator) -> list[str]:
                    entries=entries))
     items.append(t("ci.seal.summary.plan_yes" if record.plan else "ci.seal.summary.plan_no"))
     items.append(t("ci.seal.summary.manifest", sha256=record.manifest_sha256))
+    signing = _signing_text(o, t, signed="ci.seal.summary.signed", unsigned="ci.seal.summary.unsigned")
+    if signing is not None:
+        items.append(signing)
     if o.folder is not None:
         items.append(t("ci.seal.summary.artifact", artifact=record.artifact, folder=o.folder.name))
     else:
@@ -956,6 +1106,9 @@ def seal(args: argparse.Namespace, ctx: OpContext, out: TextIO, *, sealers: Seal
     if o.comment not in (None, "no_pr"):
         _say(_comment_item(o, t) or "")
     _say(t("ci.seal.done", check=f"{_meta.NAME}/seal-{o.kind}", records=o.records, status=o.printed_status))
+    annotation = warning_line(o, t)
+    if annotation is not None:
+        out.write(annotation)
     out.write(f"records={o.records}\nstatus={o.printed_status}\n")
     out.flush()
     return o.exit_code()

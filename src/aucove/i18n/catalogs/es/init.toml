@@ -63,7 +63,7 @@ main-broken = "La rama base no compila o no valida"
 flag_bypass = "Integrado sin cumplir la matriz de aprobación"
 
 [init.token]
-prompt = "Token de administración de GitHub (permiso Administration de lectura y escritura; no se muestra ni se guarda): "
+prompt = "Token de administración de GitHub (permisos Administration de lectura y escritura, y Secrets y Environments de lectura; no se muestra ni se guarda): "
 
 [init]
 commit = "Configura el proyecto con init"
@@ -98,6 +98,9 @@ bypass_declined = "Sin suplente ni bypass, tus PR quedan bloqueados hasta que de
 invited = "`{login}` recibió una invitación como colaborador externo: lo correcto es invitarlo a la organización (06-permisos REQ-PERM-55)."
 org = "Ajustes de la organización que conviene que cambie un owner (06-permisos §4.10): {changes}."
 setup_task = "Prepara el proyecto en la tarea #{task}, «{title}»: abre tu agente en la carpeta del proyecto y pídele que te guíe para completar el plan, las personas y las partes."
+evidence_secrets_repo = "No se pudieron leer los nombres de los secretos de Actions del repositorio: comprueba en la web que ninguno se llame `{secret}`. La llave del proyecto solo va en el environment (10-seguridad REQ-SEC-87)."
+evidence_secrets_org = "No se pudieron leer los nombres de los secretos de Actions de la organización: comprueba con un owner que ninguno visible para este repositorio se llame `{secret}`."
+evidence_secret = "Agrega la llave privada del proyecto como secreto `{secret}` del environment `{environment}`, en la web o con `gh secret set {secret} --env {environment}` (guía del admin)."
 
 # Vista legible del resultado.
 [init.render]

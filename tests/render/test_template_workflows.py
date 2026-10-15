@@ -975,7 +975,9 @@ def test_seal_workflow_is_required_by_the_convention(fmt: str) -> None:
     assert [(f.path, f.severity) for f in missing] == [(path, "error")]
     # project.yaml no tiene ninguna clave para apagar el sellado (03-esquemas §3).
     schema = json.loads((REPO_ROOT / "schemas" / "project.schema.json").read_text(encoding="utf-8"))
-    assert not [key for key in schema["properties"] if "seal" in key or "evidence" in key]
+    # evidence_signing elige quién firma (00-marco D-72), no apaga el sellado.
+    assert not [key for key in schema["properties"]
+                if ("seal" in key or "evidence" in key) and key != "evidence_signing"]
 
 
 @pytest.mark.parametrize("name", WORKFLOW_FILES)

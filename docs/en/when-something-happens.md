@@ -161,3 +161,28 @@ Run `aucove doctor` in the terminal before editing: it says what is missing (the
 The agent stops and asks you to install it with the command from the guide. It does not install it on its own.
 
 </details>
+
+<details>
+<summary>The sealing says that a merge was left without the project signature</summary>
+
+The job summary, a yellow warning in Actions and the comment on the submission say so, with the reason. The record was sealed anyway, because the date comes first, and the signature of the milestone index covers it later. So that the next ones are signed:
+
+- `no_secret`: the secret `AUCOVE_EVIDENCE_KEY` is missing from the `aucove-evidence` environment. Add it with [step 3](project-signature.md#3-with-ci-mode-keep-the-key-on-github).
+- `key_mismatch`: the key in the secret is not a current key of `project.yaml`, for example because you changed it in one place and not in the other. Check that both match.
+- `sign_failed`: the secret is not an `ssh-ed25519` key without a passphrase. Upload it again without the passphrase.
+
+</details>
+
+<details>
+<summary><code>init</code> stops because the project key is a secret of the repo or of the organization</summary>
+
+A workflow on any branch can read a secret of the repo or of the organization, so the key cannot be there. Delete it on GitHub (Settings → Secrets and variables → Actions), put it in the `aucove-evidence` environment ([step 3](project-signature.md#3-with-ci-mode-keep-the-key-on-github)) and run `aucove init` again. If the key was exposed, change it.
+
+</details>
+
+<details>
+<summary>You lost the project key, or it was stolen</summary>
+
+Give the key an end date and create another: [Changing the key, or revoking a stolen one](project-signature.md#changing-the-key-or-revoking-a-stolen-one). What was signed and sealed before that date stays valid.
+
+</details>

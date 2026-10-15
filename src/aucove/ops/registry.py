@@ -8,7 +8,8 @@ código. En H2 contenía ``doctor``, ``validate``, ``check-path`` y ``sync-roles
 (D-31), más ``evidence verify`` (D-50). H3 agrega ``status`` y ``context``, el ciclo de tareas
 (``task propose``, ``accept`` y ``cancel``, ``claim``, ``release``, ``save``, ``update``,
 ``switch``, ``record-assessment``, ``submit`` y ``expire-claims``), ``decision propose`` y
-``direction propose``, ``review`` e ``init``; ``metrics`` llega con los pasos siguientes.
+``direction propose``, ``review`` e ``init``; ``metrics`` llega con los pasos siguientes, y
+``evidence sign``, con la firma del proyecto (D-72).
 
 Un módulo de operación exporta ``run(ctx: OpContext, **kwargs) -> Result`` y,
 de forma opcional, ``render_text(result, t, *, fmt='text') -> str``.
@@ -353,8 +354,25 @@ REGISTRY: tuple[OpSpec, ...] = (
             Param("offline", "boolean", default=False, cli_only=True),
             Param("upgrade", "boolean", default=False, cli_only=True),
             Param("tz", "string", cli_only=True, schema={"minLength": 1}),
+            Param("keys", "string", cli_only=True, schema={"minLength": 1}),  # D-72
         ),
         data_def="#/$defs/data_evidence_verify",
+    ),
+    # 05 §9.27 (D-72): solo humana y sin MCP. Firma y sella el índice de un paquete de evidencia,
+    # que queda fuera del árbol de trabajo; no toca la forja ni el repositorio (sin candados).
+    OpSpec(
+        id="evidence.sign",
+        cli=("evidence", "sign"),
+        mcp_tool=None,
+        human_only=True,
+        effects="local",
+        offline="online",
+        module="ops.evidence_sign",
+        params=(
+            Param("package", "string", required=True, positional=True, cli_only=True, schema={"minLength": 1}),
+            Param("key", "string", required=True, cli_only=True, schema={"minLength": 1}),
+        ),
+        data_def="#/$defs/data_evidence_sign",
     ),
     # 05 §9.10: crea el Issue de la tarea; la idempotencia es el marcador op (§6.1).
     OpSpec(

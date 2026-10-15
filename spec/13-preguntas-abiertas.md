@@ -20,7 +20,7 @@ Cada entrada consolidada lleva un identificador `PA-<n>`, que solo vale dentro d
 
 ## 2. Resumen
 
-Hay 95 entradas abiertas, ninguna bloqueante, que reúnen 105 preguntas `Q-*` de los capítulos 01 a 12.
+Hay 97 entradas abiertas, ninguna bloqueante, que reúnen 107 preguntas `Q-*` de los capítulos 01 a 12.
 
 ---
 
@@ -53,6 +53,7 @@ En cada tabla, la columna "¿Bloquea?" da el motivo en una línea.
 | PA-97 | Q-FORGE-13 (08) | ¿Debe `doctor`, en una sesión web, comprobar que `git push` a `task/<n>` sigue disponible (por ejemplo, empujando una `task/<n>` existente a su mismo sha) y, si recibe 403, pasar la puerta web a solo consulta con un mensaje claro? | No: S1 se repite antes de H4 y antes de H7 (D-22) | Equipo técnico | Con S1 resuelto (D-41), decidirlo en H3; es un cambio para 05-operaciones y 08-forja. |
 | PA-103 | Q-FORGE-14 (08) | En la web, ¿aceptan el proxy y la Claude GitHub App el `git push` de un merge de `update` que trae de la base cambios en `.github/workflows/**`? | No: si se rechaza, `update` se hace desde la terminal | Prueba empírica | Probarlo en la repetición de S1 del 23–27/11/2026 y documentar la salida. |
 | PA-110 | Q-TRACE-13 (11) | S5 (H3, primera semana): ¿los runners alcanzan las TSA y los calendarios OTS? ¿Cuánto miden los comentarios y artefactos? ¿Hay endpoint de retención y recorte de `retention-days`? ¿Qué `verified_at` tiene el squash hecho en la web? ¿Se puede registrar en OSF sin proyecto? | No: si una TSA no responde, se cambia el catálogo; si `ubuntu-slim` no alcanza, el job pasa a `ubuntu-24.04` | Prueba empírica | Correrlo en la org de pruebas y registrar el resultado como decisión. |
+| PA-112 | Q-CI-14 (09) | ¿Qué hace GitHub con el `environment` del job `integration` de `seal.yml` en un repo privado del plan Free, que no tiene environments? ¿Sigue la regla de rama cerrando el secreto con `deployment: false`? | No para el MVP; sí para publicar `0.1.0rc2`, que espera la prueba | Prueba empírica (`CT-ADM-04` y E12 en `ct-public` y `ct-private`) | Correrla antes del release. Si el job no corre en el privado de Free, el equipo técnico elige otra forma de declarar el environment para el modo `admin`. |
 
 ### 4.2 Permisos, aprobaciones y revisión
 
@@ -181,6 +182,7 @@ En cada tabla, la columna "¿Bloquea?" da el motivo en una línea.
 | PA-108 | Q-CI-13 (09) | ¿Actualización diaria de las pruebas OTS? | No: `verify --upgrade` y la guía las completan | Equipo técnico | v0.2. |
 | PA-109 | Q-MVP-16 (12) | ¿Se practica una apertura en el piloto? | No | Usuario | Solo si un grupo llega a un hito; si no, depósito cifrado. |
 | PA-111 | Q-TRACE-14 (11) | ¿Qué verificación de Bitcoin se agrega en v0.2? | No: en v0.1 OTS da `weak` y `VERIFY.md` explica el cotejo manual | Equipo técnico | Nodo propio opcional más dos exploradores coincidentes, marcados de menor confianza. |
+| PA-113 | Q-TRACE-15 (11) | ¿Se admiten llaves físicas FIDO (`sk-ssh-ed25519@openssh.com`) para firmar el índice en el modo `admin`? | No: v0.1 firma con `ssh-ed25519` y frase de paso | Equipo técnico | v0.2: es la mejor defensa contra un agente que firme por su cuenta (10-seguridad TH-34). |
 
 ### 4.12 Revisión con modelo (reservada)
 
@@ -191,7 +193,7 @@ En cada tabla, la columna "¿Bloquea?" da el motivo en una línea.
 
 ### 4.13 Lista de verificación de las pruebas empíricas
 
-Las entradas que decide una prueba se agrupan aquí para planificar H1 y H2: PA-10, PA-11 (`CT-CAP-02`), PA-12, PA-13, PA-15 (`CT-WEB-03`), PA-16, PA-17 (`CT-AUTH-01`), PA-18, PA-20, PA-21, PA-32, PA-48, PA-49, PA-50, PA-51, PA-58, PA-63, PA-65, PA-66, PA-67, PA-71, PA-74, PA-90, PA-94, PA-103, PA-110.
+Las entradas que decide una prueba se agrupan aquí para planificar H1 y H2: PA-10, PA-11 (`CT-CAP-02`), PA-12, PA-13, PA-15 (`CT-WEB-03`), PA-16, PA-17 (`CT-AUTH-01`), PA-18, PA-20, PA-21, PA-32, PA-48, PA-49, PA-50, PA-51, PA-58, PA-63, PA-65, PA-66, PA-67, PA-71, PA-74, PA-90, PA-94, PA-103, PA-110, PA-112.
 
 ---
 

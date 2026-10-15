@@ -70,7 +70,7 @@ git push -u origin main
 
 You need the everyday token, like everyone else ([the steps are in Researcher](researcher.md#your-github-token)). For `init` you also need an administration token, used only that day:
 
-- the same form, with the **Administration** permission on "Read and write" in addition to the others, and an expiration of 1 day;
+- the same form, with the **Administration** permission on "Read and write", and **Secrets** and **Environments** on "Read-only", in addition to the others, and an expiration of 1 day;
 - do not keep it in `GH_TOKEN`: you paste it when `init` asks for it, and it is neither shown nor stored;
 - when `init` is done, delete it on GitHub.
 
@@ -107,7 +107,7 @@ Next I will ask for a short-lived GitHub administration token; it is neither sho
 To confirm, type exactly "init labfe/ising-diluido" and press Enter: init labfe/ising-diluido
 roles.yaml has no deputy: nobody can approve your PRs. If you confirm, you (lmendez) become a bypass actor …
 To confirm, type exactly "bypass lmendez" and press Enter: bypass lmendez
-GitHub administration token (Administration read and write permission; neither shown nor stored): (you paste the token; it is not shown)
+GitHub administration token (Administration read and write, and Secrets and Environments read-only; neither shown nor stored): (you paste the token; it is not shown)
 init on labfe/ising-diluido (enforced profile):
 Files (39):
   updated: project.yaml
@@ -123,7 +123,7 @@ Pending:
 Before working: everyone turns on the GitHub noreply email and signs the authorship and disclosure agreement (00-marco D-44 and D-49).
 ```
 
-What it left behind: GitHub configured (protections, labels and how long the evidence is kept), the project files in one commit, and your setup task, #1, already accepted. Now delete the administration token on GitHub.
+What it left behind: GitHub configured (protections, labels, how long the evidence is kept and the `aucove-evidence` environment for the project signature), the project files in one commit, and your setup task, #1, already accepted. Now delete the administration token on GitHub.
 
 ### 6. Open your agent and prepare the project
 
@@ -200,6 +200,8 @@ To confirm, type exactly "accept 2" and press Enter: accept 2
 ### 8. Tell your team
 
 Check that each person accepted the invitation to the organization and send them the [researcher guide](researcher.md): install, create their token, clone and open their agent. Approve their tokens when they show up in Pending requests. If someone will work from the browser, install the Claude app for GitHub on the repo.
+
+When you are done, set up the [project signature](project-signature.md), which takes about 15 minutes: with it, whoever reviews the work from outside can check that your project issued each record, not only when it existed.
 
 ## Every week
 

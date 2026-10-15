@@ -14,6 +14,10 @@ Devuelve ``None`` si hay algún hallazgo de severidad ``error``.
   ese valor condicional, así que no está en ``DEFAULTS``.
 - ``format`` es obligatorio (03 §3.2: sin valor por defecto) y la configuración
   efectiva lo expone tal cual; qué cambia con ``none`` lo deciden las reglas y el CI.
+- ``evidence_signing`` (00-marco D-72): sin el bloque, ``mode`` es ``none`` y no hay llaves.
+  Las reglas de la lista de llaves que el esquema no expresa (REQ-SCHEMA-96) las aplica
+  ``domain.signing.parse_keys``: un ``id`` o una llave repetidos, una llave que no es
+  ``ssh-ed25519`` y un ``until`` que no es posterior a su ``since`` son ``E_CONFIG_INVALID``.
 
 La compatibilidad con el núcleo instalado (REQ-SCHEMA-17) la decide
 ``domain.compat.check``; :func:`compat` la aplica a una configuración.
@@ -30,6 +34,7 @@ from typing import Any
 from .. import _meta
 from ..domain import compat as _compat
 from ..domain.findings import Finding, has_errors
+from ..domain.signing import EvidenceKey, parse_keys
 from ..i18n import Lang, Translator
 from .schemas import quote_hint, validate
 from .yamlload import SYNTAX_CODE, config_finding, default_t, line_for, load_with_lines, with_hint
@@ -109,6 +114,14 @@ class BuildConfig:
 
 
 @dataclass(frozen=True)
+class SigningConfig:
+    """``evidence_signing`` efectivo (00-marco D-72): quién firma y las llaves públicas válidas."""
+
+    mode: str = "none"  # ci | admin | none
+    keys: tuple[EvidenceKey, ...] = ()
+
+
+@dataclass(frozen=True)
 class ProjectConfig:
     """Configuración efectiva: todas las claves de 03 §3.2 con su valor o el de defecto.
 
@@ -138,6 +151,7 @@ class ProjectConfig:
     review: Mapping[str, object] = field(default_factory=lambda: DEFAULTS["review"])
     advisory_acceptance: Mapping[str, str] | None = None
     mode: str = "group"  # group | individual (D-57); sus reglas (REQ-SCHEMA-94) llegan en H3
+    evidence_signing: SigningConfig = field(default_factory=SigningConfig)  # D-72
 
 
 def _lines_of(text: str) -> list[str]:
@@ -186,6 +200,12 @@ def _effective(raw: Mapping[str, Any]) -> ProjectConfig:
     disclosure = raw.get("disclosure", ROOT_DEFAULTS["disclosure"])
     data_policy = _section(raw, "data_policy")
     data_policy.setdefault("require_commercial", default_require_commercial(disclosure))
+    signing = raw.get("evidence_signing")
+    if isinstance(signing, dict):
+        keys, _problems = parse_keys(signing.get("keys") or ())
+        evidence_signing = SigningConfig(mode=signing.get("mode", "none"), keys=keys)
+    else:
+        evidence_signing = SigningConfig()
     return ProjectConfig(
         convention=raw["convention"],
         core=raw["core"],
@@ -218,6 +238,7 @@ def _effective(raw: Mapping[str, Any]) -> ProjectConfig:
         review=MappingProxyType(_section(raw, "review")),
         advisory_acceptance=MappingProxyType(dict(acceptance)) if isinstance(acceptance, dict) else None,
         mode=raw.get("mode", ROOT_DEFAULTS["mode"]),
+        evidence_signing=evidence_signing,
     )
 
 
@@ -234,7 +255,7 @@ def _quote_syntax_hint(finding: Finding, norm: str | None, t: Translator) -> Fin
 def _rules(
     raw: Mapping[str, Any], norm: str, lines: Mapping[str, int], *, file: str, t: Translator, check: str
 ) -> list[Finding]:
-    """REQ-SCHEMA-83 y REQ-SCHEMA-84 sobre un documento que ya cumple el esquema."""
+    """REQ-SCHEMA-83, REQ-SCHEMA-84 y REQ-SCHEMA-96 sobre un documento que ya cumple el esquema."""
     out: list[Finding] = []
 
     def invalid(pointer: str, detail: str, hint: str | None = None) -> None:
@@ -260,6 +281,11 @@ def _rules(
             "/limits/expiry_warning_days",
             t("config.project.expiry_warning", warning=str(warning), expiry=str(expiry)),
         )
+    signing = raw.get("evidence_signing")
+    if isinstance(signing, dict) and "keys" in signing:
+        _keys, problems = parse_keys(signing["keys"])
+        for problem in problems:  # REQ-SCHEMA-96
+            invalid("/evidence_signing/keys" + problem.pointer, t(f"config.project.evidence_key.{problem.reason}"))
     return out
 
 

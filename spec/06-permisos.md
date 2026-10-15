@@ -393,7 +393,7 @@ Con `mode: individual` (00-marco D-57; 03-esquemas REQ-SCHEMA-94) hay una sola p
 - **REQ-PERM-25.** Cada paso de `init` DEBE ser idempotente: lee el estado, compara y escribe solo si difiere. DEBE informar `applied`, `unchanged`, `skipped` o `failed` por paso.
 - **REQ-PERM-26.** `init` DEBE aplicar los rulesets como última protección, después de publicar en la base los archivos generados (`CODEOWNERS`).
 
-Orden: (1) ajustes del repo, (2) permisos de Actions (`actions/permissions` con `sha_pinning_required`, `actions/permissions/workflow` y, en repos públicos, la política que permite `pull_request_target`), (3) colaboradores, (4) etiquetas, (5) archivos generados en la base, (6) rulesets, (7) verificación (§4.11), (8) la tarea de preparación (05-operaciones §9.3; 00-marco D-70) e informe de los ajustes de organización (§4.10).
+Orden: (1) ajustes del repo, (2) permisos de Actions (`actions/permissions` con `sha_pinning_required`, `actions/permissions/workflow` y, en repos públicos, la política que permite `pull_request_target`) y el environment `aucove-evidence` (§4.3b), (3) colaboradores, (4) etiquetas, (5) archivos generados en la base, (6) rulesets, (7) verificación (§4.11), (8) la tarea de preparación (05-operaciones §9.3; 00-marco D-70) e informe de los ajustes de organización (§4.10).
 
 ### 4.2 Ajustes del repositorio
 
@@ -453,6 +453,12 @@ Texto del aviso (el catálogo lo toma de aquí; `{level}` es `org` o `repo`, y `
 - `en`: «The Actions policy ({level}) does not allow: {missing}. The template workflows cannot run. Ask an owner to allow these actions, pinned by SHA (minimum settings in the guide).» If the result is unknown: «Could not read the Actions policy (admin access is required). Check with an owner that it allows: {missing}.»
 
 Cada workflow declara sus permisos en su bloque `permissions:` (09-ci). La lista de acciones permitidas es de 10-seguridad.
+
+### 4.3b Environment `aucove-evidence` (00-marco D-72)
+
+El job `integration` de `seal.yml` declara el environment `aucove-evidence` (09-ci REQ-CI-61). Un workflow que nombra un environment que no existe lo crea sin reglas ni secretos, y entonces cualquier rama podría usarlo; por eso `init` lo crea antes, con su regla.
+
+- **REQ-PERM-61.** Si el repositorio admite environments (es público, o privado con Pro, Team o Enterprise: los mismos casos que el perfil `enforced`), `init` DEBE crear o actualizar `aucove-evidence`, sea cual sea `evidence_signing.mode`, con `deployment_branch_policy: {"protected_branches": false, "custom_branch_policies": true}` y una sola regla de despliegue, de tipo `branch`, igual a `forge.base_branch`, y DEBE borrar cualquier otra regla. No le pone revisores ni temporizador. Antes, con el token de administración, `init` DEBE leer los nombres de los secretos de Actions del repositorio y de los de la organización visibles para el repositorio, y fallar con `E_CONFIG_EVIDENCE_KEY` (`details.reason: repo_secret`) si alguno se llama `AUCOVE_EVIDENCE_KEY` (10-seguridad REQ-SEC-87). Con `mode: ci`, si el environment no tiene ese secreto, `init` lo agrega a `data.pending_steps`: el admin lo pone en la web o con `gh secret set AUCOVE_EVIDENCE_KEY --env aucove-evidence`, porque `init` nunca escribe secretos. Si una lectura de secretos falla por permisos, el resultado es desconocido, y la comprobación queda en `data.pending_steps` para hacerla a mano.
 
 ### 4.4 Colaboradores
 
@@ -634,7 +640,7 @@ GitHub Free con repo privado no ofrece rulesets, ramas protegidas, code owners o
 
 ## 6. Operaciones solo humanas: aplicación en capas
 
-Son aprobar, pedir cambios, aceptar y cancelar tareas, e `init` (D-09). Integrar tampoco la hace el núcleo. A esto se suman los cambios de protección (ruleset, colaboradores, ajustes), que solo hace `init`.
+Son aprobar, pedir cambios, aceptar y cancelar tareas, `init` (D-09) y firmar el índice del paquete de evidencia (D-72). Integrar tampoco la hace el núcleo. A esto se suman los cambios de protección (ruleset, colaboradores, ajustes), que solo hace `init`.
 
 | Capa | Mecanismo | Cubre | No cubre | Autoridad |
 |---|---|---|---|---|
@@ -652,20 +658,21 @@ Son aprobar, pedir cambios, aceptar y cancelar tareas, e `init` (D-09). Integrar
 | Aprobar, pedir cambios o descartar | `gh pr review` con `--approve`/`-a` o `--request-changes`/`-r`; `gh api` con `POST`/`PUT` a `repos/*/pulls/*/reviews*`; GraphQL `addPullRequestReview`, `submitPullRequestReview`, `dismissPullRequestReview` |
 | Aceptar o cancelar tareas, reconocer dirección | `gh issue edit` con `--remove-label state:proposed` o `--add-label ack:direction`; `gh issue close` sobre un Issue `task` |
 | Cambiar protecciones | `gh api` con método de escritura a `*/rulesets*`, `*/branches/*/protection*`, `*/collaborators/*`, `*/actions/permissions*`, `PATCH repos/{o}/{r}`; `gh repo edit` |
-| Operaciones H de la CLI | `aucove init`, `aucove review approve`, `aucove review request-changes`, `aucove task accept`, `aucove task cancel` |
+| Operaciones H de la CLI | `aucove init`, `aucove review approve`, `aucove review request-changes`, `aucove task accept`, `aucove task cancel`, `aucove evidence sign` |
+| Firmar con la llave del proyecto (D-72) | `ssh-keygen` con `-Y sign` |
 | HTTP directo a la forja | `curl`, `wget`, `Invoke-RestMethod` o `Invoke-WebRequest` a `api.github.com` con un método distinto de `GET` |
 
 Comprobación de la capa 2, `require_human`, igual para todas las operaciones H. Se aplica en dos fases (05-operaciones §10 la cita):
 
 1. **Fase 1, `human_precheck`**, antes de leer credenciales y de cualquier llamada de red: `CLAUDE_CODE_CHILD_SESSION` no vacía, `CI=true` o `GITHUB_ACTIONS=true` → `E_HUMAN_ONLY_AGENT_ENV`; stdin o stdout sin TTY → `E_HUMAN_ONLY_NO_TTY`.
-2. **Fase 2, `human_confirm`**, tras las lecturas: resumen a stderr (con `head_sha` y el estado del CI en las revisiones) y reto `<op> <target>`, con `op` ∈ {`approve`, `request-changes`, `accept`, `cancel`, `init`} y `target` = `<pr>`, `<n>` u `<owner>/<repo>`. Hay un solo intento, y EOF equivale a `E_HUMAN_ONLY_NOT_CONFIRMED`. En `advisory`, `init` pide una segunda frase, «acepto el perfil advisory» / «I accept the advisory profile» (REQ-PERM-40); sin suplente (REQ-PERM-19), la frase `bypass <login del lead>`. Devuelve `HumanConfirmation(operation, confirmed_at)`.
+2. **Fase 2, `human_confirm`**, tras las lecturas: resumen a stderr (con `head_sha` y el estado del CI en las revisiones) y reto `<op> <target>`, con `op` ∈ {`approve`, `request-changes`, `accept`, `cancel`, `init`, `sign`} y `target` = `<pr>`, `<n>`, `<owner>/<repo>` o el nombre de la carpeta del paquete. Hay un solo intento, y EOF equivale a `E_HUMAN_ONLY_NOT_CONFIRMED`. En `advisory`, `init` pide una segunda frase, «acepto el perfil advisory» / «I accept the advisory profile» (REQ-PERM-40); sin suplente (REQ-PERM-19), la frase `bypass <login del lead>`. Devuelve `HumanConfirmation(operation, confirmed_at)`.
 
 ```python
 import os, sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-H_OPS = {"approve", "request-changes", "accept", "cancel", "init"}
+H_OPS = {"approve", "request-changes", "accept", "cancel", "init", "sign"}
 
 @dataclass(frozen=True)
 class HumanConfirmation:                  # la exige 08-forja (REQ-FORGE-10)
@@ -689,7 +696,7 @@ def _type_once(phrase: str, code: str) -> None:
 
 def human_confirm(op: str, target: str, summary: str, *, advisory: bool = False,
                   bypass_lead: str | None = None) -> HumanConfirmation:
-    """Fase 2: tras las lecturas. target: '<pr>', '<n>' u '<owner>/<repo>'."""
+    """Fase 2: tras las lecturas. target: '<pr>', '<n>', '<owner>/<repo>' o la carpeta del paquete."""
     if op not in H_OPS:
         raise ValueError(op)
     print(summary, file=sys.stderr)                    # en revisiones, con head_sha y estado del CI
@@ -774,6 +781,8 @@ Un workflow programado PUEDE comentar en los PR vencidos mencionando a `lead` y 
 | `W_FORGE_ACTIONS_RESTRICTED` | aviso | REQ-PERM-56 (00-marco D-39) |
 | `REQ-PERM-57` | requisito | Retención de 400 días de artefactos y registros de Actions en repos privados (§4.3; 00-marco D-46) |
 | `E_CONFIG_BASE_NOT_DEFAULT` | código de error | REQ-PERM-24 |
+| REQ-PERM-61, environment `aucove-evidence`, `E_CONFIG_EVIDENCE_KEY` (`repo_secret`) | requisito, environment y código de error | El environment de la firma del proyecto, con la rama base como única regla, y la llave nunca como secreto del repositorio (§4.3b; 00-marco D-72) |
+| `sign` | valor de `op` del reto de §6 | `aucove evidence sign` (00-marco D-72) |
 | Actor de `sync-roles`: `lead` / `deputy` | cambio en 00-marco §5.7 | el suplente regenera `CODEOWNERS` cuando edita `roles.yaml` en nombre del `lead` |
 | `.mcp.json`, `.codex/**`, `.gemini/**`, `opencode.json`, `.opencode/**`, `.agents/plugins/**` → clase `lead` | agregar a 00-marco §5.2 | ya son `lead` por defecto; se listan porque son rutas de control |
 

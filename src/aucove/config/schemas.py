@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 SchemaKind = Literal[
     "project", "roles", "result", "decision", "session-note", "pr-meta",
-    "evidence-manifest", "evidence-openings", "evidence-record",
+    "evidence-manifest", "evidence-openings", "evidence-record", "evidence-signature",
 ]
 SCHEMA_KINDS: tuple[SchemaKind, ...] = get_args(SchemaKind)
 

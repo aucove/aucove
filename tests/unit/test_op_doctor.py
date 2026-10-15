@@ -303,6 +303,7 @@ def test_healthy_project(tmp_path: Path, repo: GitRepo) -> None:
             "convention": "ok", "remote": "ok", "identity": "ok", "membership": "ok", "forge_reachable": "ok",
             "profile": "ok", "deputy": "ok", "codeowners_sync": "ok", "merge-settings": "ok", "generated_files": "ok",
             "mcp_config": "ok", "half_states": "ok", "cache": "ok", "evidence_tools": EXTRA_STATUS,
+            "evidence_signing": "warn",  # sin evidence_signing: sin firma del proyecto (00-marco D-72)
         }
     )
     assert statuses(result) == expected

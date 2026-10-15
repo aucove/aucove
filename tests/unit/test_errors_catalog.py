@@ -26,7 +26,7 @@ def _enum(name: str) -> list[str]:
 
 def test_errors_equal_schema_enum() -> None:
     assert list(errors.ERRORS) == _enum("error_code")
-    assert len(errors.ERRORS) == 79
+    assert len(errors.ERRORS) == 81  # E_CONFIG_TOOL_MISSING y E_CONFIG_EVIDENCE_KEY (D-72)
 
 
 def test_warnings_equal_schema_enum() -> None:

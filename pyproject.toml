@@ -32,7 +32,8 @@ dependencies = [
 # Sellado y verificación de evidencia (01-arquitectura §4, REQ-ARCH-99): solo con
 # importación perezosa desde aucove.evidence y nunca en la ruta caliente.
 [project.optional-dependencies]
-evidence = ["rfc3161-client>=1.0,<2", "opentimestamps>=0.4.5,<0.5", "tzdata>=2025.2; sys_platform == 'win32'"]
+evidence = ["rfc3161-client>=1.0,<2", "opentimestamps>=0.4.5,<0.5", "cryptography>=44",
+            "tzdata>=2025.2; sys_platform == 'win32'"]
 
 [project.scripts]
 aucove = "aucove.entry:main"

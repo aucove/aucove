@@ -8,6 +8,13 @@
 [evidence]
 verify = "Evidence verification"
 
+[evidence.sign]
+summary = "Signature on the index of the evidence package (00-marco D-72).\n  Package: {package}\n  `index.txt`: {files} files, SHA-256 `{sha256}`\n  Key for `ssh-keygen`: {key}\n  Current keys of the project: {keys}\n`ssh-keygen` will ask for the passphrase of the key; then the signature is stamped with the TSAs and OpenTimestamps, and stays in a `signature/` folder of the package."
+effect = "Would sign `index.txt` of {folder} with the project key and write the stamped signature in a `signature/` folder of the package."
+done = "Index signature in `{folder}` ({package}): key `{key_id}` (`{key}`) signed `index.txt`; {ok} of {total} proofs obtained."
+proof = "  {proof} `{source}`: {state}"
+no_tsa = "No TSA answered: the signature only has OpenTimestamps. Run `evidence sign` again later to add a folder with TSAs."
+
 [evidence.verdict]
 verified = "verified"
 pending = "pending"
@@ -36,6 +43,8 @@ openings = "openings"
 actors = "actors"
 git = "git"
 content = "content"
+signature = "signature"
+index = "index"
 
 [evidence.render]
 header = "{title} · {target}: {verdict}"
@@ -44,12 +53,19 @@ check = "  [{status}] {check}{source}: {detail}"
 time = "      {utc}"
 time_local = "      {utc} · {local}"
 confidence = "({confidence} confidence)"
+origin = "  origin: {origin}"
+signature_folder = "Index signature `{folder}`: {verdict}"
+
+[evidence.origin]
+project = "the project (a key of the project that was valid at the date of the stamp signed it)"
+unknown = "unknown (there is a signature, but it could not be checked against the keys of the project)"
+unsigned = "no project signature"
 
 [evidence.note]
 more = "Other problems: {n}."
-upgraded = "It was completed with the calendars and `manifest.json.ots` was rewritten."
+upgraded = "It was completed with the calendars and the `.ots` proof was rewritten."
 upgrade_dry_run = "Completed with the calendars; with `--dry-run` it was not rewritten."
-upgrade_not_written = "Completed, but `manifest.json.ots` could not be rewritten."
+upgrade_not_written = "Completed, but the `.ots` proof could not be rewritten."
 completed = "Completed in memory with the calendars; `--upgrade` saves it."
 
 # -- evidence verify checks (evidence.check.<check>.<reason>) ---------------------------------
@@ -78,7 +94,7 @@ missing_extra = "The `evidence` extra is missing: the proof was not verified."
 unknown_tsa = "The TSA is not in the core catalog."
 invalid = "The stamp cannot be read."
 rejected = "The TSA rejected the request."
-digest_mismatch = "The stamp is not for the SHA-256 of the manifest."
+digest_mismatch = "The stamp is not for the SHA-256 of what was sealed (the manifest or, if signed, its signature)."
 nonce_mismatch = "The stamp's nonce is not the request's nonce."
 policy = "The stamp's policy is not in the catalog."
 chain = "The chain does not reach a catalog root valid at `genTime`."
@@ -96,16 +112,47 @@ stale = "Valid stamp, but the stored OCSP or CRL do not cover `genTime`."
 after_expiry = "Valid stamp, but the stored OCSP or CRL was issued after the TSA certificate expired, when its status is no longer guaranteed."
 revoked = "The TSA certificate was revoked: the stamp is not valid."
 revoked_later = "The TSA certificate was revoked after `genTime` for a reason that does not invalidate the stamp."
+subject_missing = "`{file}`, what was sealed, is missing: the stamp cannot be checked."
 
 [evidence.check.ots]
-pending = "The proof commits to the manifest and awaits the Bitcoin block; pending calendars: {n}."
-bitcoin_unverified = "The proof commits to the manifest and ends in Bitcoin block {height} (Merkle root {merkle_root}), which this version does not check: check it by hand as `VERIFY.md` explains."
+pending = "The proof commits to what was sealed and awaits the Bitcoin block; pending calendars: {n}."
+bitcoin_unverified = "The proof commits to what was sealed and ends in Bitcoin block {height} (Merkle root {merkle_root}), which this version does not check: check it by hand as `VERIFY.md` explains."
 invalid = "The `.ots` proof cannot be read."
-digest_mismatch = "The `.ots` proof is not for the SHA-256 of the manifest."
+digest_mismatch = "The `.ots` proof is not for the SHA-256 of what was sealed."
 missing_extra = "The `evidence` extra is missing: the proof was not verified."
 not_obtained = "The proof was not obtained when sealing."
-missing = "`manifest.json.ots` is missing."
-unreadable = "`manifest.json.ots` could not be read. {problem}"
+missing = "`{file}` is missing."
+unreadable = "`{file}` could not be read. {problem}"
+subject_missing = "`{file}`, what was sealed, is missing: the proof cannot be checked."
+
+[evidence.check.signature]
+ok = "Valid project signature: key `{key_id}` (`{key}`) was valid at the date of the stamp."
+unsigned = "The record is not signed by the project."
+no_keys = "The signature is valid with its key (`{key}`), but there is no list of keys of the project to check it against: use `--keys` with the list that the group publishes, or compare the fingerprint by hand."
+undated = "The signature is from key `{key_id}` of the project, but without a valid RFC 3161 stamp there is no date to check that the key was valid."
+missing = "`{file}`, the project signature, is missing."
+unreadable = "`{file}` could not be read. {problem}"
+no_manifest = "Without `manifest.json` the signature cannot be checked."
+no_index = "Without `index.txt` the signature on the index cannot be checked."
+missing_extra = "The `evidence` extra is missing: the signature was not checked."
+invalid = "The signature does not have the form of an OpenSSH signature (SSHSIG)."
+folder_invalid = "`signature.json` cannot be understood. {problem}"
+schema = "`signature.json` does not comply with the `evidence-signature/v1` schema at {pointer}."
+namespace = "The signature is from another namespace: it is not an evidence signature of the project."
+unsupported = "The signature uses a key or a hash that is not allowed (only `ssh-ed25519`, with `sha256` or `sha512`)."
+bad_signature = "The signature does not verify with these bytes: what was signed changed or the signature was altered."
+metadata_mismatch = "The key or the hash of the signature (`{key}`) are not the ones the record declares."
+key_unknown = "The key of the signature (`{key}`) is not in the list of keys of the project."
+key_not_valid = "Key `{key_id}` of the project was not valid at the date of the stamp."
+
+[evidence.check.index]
+ok = "Every file listed in `index.txt` has its hash: {n}."
+missing = "`index.txt` is missing."
+unreadable = "`index.txt` could not be read. {problem}"
+changed = "`index.txt` is not the signed index: it changed after it was signed."
+bad_index = "`index.txt` does not have the `sha256sum` format (line {line})."
+mismatch = "Files with a different hash than the one in the index: {n} of {total}."
+missing_files = "Files listed in the index are missing: {n} of {total}. A partial copy of the package is not an alteration."
 
 [evidence.check.openings]
 ok = "The file openings reproduce their commitment: {n}."

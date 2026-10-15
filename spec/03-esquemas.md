@@ -233,6 +233,18 @@ Proyecto individual (solo lo que cambia; 00-marco D-57):
 mode: individual        # una sola persona activa en roles.yaml; los PR se integran sin aprobación (REQ-SCHEMA-94)
 ```
 
+Firma del proyecto (solo el bloque que cambia; 00-marco D-72):
+
+```yaml
+evidence_signing:
+  mode: ci                # ci: firma el CI; admin: firma el admin en cada hito; none: sin firma
+  keys:
+    - id: k1
+      public_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA1L20vZkfUKSNHpRKBXE1uvnrNgGT54K/5dSLLFhxtl lab-movilidad"
+      since: "2026-10-14T00:00:00Z"
+      until: null         # la fecha desde la que la llave deja de valer, al rotarla o revocarla
+```
+
 Con perfil `advisory`, `init` agrega además la aceptación explícita del responsable:
 
 ```yaml
@@ -269,6 +281,11 @@ ci:
 | `format` | `latex` \| `none` | sí | — | `latex`: manuscrito en `tex/`, compilado por el CI; `none`: sin manuscrito y con el texto de cada parte en `<id>.md` (D-43); con `none` no se admite `build` (REQ-SCHEMA-90) |
 | `mode` | `group` \| `individual` | no | `group` | `individual`: proyecto de una sola persona; `roles.yaml` tiene una sola persona activa, el responsable, y los PR se integran sin aprobación, con el CI y los sellos de siempre (00-marco D-57; REQ-SCHEMA-94). Lo pone `init --individual`; para pasar a grupo se cambia a `group` |
 | `disclosure` | `private` \| `milestones` \| `open` | no | `milestones` | política de apertura (D-44; checklist en 11-trazabilidad §8.9); `open` exige `data_policy.level: public` (REQ-SCHEMA-92) |
+| `evidence_signing.mode` | `ci` \| `admin` \| `none` | sí, si está el bloque | `none` (sin el bloque) | quién firma con la llave del proyecto: `ci`, el job `integration` de `seal.yml`; `admin`, el admin en cada hito; `none`, nadie (00-marco D-72; 11-trazabilidad §8.10) |
+| `evidence_signing.keys` | lista de llaves | si `mode` no es `none` | — | llaves públicas del proyecto, sin borrar ninguna (REQ-SCHEMA-96; 11-trazabilidad REQ-TRACE-93) |
+| `evidence_signing.keys[].id` | cadena `^[a-z0-9][a-z0-9-]{0,31}$` | sí | — | identificador de la llave; no se repite |
+| `evidence_signing.keys[].public_key` | `ssh-ed25519 <base64>`, con un comentario opcional | sí | — | la llave pública, como la escribe `ssh-keygen` |
+| `evidence_signing.keys[].since` / `.until` | fecha-hora RFC 3339 en UTC / ídem o `null` | sí / no | — / `null` | la llave vale desde `since` y antes de `until` |
 | `forge.type` | `github` | sí | — | único valor en v0.1 (D-04) |
 | `forge.repo` | `owner/name` | sí | — | repo canónico; sin distinguir mayúsculas |
 | `forge.base_branch` | cadena | no | `main` | nombre de rama válido para `git check-ref-format --branch` (no empieza con `-`, ningún componente termina en `.lock`, no es `HEAD`); no empieza con `task/`, sin distinguir mayúsculas; DEBE ser la rama por defecto del repositorio (REQ-SCHEMA-19) |
@@ -302,7 +319,7 @@ ci:
 | `ci.model_review.model` | cadena `^claude-[a-z0-9-]+$` | si `enabled` | — (sin valor por defecto) | ID del modelo |
 | `ci.model_review.max_turns` | entero 1..4 | no | `4` | |
 
-Claves y valores reservados (el esquema v1 los rechaza): `forge.host` y otros valores de `forge.type` (GitLab, Forgejo, GitHub Enterprise Server); `format: markdown | quarto`; `data_policy.level: restricted | local_only` (10-seguridad REQ-SEC-63); `ci.model_review.provider`, `ci.model_review.environment` y `ci.model_review.trigger`; la clave `evidence` (el sellado no se configura en v0.1; 00-marco D-45, D-47).
+Claves y valores reservados (el esquema v1 los rechaza): `forge.host` y otros valores de `forge.type` (GitLab, Forgejo, GitHub Enterprise Server); `format: markdown | quarto`; `data_policy.level: restricted | local_only` (10-seguridad REQ-SEC-63); `ci.model_review.provider`, `ci.model_review.environment` y `ci.model_review.trigger`; la clave `evidence` (el sellado no se configura en v0.1; 00-marco D-45, D-47). La firma del proyecto sí se configura, con `evidence_signing` (D-72).
 
 ### 3.3 Reglas
 
@@ -320,7 +337,8 @@ Claves y valores reservados (el esquema v1 los rechaza): `forge.host` y otros va
 - **REQ-SCHEMA-90.** Con `format: none`, `project.yaml` NO DEBE tener el bloque `build` (lo exige el esquema), y `ci.pdf_retention_days` y `ci.latexdiff` no tienen efecto.
 - **REQ-SCHEMA-91.** En la configuración efectiva, si falta `data_policy.require_commercial`, vale `true` cuando `disclosure` no es `open` y `false` cuando lo es. Un `false` explícito con `disclosure` distinto de `open` DEBERÍA ir acompañado de una decisión en `memory/decisions/` (D-48). La regla `schemas` aplica la matriz de 10-seguridad §8.3 con este valor efectivo.
 - **REQ-SCHEMA-92.** Con `disclosure: open`, `data_policy.level` DEBE ser `public` (lo hace cumplir el esquema; 10-seguridad REQ-SEC-85).
-- **REQ-SCHEMA-93.** Los esquemas `evidence-manifest/v1`, `evidence-openings/v1` y `evidence-record/v1` se empaquetan con el núcleo. Su semántica la define 11-trazabilidad §8.
+- **REQ-SCHEMA-93.** Los esquemas `evidence-manifest/v1`, `evidence-openings/v1`, `evidence-record/v1` y `evidence-signature/v1` se empaquetan con el núcleo. Su semántica la define 11-trazabilidad §8.
+- **REQ-SCHEMA-96.** Con `evidence_signing.mode` distinto de `none`, `keys` DEBE tener al menos una llave (lo hace cumplir el esquema). El núcleo DEBE rechazar con `E_CONFIG_INVALID` un `id` o una `public_key` repetidos, una `public_key` que no sea una llave `ssh-ed25519` válida y un `until` que no sea posterior a su `since`. La lista que publica el grupo y que lee `evidence verify --keys` es un YAML con solo la clave `keys`, con las mismas reglas (11-trazabilidad §8.10).
 
 ## 4. `roles.yaml`
 
@@ -1144,8 +1162,8 @@ Son códigos de hallazgo (00-marco §5.11); no entran en el catálogo cerrado de
 
 | Identificador | Tipo | Definición |
 |---|---|---|
-| Claves de `project.yaml` (§3.2) | claves YAML | `convention`, `core`, `core_pin`, `name`, `title`, `language`, `format`, `disclosure`, `forge.{type,repo,base_branch,advisory_acceptance}`, `build.{engine,main,image,bibliography,bib_files,shell_escape,compile_on_submit,timeout_minutes}`, `limits.{max_active_claims,claim_expiry_days,expiry_warning_days,handoff_hold_days,exclusive_sections}`, `context.{max_chars,recent_decisions}`, `coordinator.require_direction_ack`, `review.sla_hours`, `data_policy.{level,require_commercial,human_subjects,ethics_ref}`, `licenses.{holder,text,code,data}`, `ci.{pdf_retention_days,latexdiff,model_review.{enabled,auth,model,max_turns}}` |
-| Valores de `project.yaml` | enumeraciones | `none` de `format` (D-43); `private`, `milestones`, `open` de `disclosure` (D-44); `pdflatex`, `xelatex`, `lualatex`; `biber`, `bibtex`, `none`; `disabled`, `restricted`; `never`, `if_available`, `always`; `public`, `internal`; `api_key`, `oidc` |
+| Claves de `project.yaml` (§3.2) | claves YAML | `convention`, `core`, `core_pin`, `name`, `title`, `language`, `format`, `disclosure`, `forge.{type,repo,base_branch,advisory_acceptance}`, `build.{engine,main,image,bibliography,bib_files,shell_escape,compile_on_submit,timeout_minutes}`, `limits.{max_active_claims,claim_expiry_days,expiry_warning_days,handoff_hold_days,exclusive_sections}`, `context.{max_chars,recent_decisions}`, `coordinator.require_direction_ack`, `review.sla_hours`, `data_policy.{level,require_commercial,human_subjects,ethics_ref}`, `licenses.{holder,text,code,data}`, `evidence_signing.{mode,keys[].{id,public_key,since,until}}` (D-72), `ci.{pdf_retention_days,latexdiff,model_review.{enabled,auth,model,max_turns}}` |
+| Valores de `project.yaml` | enumeraciones | `none` de `format` (D-43); `private`, `milestones`, `open` de `disclosure` (D-44); `pdflatex`, `xelatex`, `lualatex`; `biber`, `bibtex`, `none`; `disabled`, `restricted`; `never`, `if_available`, `always`; `public`, `internal`; `api_key`, `oidc`; `ci`, `admin`, `none` de `evidence_signing.mode` (D-72) |
 | Claves y valores reservados | claves YAML | `forge.host`, `format: markdown\|quarto`, `data_policy.level: restricted\|local_only`, `ci.model_review.{provider,environment,trigger}`, `evidence` |
 | Claves de `roles.yaml` (§4.2) | claves YAML | `version`, `lead`, `deputy`, `people[].{login,forge_id,name,email,orcid,role,account_type,credit,active}`, `sections[].{id,title,owner}` |
 | `account_type` | enumeración | `consumer_training_on`, `consumer_training_off`, `team`, `enterprise`, `api`, `cloud_provider`, `local`, `none`, `unknown` (§4.4; `roles.schema.json`) |
@@ -1163,8 +1181,8 @@ Son códigos de hallazgo (00-marco §5.11); no entran en el catálogo cerrado de
 | `aucove:pr-meta-begin`, `aucove:pr-meta-end` (`v1`) | marcadores HTML | delimitan el bloque del PR (00-marco §5.14) |
 | `https://aucove.invalid/schemas/pr-meta/v1` | `$id` | esquema del bloque (§9.3), publicado como `schemas/pr-meta.schema.json` |
 | Claves del bloque del PR | claves | `schema`, `task`, `sections`, `plan_refs`, `decisions`, `trace` |
-| `https://aucove.invalid/schemas/evidence-manifest/v1`, `evidence-openings/v1`, `evidence-record/v1` | `$id` | esquemas de evidencia que se empaquetan con el núcleo (REQ-SCHEMA-93); semántica en 11-trazabilidad §8 |
-| REQ-SCHEMA-90 a REQ-SCHEMA-93 | requisitos | `format: none` sin `build`, `require_commercial` efectivo, `disclosure: open` con datos públicos y esquemas de evidencia (§3.3) |
+| `https://aucove.invalid/schemas/evidence-manifest/v1`, `evidence-openings/v1`, `evidence-record/v1`, `evidence-signature/v1` | `$id` | esquemas de evidencia que se empaquetan con el núcleo (REQ-SCHEMA-93); semántica en 11-trazabilidad §8 |
+| REQ-SCHEMA-90 a REQ-SCHEMA-93, REQ-SCHEMA-96 | requisitos | `format: none` sin `build`, `require_commercial` efectivo, `disclosure: open` con datos públicos, esquemas de evidencia y llaves del proyecto (§3.3) |
 | Códigos de §10 | códigos de hallazgo | nuevos en las áreas `CONFIG` y `VALIDATION` (00-marco §5.11) |
 
 ## 12. Supuestos sobre otros capítulos

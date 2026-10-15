@@ -238,7 +238,8 @@ Hace dos cosas: (1) deniega los comandos de la tabla y (2) toma la instantánea 
 | HTTP directo a la forja | es `curl`, `wget`, `Invoke-RestMethod`/`irm` o `Invoke-WebRequest`/`iwr` hacia `api.github.com` (o el host de `capabilities.json`) con un método distinto de `GET` o con cuerpo (`-d`, `--data`, `-F`, `-Body`) | `E_PERM_COMMAND_DENIED` |
 | Push a la base (integrar) | es `git push` con `--all`, `--mirror`, un refspec cuyo destino (sin `+` ni `refs/heads/`) es la base, `--delete` de la base, o sin refspec (o con `HEAD`) estando en la base | `E_PERM_COMMAND_DENIED` |
 | Push o borrado de tareas ajenas | es `git push` a `task/<m>` con `m` distinto de la tarea actual (REQ-HOOK-37); es `git push` con `--delete` o con un refspec `:task/<m>` sobre una `task/*` ajena; o es `gh api -X DELETE repos/*/git/refs/heads/task/*` | `E_PERM_COMMAND_DENIED` |
-| Operación solo humana (D-09) | es `aucove init`, `aucove task accept`, `aucove task cancel`, `aucove review approve` o `aucove review request-changes` | `E_HUMAN_ONLY_AGENT_ENV` |
+| Operación solo humana (D-09) | es `aucove init`, `aucove task accept`, `aucove task cancel`, `aucove review approve`, `aucove review request-changes` o `aucove evidence sign` | `E_HUMAN_ONLY_AGENT_ENV` |
+| Firmar con la llave del proyecto (00-marco D-72) | es `ssh-keygen` con `-Y sign` o `-Ysign` | `E_HUMAN_ONLY_AGENT_ENV` |
 | Manipulación de controles | menciona `.claude/settings`, `settings.local.json`, `.aucove/` o `disableAllHooks`, salvo que `argv[0]` sea literalmente `aucove` (sin `/`, `\` ni extensión) y la búsqueda de `aucove` en las carpetas absolutas del `PATH`, sin el directorio actual (01-arquitectura REQ-ARCH-33), coincida con `core_executable` registrado en `state/heartbeat.json` | `E_PERM_GUARD_TAMPER` |
 | No analizable | tiene comillas sin cerrar, o un `git push` con `$`/backtick en el refspec | `E_PERM_SHELL_UNPARSEABLE` |
 
@@ -403,6 +404,8 @@ Lo genera el núcleo en `init` (clase `lead`, 00-marco §5.2), con el nombre del
       "Bash(aucove task cancel *)",
       "Bash(aucove review approve *)",
       "Bash(aucove review request-changes *)",
+      "Bash(aucove evidence sign *)",
+      "Bash(ssh-keygen -Y sign *)",
       "PowerShell(gh pr merge *)",
       "PowerShell(gh pr review *)",
       "PowerShell(git push * main)",
@@ -412,7 +415,9 @@ Lo genera el núcleo en `init` (clase `lead`, 00-marco §5.2), con el nombre del
       "PowerShell(aucove task accept *)",
       "PowerShell(aucove task cancel *)",
       "PowerShell(aucove review approve *)",
-      "PowerShell(aucove review request-changes *)"
+      "PowerShell(aucove review request-changes *)",
+      "PowerShell(aucove evidence sign *)",
+      "PowerShell(ssh-keygen -Y sign *)"
     ]
   },
   "hooks": {

@@ -690,11 +690,11 @@ Aquí la política es más estricta que en la plantilla (REQ-TRACE-28) porque en
 >
 > **en:** *aucove* is an independent open source project. It is not affiliated with, endorsed by, or sponsored by Anthropic, OpenAI, Google, GitHub, or any other provider mentioned. Claude, Claude Code, Codex, Gemini, GitHub, and other marks belong to their respective owners and are mentioned only to indicate compatibility.
 
-## 8. Evidencia verificable de fecha
+## 8. Evidencia verificable de fecha y de origen
 
 ### 8.1 Alcance y límites
 
-Los sellos prueban que un contenido existía en una fecha y que no cambió después: fecha e integridad. No prueban autoría ni titularidad (§1, principio 1; §6.4).
+Los sellos prueban que un contenido existía en una fecha y que no cambió después: fecha e integridad. No prueban autoría ni titularidad (§1, principio 1; §6.4). La firma del proyecto (§8.10) agrega el origen: que el registro lo emitió quien tiene la llave privada del proyecto, no quién escribió cada cambio.
 
 Los compromisos ocultan rutas, contenidos e identidades, pero `tree`, `commit` y `commits` van sin sal. Quien conozca todos los demás archivos del árbol podría confirmar una suposición sobre un archivo de poca entropía. Es un riesgo menor y aceptado en v0.1.
 
@@ -710,6 +710,8 @@ Sella el workflow `seal.yml` de la plantilla, con `aucove ci seal` (09-ci §7.4)
 |---|---|---|---|
 | `submission` | Cada cabeza de un PR de tarea del mismo repo (eventos `opened`, `synchronize`, `reopened` y `ready_for_review`) | OpenTimestamps | `submission` |
 | `integration` | Cada push a la base, desde el último commit sellado (09-ci REQ-CI-52) | 2 TSA del catálogo (§8.7) más OpenTimestamps | `integration` |
+
+Con `evidence_signing.mode: ci`, el job `integration` firma el manifiesto antes de sellarlo (§8.10). Las entregas no se firman en el CI: las cubre la firma del índice del paquete (§8.8).
 
 El registro de integración lleva `plan: true` cuando su rango toca `plan.md`, `roles.yaml` o `memory/constitution.md`, o cuando es el primero del repo. Así el plan queda sellado como un prerregistro.
 
@@ -731,7 +733,7 @@ Las entradas van ordenadas por `p`. Una ruta que no sea UTF-8 válido se omite y
 
 ### 8.4 Pruebas
 
-Las dos clases de prueba sellan el SHA-256 de los bytes exactos de `manifest.json`.
+Las dos clases de prueba sellan el SHA-256 de los bytes exactos del archivo sellado: `manifest.json` o, si el registro va firmado, la firma `manifest.json.sig` (§8.10). `record.json` lo dice en `sealed`.
 
 - **OpenTimestamps (OTS):** el cliente agrega su nonce y se usan al menos 2 de los 4 calendarios por defecto. La prueba queda pendiente hasta que Bitcoin incluye su bloque, y se completa con `ots upgrade` o con `aucove evidence verify --upgrade`.
 - **RFC 3161:** SHA-256, nonce de 64 bits y `certReq: true`. Antes de guardar la respuesta se verifican la huella, el nonce, la política del catálogo y la cadena hasta su raíz, válida en `genTime`. Se guardan el `.tsr`, `chain.pem`, `root.pem` y `ocsp.der` o `crl.der`. Timeout de 15 s, un reintento y una solicitud por TSA y por run (Sectigo pide 15 s entre solicitudes). Como mucho se intentan 3 TSA por run, para que un registro no pase de 4 pruebas.
@@ -744,9 +746,12 @@ Las dos clases de prueba sellan el SHA-256 de los bytes exactos de `manifest.jso
 
 Cada registro es una carpeta `<kind>-<commit>/` con:
 
-- `record.json` (`evidence-record/v1`), `manifest.json`, `openings.json` y `manifest.json.ots`;
+- `record.json` (`evidence-record/v1`), `manifest.json`, `openings.json` y la prueba OTS del archivo sellado (`manifest.json.ots`, o `manifest.json.sig.ots` si el registro va firmado);
+- si el registro va firmado, la firma `manifest.json.sig` (§8.10);
 - por cada TSA, `tsa/<id>.tsr`, `tsa/<id>.chain.pem`, `tsa/<id>.root.pem` y `tsa/<id>.ocsp.der` o `tsa/<id>.crl.der`;
 - `VERIFY.md` y `open_commitments.py` (§8.6).
+
+`record.json` dice qué archivo se selló (`sealed`) y, si el registro va firmado, los datos de la firma (`signature`: el archivo, el formato, el espacio de nombres, el hash, la huella de la llave y su `id`). Un registro sin esas claves, como los de `0.1.0rc1`, equivale a `sealed: manifest.json` y `signature: null`.
 
 Si `--out` ya tiene esa carpeta, por otro intento del run en el mismo directorio, `ci seal` usa `<kind>-<commit>-a<n>/`, donde `<n>` es el intento.
 
@@ -765,12 +770,14 @@ Un commit sin PR solo tiene el artefacto.
 `aucove evidence verify` da los veredictos de 05-operaciones §9.26. Para quien verifica sin el framework, cada registro trae un kit del árbitro. `VERIFY.md` está localizado y escrito en lenguaje llano. Contiene:
 
 - qué prueba el registro y qué no (§8.1);
-- un solo comando: `uvx --from "aucove[evidence]==X.Y.Z" aucove evidence verify .`, con la versión del núcleo que selló. Un registro con solo OTS da `pending` hasta que se coteja a mano su bloque de Bitcoin (05-operaciones §9.26);
-- para cada TSA, comparar el SHA-256 de `tsa/<id>.root.pem` con la huella que publica la TSA (que `VERIFY.md` y el catálogo listan) y correr `openssl ts -verify -data manifest.json -in tsa/<id>.tsr -CAfile tsa/<id>.root.pem -untrusted tsa/<id>.chain.pem -attime <genTime en segundos desde 1970>`;
-- para OTS, `ots --no-bitcoin verify manifest.json.ots` (o `ots info`), que muestra el bloque, y cotejar la raíz de Merkle de ese bloque en un explorador o en un nodo propio;
+- un solo comando: `uvx --from "aucove[evidence]==X.Y.Z" aucove evidence verify . --keys <lista>`, con la versión del núcleo que selló y la lista de llaves que publica el grupo (§8.10). Un registro con solo OTS da `pending` hasta que se coteja a mano su bloque de Bitcoin (05-operaciones §9.26);
+- en los pasos siguientes, `<sellado>` es el archivo que dice `sealed`: `manifest.json` o, si el registro va firmado, `manifest.json.sig`;
+- para cada TSA, comparar el SHA-256 de `tsa/<id>.root.pem` con la huella que publica la TSA (que `VERIFY.md` y el catálogo listan) y correr `openssl ts -verify -data <sellado> -in tsa/<id>.tsr -CAfile tsa/<id>.root.pem -untrusted tsa/<id>.chain.pem -attime <genTime en segundos desde 1970>`;
+- para OTS, `ots --no-bitcoin verify <sellado>.ots` (o `ots info`), que muestra el bloque, y cotejar la raíz de Merkle de ese bloque en un explorador o en un nodo propio;
+- si el registro va firmado, con el `allowed_signers` que publica el grupo, `ssh-keygen -Y verify -f allowed_signers -I <id de la llave> -n aucove-evidence -s manifest.json.sig -O verify-time=<genTime en AAAAMMDDhhmmss>Z < manifest.json`, que comprueba la firma y que la llave valía en la fecha del sello. Sin ese archivo, `ssh-keygen -Y check-novalidate -n aucove-evidence -s manifest.json.sig < manifest.json` comprueba la firma y muestra la huella de la llave, que se compara a mano con la publicada y con sus fechas. El primer comando pide OpenSSH 9.1 o posterior, por las fechas en UTC; el `ssh-keygen` de Windows 11 y el de Git for Windows lo son;
 - las fórmulas de §8.3 y `python open_commitments.py manifest.json openings.json [carpeta]`.
 
-- **REQ-TRACE-82:** `ci seal` DEBE copiar `VERIFY.md` (en el idioma del proyecto) y `open_commitments.py` en cada carpeta de registro. El script DEBE tener 40 líneas o menos, usar solo la biblioteca estándar de Python 3.8 o posterior y funcionar sin el núcleo. Cada línea de su salida empieza con una palabra fija, que no se localiza: `ok`, `different` (el archivo no es el sellado), `missing` (falta el archivo) o `not-in-manifest` (la apertura no es de este manifiesto). `VERIFY.md` las explica en el idioma del proyecto. El script termina en 0 si todo coincide; si no, en 1.
+- **REQ-TRACE-82:** `ci seal` DEBE copiar `VERIFY.md` (en el idioma del proyecto) y `open_commitments.py` en cada carpeta de registro, y `evidence sign`, `VERIFY.md` en cada carpeta de firma (§8.10). El script DEBE tener 40 líneas o menos, usar solo la biblioteca estándar de Python 3.8 o posterior y funcionar sin el núcleo. Cada línea de su salida empieza con una palabra fija, que no se localiza: `ok`, `different` (el archivo no es el sellado), `missing` (falta el archivo) o `not-in-manifest` (la apertura no es de este manifiesto). `VERIFY.md` las explica en el idioma del proyecto. El script termina en 0 si todo coincide; si no, en 1.
 
 ### 8.7 Catálogo de TSA
 
@@ -785,12 +792,13 @@ En cada hito, y como mínimo al cerrar el proyecto, el responsable arma el paque
 1. `gh run download` de cada artefacto `evidence-*`, antes de que venza.
 2. `gh api --paginate repos/{o}/{r}/issues/comments`, filtrando el marcador `aucove:ci:evidence`, a `comments.jsonl`.
 3. `git fetch origin '+refs/pull/*/head:refs/pull/*/head'` y `git bundle create repo.bundle --all`, que incluye las cabezas de los PR no integrados.
-4. `index.txt` con el `sha256sum` de cada archivo; opcionalmente, `ots stamp index.txt`.
-5. Guardar el paquete en al menos dos custodios fuera de GitHub y registrar en una decisión la fecha, los custodios y el SHA-256 del paquete. Sin repositorio institucional, los custodios recomendados son: el registro cifrado de OSF (00-marco D-47); Harvard Dataverse, con un DOI por proyecto, cada hito como versión, acceso restringido, título neutro y el paquete cifrado; y la copia del responsable (00-marco D-46). Zenodo da un DOI por versión y deja públicos los metadatos: se usa para los releases públicos (§8.9), no para la custodia.
+4. `index.txt` con el `sha256sum` de cada archivo, en el formato de §8.10.
+5. Con `evidence_signing.mode` distinto de `none`, `aucove evidence sign <paquete>`, que firma el índice y sella la firma en `<paquete>/signature/` (§8.10). Con `none`, opcionalmente, `ots stamp index.txt`.
+6. Guardar el paquete en al menos dos custodios fuera de GitHub y registrar en una decisión la fecha, los custodios y el SHA-256 del paquete. Sin repositorio institucional, los custodios recomendados son: el registro cifrado de OSF (00-marco D-47); Harvard Dataverse, con un DOI por proyecto, cada hito como versión, acceso restringido, título neutro y el paquete cifrado; y la copia del responsable (00-marco D-46). Zenodo da un DOI por versión y deja públicos los metadatos: se usa para los releases públicos (§8.9), no para la custodia.
 
 Cada persona puede pedir su exportación personal en cada hito y antes de salir del equipo. Reúne `.aucove/evidence/`, los artefactos de los PR propios y `git archive <commit> sections/<id>/` de cada registro propio, sin bundle ni contenido de otras personas.
 
-- **REQ-TRACE-84:** La guía de custodia (H4) DEBE describir el armado del paquete y de la exportación personal con `gh` y `git`, sin el núcleo.
+- **REQ-TRACE-84:** La guía de custodia (H4) DEBE describir el armado del paquete y de la exportación personal con `gh` y `git`, sin el núcleo, salvo la firma del índice (§8.10).
 - **REQ-TRACE-85:** El paquete y la exportación personal DEBEN guardarse fuera del árbol de trabajo del repo y nunca versionarse.
 
 ### 8.9 Apertura por hitos y depósito cifrado
@@ -805,7 +813,46 @@ La checklist de 00-marco D-44 va como plantilla de decisión: IMPI primero si al
 - **REQ-TRACE-86:** Una apertura DEBE registrarse como decisión que enumere la checklist cumplida y la etiqueta del hito.
 - **REQ-TRACE-87:** El espejo público NO DEBE incluir Issues, PR ni comentarios del repo privado, porque llevan aperturas.
 
-### 8.10 Reservado para v0.2
+### 8.10 Firma del proyecto (D-72)
+
+Cada proyecto tiene un par de llaves Ed25519 (00-marco D-72). La llave privada firma y la pública verifica. La firma prueba que un registro lo emitió quien tiene la llave privada del proyecto, y su sello (§8.4) prueba desde cuándo existe. No prueba quién escribió cada cambio (§8.1).
+
+**Las llaves.** Las declara `project.yaml: evidence_signing` (03-esquemas §3.2 y REQ-SCHEMA-96):
+
+- `mode`: quién firma, `ci`, `admin` o `none`; sin el bloque, `none`.
+- `keys`: las llaves públicas del proyecto. Cada una tiene `id`, `public_key` (`ssh-ed25519 …`, como la escribe `ssh-keygen`), `since` y `until`, en fecha y hora RFC 3339 en UTC; `until` es `null` mientras la llave vale.
+
+Una llave vale desde `since` y hasta antes de `until`. Para rotarla, se agrega la nueva y se le pone `until` a la anterior. Para revocarla, `until` es la fecha desde la que dejó de ser confiable (la del robo, si se conoce). Lo firmado y sellado antes de `until` sigue valiendo.
+
+El grupo publica la lista de llaves (00-marco D-72) en un repositorio público suyo, archivado en Zenodo. Es un archivo YAML con solo la clave `keys`, con los mismos elementos. Va junto con la huella de cada llave (`SHA256:…`, la que muestra `ssh-keygen -lf`) y con un archivo `allowed_signers` de OpenSSH, con una línea por llave: `<id> namespaces="aucove-evidence",valid-after="<since>"[,valid-before="<until>"] ssh-ed25519 <llave>`, con las fechas en la forma `AAAAMMDDhhmmssZ`.
+
+**El formato.** La firma de OpenSSH (SSHSIG, `PROTOCOL.sshsig`), en su forma ASCII (`-----BEGIN SSH SIGNATURE-----`), con el espacio de nombres `aucove-evidence` y el hash `sha512` al firmar; al verificar se aceptan `sha256` y `sha512`. Se firman los bytes exactos del archivo, sin normalizar. El sello va después: las TSA y OTS sellan el SHA-256 de los bytes de la firma (§8.4).
+
+**Qué se firma y quién.**
+
+| Modo | Registro `integration` | Registro `submission` | Índice del paquete (§8.8) |
+|---|---|---|---|
+| `ci` | el job `integration` de `seal.yml` firma `manifest.json` en `manifest.json.sig` (09-ci REQ-CI-61) | sin firma: su job corre en `pull_request_target` y no recibe secretos | el admin, con `aucove evidence sign` |
+| `admin` | sin firma | sin firma | el admin, con `aucove evidence sign` |
+| `none` | sin firma | sin firma | sin firma |
+
+**La firma del índice.** En cada hito (§8.8), el admin corre `aucove evidence sign <paquete>` (05-operaciones §9.27). La operación firma `index.txt` con `ssh-keygen`, sella la firma con las TSA del catálogo y OTS, como un registro `integration` (09-ci REQ-CI-53), y escribe en el paquete la carpeta `signature/` (o `signature-<n>/`, con el menor `n` desde 2 que esté libre). La carpeta contiene `signature.json` (`evidence-signature/v1`), `index.txt.sig`, `index.txt.sig.ots`, los archivos `tsa/<id>.*` de §8.5 y `VERIFY.md`. Un paquete firmado no se modifica: lo nuevo va en el paquete del hito siguiente.
+
+`index.txt` tiene una línea por archivo del paquete, `<SHA-256 en hexadecimal> <ruta>`, como la escribe `sha256sum`: entre la huella y la ruta van dos espacios, o un espacio y `*`. La ruta es relativa a la raíz del paquete, con o sin `./` al inicio, usa `/`, no tiene `..` y no se repite. El índice no se lista a sí mismo ni lista las carpetas `signature*/`.
+
+**La verificación.** `aucove evidence verify` (05-operaciones §9.26):
+
+- en cada registro firmado, comprueba la firma (check `signature`) con las llaves de `--keys` o del `project.yaml` del proyecto, nunca con la llave que trae la firma;
+- en cada carpeta `signature*/` de un paquete, comprueba la firma del índice, sus sellos y que cada archivo que lista `index.txt` tenga su huella;
+- a cada registro le da un origen (`origin`): `project`, si su firma da `pass` o si lo cubre una firma del índice que da `pass` (el índice lista su `manifest.json` con la misma huella); `unknown`, si lo cubre una firma que no se pudo cotejar con las llaves del proyecto, porque no hay lista de llaves o porque falta la fecha del sello; `unsigned`, si ninguna firma lo cubre.
+
+- **REQ-TRACE-90:** Solo DEBEN aceptarse llaves `ssh-ed25519`. Una firma DEBE verificarse con los bytes exactos del archivo firmado, el espacio de nombres `aucove-evidence` y una llave de la lista que valga en la fecha del sello: el `genTime` más antiguo de las pruebas TSA del mismo registro, o de la misma carpeta de firma, que dan `pass` o `weak`. Sin esa fecha, como con solo OTS, la firma queda `pending`.
+- **REQ-TRACE-91:** Un registro o una carpeta con firma DEBE tener la firma como archivo sellado (`sealed`), y sus pruebas DEBEN ser de la firma. Una firma sin sellar da `fail`, porque nada impediría fabricarla después con una llave robada.
+- **REQ-TRACE-92:** Una firma que no verifica, de una llave que no está en la lista o de una llave que no valía en la fecha del sello DEBE dar `fail`, y el registro o la carpeta de firma, `failed`. Un archivo que lista `index.txt` con otra huella también da `fail`; uno que falta da `skip`, porque una copia parcial del paquete no es una alteración.
+- **REQ-TRACE-93:** Una llave NUNCA DEBE borrarse de `keys`: para retirarla o revocarla se le pone `until`, para que las firmas anteriores se sigan verificando.
+- **REQ-TRACE-94:** La llave privada NUNCA DEBE entrar en el repositorio, en `.aucove/`, en un registro, en un paquete, en un artefacto ni en la salida (10-seguridad REQ-SEC-87). `evidence sign` no la lee: delega la firma en `ssh-keygen -Y sign`, al que le pasa `index.txt` por la entrada estándar y del que recibe la firma por la salida estándar, y `ssh-keygen` pide la frase de paso en la terminal. Antes de escribir nada, `evidence sign` DEBE verificar la firma con una llave de `keys` que valga en ese momento.
+
+### 8.11 Reservado para v0.2
 
 Quedan para v0.2, como operaciones o automatismos del núcleo: `aucove evidence export` (con `find_artifact` y `download_artifact`), `aucove evidence deposit` y `aucove evidence disclose`; la verificación de Bitcoin con nodo propio o con exploradores; la actualización programada de OTS; el re-sellado según RFC 4998, y la constancia NOM-151.
 
@@ -841,7 +888,7 @@ Quedan para v0.2, como operaciones o automatismos del núcleo: `aucove evidence 
 | `ai_use`, `assisted_by` | claves del front matter de la nota de sesión | Copia revisada de la traza (§2.7) |
 | `LicenseRef-AllRightsReserved` | licencia personalizada | Todos los derechos reservados (§7.3) |
 | `submission`, `integration` | valores de `kind` | Registros de entrega y de integración (§8.2) |
-| `evidence-manifest/v1`, `evidence-openings/v1`, `evidence-record/v1` | esquemas (03-esquemas REQ-SCHEMA-93) | Manifiesto, aperturas y registro (§8.3, §8.5) |
+| `evidence-manifest/v1`, `evidence-openings/v1`, `evidence-record/v1`, `evidence-signature/v1` | esquemas (03-esquemas REQ-SCHEMA-93) | Manifiesto, aperturas, registro y firma del índice (§8.3, §8.5, §8.10) |
 | `evidence-<kind>-<commit>-a<n>` | artefactos de Actions | Carpeta del registro; 400 días como máximo (§8.5) |
 | `<!-- aucove:ci:evidence v1 kind=<kind> sha=<commit> attempt=<n>` … `-->` | marcador de comentario (`ci:evidence`) | Registro `evidence-record/v1` en el PR (§8.5; 09-ci REQ-CI-54) |
 | `.aucove/evidence/` | ruta local | Copia de los registros de los PR propios (§8.5; 05-operaciones REQ-OPS-66) |
@@ -849,7 +896,15 @@ Quedan para v0.2, como operaciones o automatismos del núcleo: `aucove evidence 
 | `aucove/_data/tsa-catalog.json` | catálogo del núcleo | TSA para sellar y verificar (§8.7) |
 | `pr_author`, `merged_by`, `author`, `committer` | roles de actor | Compromisos `a` (§8.3) |
 | `AUCOVE_EVIDENCE_FAKE` | variable de entorno (solo con `AUCOVE_TESTING=1`) | Dobles de TSA y calendarios de la autoprueba (§8.4, REQ-TRACE-89) |
-| REQ-TRACE-74 a REQ-TRACE-89 | requisitos | §6.4 (REQ-TRACE-74) y §8 (REQ-TRACE-75 a REQ-TRACE-89) |
+| `evidence_signing` (`mode`, `keys[].id`, `keys[].public_key`, `keys[].since`, `keys[].until`) | clave de `project.yaml` | Modo de la firma y llaves públicas del proyecto (§8.10; 03-esquemas REQ-SCHEMA-96) |
+| `ci`, `admin`, `none` | valores de `evidence_signing.mode` | Quién firma (§8.10) |
+| `aucove-evidence` | espacio de nombres SSHSIG | Firma del proyecto (§8.10) |
+| `manifest.json.sig`, `manifest.json.sig.ots` | archivos del registro firmado | Firma del manifiesto y su prueba OTS (§8.5, §8.10) |
+| `sealed`, `signature` | claves de `evidence-record/v1` | Archivo sellado y datos de la firma (§8.5) |
+| `signature/`, `signature-<n>/`, `signature.json`, `index.txt.sig`, `index.txt.sig.ots` | carpeta y archivos del paquete | Firma del índice y sus sellos (§8.10) |
+| `allowed_signers` | archivo publicado por el grupo | Llaves para `ssh-keygen -Y verify` (§8.6, §8.10) |
+| `project`, `unknown`, `unsigned` | valores de `origin` | Origen de cada registro en `evidence verify` (§8.10) |
+| REQ-TRACE-74 a REQ-TRACE-94 | requisitos | §6.4 (REQ-TRACE-74) y §8 (REQ-TRACE-75 a REQ-TRACE-94) |
 
 ## 10. Supuestos sobre otros capítulos
 
@@ -879,6 +934,7 @@ Quedan para v0.2, como operaciones o automatismos del núcleo: `aucove evidence 
 - **Q-TRACE-12:** ¿Conviene una NOM-151 por hito en algún grupo, tras la consulta jurídica? (Diferida: queda fuera de la consulta jurídica actual).
 - **Q-TRACE-13:** Por confirmar en S5: ¿los runners `ubuntu-slim` alcanzan FreeTSA, Sectigo y los calendarios OTS? ¿Cuánto miden los comentarios y artefactos reales? ¿Existe el endpoint de retención de 06-permisos REQ-PERM-57, y `upload-artifact` recorta `retention-days` al máximo del repo? ¿Qué `verified_at` tiene un squash hecho en la web? ¿Se puede crear un registro de OSF sin proyecto después del 16/11/2026? (La guía de OSF, consultada el 2026-10-07, dice que sí; S5 lo comprueba en la práctica).
 - **Q-TRACE-14:** ¿Qué verificación de Bitcoin se agrega en v0.2: nodo propio, dos exploradores o ambos?
+- **Q-TRACE-15:** ¿Se admiten llaves físicas `sk-ssh-ed25519@openssh.com` (FIDO) para firmar el índice en el modo `admin`? Piden tocar la llave en cada firma, que es la mejor defensa contra un agente que firme por su cuenta (10-seguridad TH-34), pero el CI no puede usarlas y su firma tiene otro formato. Se propone para v0.2.
 
 ## 12. Referencias
 

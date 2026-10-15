@@ -79,6 +79,7 @@ from .base import (
     Comment,
     CommitInfo,
     Comparison,
+    EnvironmentInfo,
     FileChange,
     FileContent,
     ForgeAuthError,
@@ -110,6 +111,7 @@ from .base import (
     RepoRef,
     Review,
     RulesetInfo,
+    SecretScope,
     WorkflowPermissions,
     WorkflowRun,
     rules_summary,
@@ -2673,6 +2675,30 @@ class GitHubAdapter:
             return None
         return {key: data[key] for key in ORG_SETTINGS if key in data}
 
+    def environment(self, name: str) -> EnvironmentInfo | None:
+        """``GET environments/{name}`` y, con reglas propias, sus reglas de despliegue (00-marco D-72)."""
+        path = f"environments/{_pct(name)}"
+        try:
+            data = self._json(self._call("environment", "GET", path), "environment")
+        except _HttpError as e:
+            if e.status == 404:
+                return None
+            raise self._classify("environment", e) from e
+        policy = data.get("deployment_branch_policy") if isinstance(data, dict) else None
+        if not isinstance(policy, dict):
+            return EnvironmentInfo(name, "all")
+        if policy.get("protected_branches") is True:
+            return EnvironmentInfo(name, "protected")
+        try:
+            items = self._all("environment", f"{path}/deployment-branch-policies", key="branch_policies")
+        except _HttpError as e:
+            raise self._classify("environment", e) from e
+        rules = tuple(
+            (str(item.get("type") or "branch"), str(item["name"]))
+            for item in items if isinstance(item, dict) and isinstance(item.get("name"), str)
+        )
+        return EnvironmentInfo(name, "custom", rules)
+
 
 # ---------------------------------------------------------------------------
 # Fábrica (ops.context.context_factory, REQ-ARCH-15)
@@ -2913,6 +2939,57 @@ class GitHubAdmin:
         except _HttpError as e:
             raise self._gh._classify("branch_rules", e) from e
         return [dict(item) for item in items if isinstance(item, dict)]
+
+    # -- environment de la firma del proyecto (06 §4.3b; 00-marco D-72) -----------------------
+
+    def environment(self, name: str) -> EnvironmentInfo | None:
+        return self._gh.environment(name)
+
+    def put_environment(self, name: str, *, branch: str) -> EnvironmentInfo:
+        """Deja el environment con una sola regla de despliegue, la rama ``branch`` (REQ-FORGE-74).
+
+        Crea o actualiza el environment con reglas propias, crea la regla que falta, borra las
+        demás y verifica el resultado con una lectura. No toca revisores, temporizador ni secretos.
+        """
+        path = f"environments/{_pct(name)}"
+        body = {"deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}}
+        try:
+            self._gh._call("put_environment", "PUT", path, body=body)
+            items = self._gh._all("put_environment", f"{path}/deployment-branch-policies", key="branch_policies")
+            wanted = False
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("name") == branch and item.get("type", "branch") == "branch" and not wanted:
+                    wanted = True
+                    continue
+                ident = item.get("id")
+                self._gh._call("put_environment", "DELETE", f"{path}/deployment-branch-policies/{ident}")
+            if not wanted:
+                self._gh._call("put_environment", "POST", f"{path}/deployment-branch-policies",
+                               body={"name": branch, "type": "branch"})
+        except _HttpError as e:
+            raise self._gh._unsupported_plan("put_environment", e) from e
+        info = self._gh.environment(name)
+        if info is None or not info.only_branch(branch):  # REQ-FORGE-11: el efecto se verifica
+            raise ForgeValidationError("put_environment: the forge did not apply the deployment branch policy")
+        return info
+
+    def secret_names(self, scope: SecretScope, environment: str | None = None) -> tuple[str, ...] | None:
+        """Nombres de los secretos de Actions (nunca sus valores); ``None`` ante un 403 o un 404."""
+        if scope == "environment":
+            if not environment:
+                raise ForgeValidationError("secret_names: the environment is missing")
+            path = f"environments/{_pct(environment)}/secrets"
+        else:
+            path = "actions/secrets" if scope == "repo" else "actions/organization-secrets"
+        try:
+            items = self._gh._all("secret_names", path, key="secrets")
+        except _HttpError as e:
+            if e.status in (403, 404):
+                return None
+            raise self._gh._classify("secret_names", e) from e
+        return tuple(sorted(str(item["name"]) for item in items if isinstance(item, dict) and "name" in item))
 
 
 def create_admin(ctx: Any, token: str) -> GitHubAdmin:

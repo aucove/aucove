@@ -6,8 +6,19 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Added
+
+- Project signature: each project can have its own signing key (`ssh-ed25519`), kept by the admin of the repository, so that anyone can check that a record comes from the project, not only when it existed. The public keys go in `evidence_signing` of `project.yaml`, each with the dates it is valid; an old key is never removed, so its signatures still verify.
+- With `evidence_signing.mode: ci`, the `integration` job of `seal.yml` signs `manifest.json` with the key stored as the secret `AUCOVE_EVIDENCE_KEY` of the environment `aucove-evidence`, and the timestamps cover the signature (`manifest.json.sig`). Without the secret, or with a key that is not a current key of the project, the record is still sealed without the signature, and the job says why in an annotation, in its summary and in the pull request comment. Submissions are never signed.
+- `evidence sign <package> --key <file>` (human only): with `mode: admin`, the admin signs the `index.txt` of a milestone package with `ssh-keygen` and timestamps the signature in a `signature/` folder.
+- `evidence verify` gives the origin of each record: `project`, `unknown` or `unsigned`. It uses the list of keys that the group publishes (`--keys`) or, inside the project, the keys of the base `project.yaml`. On a package it also verifies each `signature*/` folder and the files that its index lists. `VERIFY.md` explains how to check the signature with `ssh-keygen` alone.
+- `init` creates the environment `aucove-evidence` with the base branch as its only deployment rule, and refuses the key as a secret of the repository or of the organization. `doctor` checks the mode, that a key is valid now and the environment.
+
 ### Changed
 
+- The `evidence` extra declares `cryptography>=44`, which signs and verifies the project signature (it already came with `rfc3161-client`).
+- `evidence verify` always reports a `signature` check. Records sealed with `0.1.0rc1` stay valid and show as unsigned.
+- The administration token that `init` asks for also needs read access to Secrets and Environments, to check where the project key is kept.
 - New logo: an open book with the aucove graph on its pages. The central vertex, in amber, is the shared repository and sits on the spine.
 - The `requirements-lock.txt` of the next release pins `mcp` and `mcp-types` 2.3.0 (were 2.2.0) and `tzdata` 2026.5 (was 2026.4).
 - The package summary on PyPI is in English, and the PyPI page links to the repository, the user guide, the issues and the changelog.

@@ -71,6 +71,8 @@ from .gitwork import fetch_base, guard_remote, push_ref
 from .init_files import Change, Choices, FilePlan, plan_files, plan_generated, project_name
 from .protections import (
     BASE_RULESET,
+    EVIDENCE_ENVIRONMENT,
+    EVIDENCE_SECRET,
     LABELS,
     ORG_RECOMMENDED,
     TASK_RULESET,
@@ -79,6 +81,7 @@ from .protections import (
     base_ruleset,
     covers,
     desired_settings,
+    environments_available,
     labels_for,
     missing_rules,
     settings_changes,
@@ -465,7 +468,9 @@ def _init(ctx: OpContext, language: str | None, fmt: str | None, disclosure: str
     write = _Writer()
     uses = template_actions(_workflows(read, tree.entries().keys(), plan.changes))
     steps.run("repo_settings", lambda: _repo_settings(st, admin, caps, write))
-    steps.run("actions", lambda: _actions(st, admin, caps, uses, write))
+    steps.run("actions", lambda: (_actions(st, admin, caps, uses, write),
+                                   _evidence_environment(st, admin, caps, base, plan.project.evidence_signing.mode,
+                                                         write)))
     steps.run("collaborators", lambda: _collaborators(st, admin, roles, ident.login, write))
     steps.run("labels", lambda: _labels(st, forge, write))
     pushed = False
@@ -641,6 +646,40 @@ def _actions(st: _Run, admin: ForgeAdmin, caps: Capabilities, uses: Sequence[str
     if caps.visibility == "public":  # 06 §4.3: el endpoint lo fija una prueba de contrato de 08
         st.protection("pull_request_target", "skipped")
         st.pending.append(st.lang("init.pending.pull_request_target"))
+
+
+def _evidence_environment(st: _Run, admin: ForgeAdmin, caps: Capabilities, base: str, mode: str,
+                          write: _Writer) -> None:
+    """06 §4.3b (REQ-PERM-61; 00-marco D-72): la llave del proyecto nunca es un secreto del
+    repositorio ni de la organización, y el environment ``<nombre>-evidence`` solo admite la rama
+    base, sea cual sea ``evidence_signing.mode``: un workflow que lo nombra lo crearía sin reglas.
+    Con ``mode: ci``, si al environment le falta el secreto, queda en ``pending_steps``: ``init``
+    nunca escribe secretos."""
+    scopes = ("repo", "org") if caps.owner_type == "Organization" else ("repo",)
+    for scope in scopes:  # antes de crear el environment
+        names = admin.secret_names(scope)  # type: ignore[arg-type]
+        if names is None:
+            st.pending.append(st.lang(f"init.pending.evidence_secrets_{scope}", secret=EVIDENCE_SECRET))
+        elif EVIDENCE_SECRET in names:
+            raise OpError("E_CONFIG_EVIDENCE_KEY", details={"reason": "repo_secret", "scope": scope})
+    if environments_available(caps) is False:
+        st.protection("environment", "unsupported", EVIDENCE_ENVIRONMENT)
+        return
+    current = admin.environment(EVIDENCE_ENVIRONMENT)
+    if current is not None and current.only_branch(base):
+        st.protection("environment", "unchanged", EVIDENCE_ENVIRONMENT)
+    else:
+        try:
+            write(lambda: admin.put_environment(EVIDENCE_ENVIRONMENT, branch=base))
+        except ForgeUnsupported:  # el plan no admite environments
+            st.protection("environment", "unsupported", EVIDENCE_ENVIRONMENT)
+            return
+        st.protection("environment", "applied", EVIDENCE_ENVIRONMENT)
+    if mode == "ci":
+        secrets = admin.secret_names("environment", EVIDENCE_ENVIRONMENT)
+        if secrets is None or EVIDENCE_SECRET not in secrets:
+            st.pending.append(st.lang("init.pending.evidence_secret", secret=EVIDENCE_SECRET,
+                                      environment=EVIDENCE_ENVIRONMENT))
 
 
 def _collaborators(st: _Run, admin: ForgeAdmin, roles: Roles, lead: str, write: _Writer) -> None:

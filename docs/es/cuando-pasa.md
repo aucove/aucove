@@ -161,3 +161,28 @@ Corre `aucove doctor` en la terminal antes de editar: dice qué falta (la instal
 El agente se detiene y te pide instalarlo con el comando de la guía. No lo instala por su cuenta.
 
 </details>
+
+<details>
+<summary>El sellado dice que una integración quedó sin la firma del proyecto</summary>
+
+Lo dicen el resumen del job, un aviso amarillo en Actions y el comentario de la entrega, con el motivo. El registro se selló igual, porque la fecha va primero, y la firma del índice del hito lo cubre después. Para que las siguientes se firmen:
+
+- `no_secret`: falta el secreto `AUCOVE_EVIDENCE_KEY` en el environment `aucove-evidence`. Agrégalo con el [paso 3](firma-del-proyecto.md#3-con-el-modo-ci-guarda-la-llave-en-github).
+- `key_mismatch`: la llave del secreto no es una llave vigente de `project.yaml`, por ejemplo porque la cambiaste en un lado y no en el otro. Revisa que coincidan las dos.
+- `sign_failed`: el secreto no es una llave `ssh-ed25519` sin frase de paso. Vuelve a subirla sin la frase.
+
+</details>
+
+<details>
+<summary><code>init</code> se detiene porque la llave del proyecto es un secreto del repo o de la organización</summary>
+
+Un secreto del repo o de la organización lo puede leer un workflow de cualquier rama, así que la llave no puede estar ahí. Bórralo en GitHub (Settings → Secrets and variables → Actions), ponlo en el environment `aucove-evidence` ([paso 3](firma-del-proyecto.md#3-con-el-modo-ci-guarda-la-llave-en-github)) y vuelve a correr `aucove init`. Si la llave estuvo expuesta, cámbiala.
+
+</details>
+
+<details>
+<summary>Perdiste la llave del proyecto, o te la robaron</summary>
+
+Ponle fecha de fin a la llave y crea otra: [Cambiar la llave, o anular una que te robaron](firma-del-proyecto.md#cambiar-la-llave-o-anular-una-que-te-robaron). Lo firmado y sellado antes de esa fecha sigue valiendo.
+
+</details>

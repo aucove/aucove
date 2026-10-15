@@ -66,17 +66,40 @@ find . -type f ! -name index.txt -print0 | xargs -0 sha256sum > index.txt
 cd ..
 ```
 
-### 6. Check that the records are sound
+### 6. Sign the package index
 
-Optional. It checks each record in the package and gives a verdict per record.
+With the [project signature](project-signature.md), in both modes. You sign `index.txt` with your key, and the signature is sealed in a `signature/` folder inside the package. That proves that the project put the package together, including the submissions, which CI does not sign. It runs in the project folder and in a normal terminal, not inside your agent: it asks you to type a confirmation and your key's passphrase, and none of that should go through the AI.
 
 ```bash
-aucove evidence verify evidence-milestone1/artifacts
+cd ising-diluido
+aucove evidence sign ../evidence-milestone1 --key $HOME/.ssh/aucove-ising-diluido
 ```
 
-Each record carries its own `VERIFY.md`, so anyone can verify it later, even without aucove.
+This is what it looks like (abridged example):
 
-### 7. Keep it in two places outside GitHub
+```text
+Signature on the index of the evidence package (00-marco D-72).
+  Package: C:\Users\laura\research\evidence-milestone1
+  `index.txt`: 214 files, SHA-256 `5f2c…`
+  …
+To confirm, type exactly "sign evidence-milestone1" and press Enter: sign evidence-milestone1
+Enter passphrase: (your passphrase; not shown)
+Index signature in `signature` (…\evidence-milestone1): key `key-2026` (`SHA256:8jmj…`) signed `index.txt`; 3 of 3 proofs obtained.
+```
+
+Once signed, the package is not modified: anything new goes in the package of the next milestone. Without the project signature, skip this step.
+
+### 7. Check the package
+
+Optional, in the project folder. It checks each record, the signature of the index and that each file matches its fingerprint:
+
+```bash
+aucove evidence verify ../evidence-milestone1
+```
+
+With the signature, each record says "origin: project". Each record carries its own `VERIFY.md`, and so does the `signature/` folder, so anyone can verify it later, even without aucove ([Verify](verify.md)).
+
+### 8. Keep it in two places outside GitHub
 
 For example, your institution's data repository, with closed access, and your own copy. Zenodo does not work for this, because what you upload there is public.
 
@@ -99,7 +122,7 @@ The package is encrypted for two people (you and the institution, or you and the
 
 </details>
 
-### 8. Record the safeguard in a decision
+### 9. Record the safeguard in a decision
 
 In your agent, with `/decision`: the date, where the package ended up (and, if you used OSF, the registration identifier and the end of the embargo) and the SHA-256 fingerprint of the file you kept. That decision is sealed in the next merge.
 

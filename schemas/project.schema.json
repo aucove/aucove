@@ -104,6 +104,9 @@
     },
     "licenses": {
       "$ref": "#/$defs/licenses"
+    },
+    "evidence_signing": {
+      "$ref": "#/$defs/evidence_signing"
     }
   },
   "allOf": [
@@ -550,6 +553,93 @@
           "type": "string",
           "maxLength": 100,
           "pattern": "^(LicenseRef-[A-Za-z0-9.-]+|[A-Za-z0-9][A-Za-z0-9.+-]*)$"
+        }
+      }
+    },
+    "evidence_signing": {
+      "description": "Firma del proyecto (00-marco D-72; 11-trazabilidad §8.10): quién firma y las llaves públicas. Sin el bloque, mode es none (REQ-SCHEMA-15). El núcleo rechaza un id o una public_key repetidos y un until que no sea posterior a su since (REQ-SCHEMA-96).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode"
+      ],
+      "properties": {
+        "mode": {
+          "description": "ci: firma el job integration de seal.yml; admin: firma el admin el índice del paquete de cada hito; none: sin firma.",
+          "enum": [
+            "ci",
+            "admin",
+            "none"
+          ]
+        },
+        "keys": {
+          "description": "Llaves públicas del proyecto; ninguna se borra (11-trazabilidad REQ-TRACE-93).",
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/evidence_key"
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "mode": {
+            "enum": [
+              "ci",
+              "admin"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "keys"
+        ],
+        "properties": {
+          "keys": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    "evidence_key": {
+      "description": "Una llave pública del proyecto: vale desde since y antes de until (null mientras vale).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "public_key",
+        "since"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+        },
+        "public_key": {
+          "description": "ssh-ed25519 y la llave en base64, como la escribe ssh-keygen, con un comentario opcional.",
+          "type": "string",
+          "pattern": "^ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI[A-Za-z0-9+/]{43}( [^\\r\\n]{1,200})?$"
+        },
+        "since": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+        },
+        "until": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     }

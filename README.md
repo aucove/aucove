@@ -59,7 +59,7 @@ Your agent opens in the project folder, a clone of the group's repository, and c
 
 ### What sets it apart
 
-- **Verifiable timestamps.** Every submission is sealed with OpenTimestamps, and every merge also with two RFC 3161 timestamps. The repository can stay private, and anyone can verify a seal later, even without aucove.
+- **Verifiable timestamps and origin.** Every submission is sealed with OpenTimestamps, and every merge also with two RFC 3161 timestamps. With the project signature, a key that the group publishes also proves that the project issued each record. The repository can stay private, and anyone can verify a seal later, even without aucove.
 - **Parts with owners.** Each part has a person in charge. The agent does not touch other people's parts, and if something slips through, CI stops it before it reaches the shared version.
 - **AI as a declared assistant.** The agent searches the literature, discusses ideas, writes and runs code. Every save records the tool and the model used, and approving is still up to people.
 - **With the agent of your choice, or none.** Every agent follows the same rules (`AGENTS.md`) and goes through the same CI. Claude Code and Codex get the full integration from `0.1.0` (skills, MCP server and hooks). Any other agent that reads `AGENTS.md` and can run commands, such as Antigravity CLI, Cursor, Gemini CLI, GitHub Copilot, goose or OpenCode, works with the rules, the shared context and the CLI, and CI stops its mistakes. You can also work without AI, with the CLI.
@@ -117,6 +117,8 @@ The [user guide](docs/en/README.md) is organized by role ([en español](docs/es/
 - **Researcher:** [setting up your computer and token, and a day of work with the agent](docs/en/researcher.md).
 - **Lead:** [setting up the project once and reviewing submissions every week](docs/en/lead.md).
 - **When a stage closes:** [safeguarding the evidence and publishing](docs/en/publish-and-safeguard.md).
+- **Whoever administers the repo:** [the project signature, set up once](docs/en/project-signature.md).
+- **Whoever reviews from outside:** [verifying a record or a package](docs/en/verify.md).
 - **When something happens:** [clashes, expired tasks, data, tokens and failures](docs/en/when-something-happens.md).
 - **To see how projects are set up:** [four example teams](docs/en/examples.md).
 
@@ -240,7 +242,7 @@ Tu agente se abre en la carpeta del proyecto, que es un clon del repo del grupo,
 
 ### Qué lo distingue
 
-- **Fechas verificables.** Cada entrega se sella con OpenTimestamps, y cada integración, además, con dos sellos de tiempo RFC 3161. El repo puede seguir privado, y cualquiera puede verificar un sello después, incluso sin aucove.
+- **Fecha y origen verificables.** Cada entrega se sella con OpenTimestamps, y cada integración, además, con dos sellos de tiempo RFC 3161. Con la firma del proyecto, una llave que publica el grupo prueba además que el proyecto emitió cada registro. El repo puede seguir privado, y cualquiera puede verificar un sello después, incluso sin aucove.
 - **Partes con dueño.** Cada parte tiene una persona a cargo. El agente no toca lo ajeno, y si algo se cuela, el CI lo detiene antes de que llegue a la versión común.
 - **La IA como asistente, y declarada.** El agente busca bibliografía, discute ideas, escribe y corre código. Cada guardado registra la herramienta y el modelo que se usaron, y aprobar sigue siendo cosa de personas.
 - **Con el agente que prefieras, o sin ninguno.** Todos siguen las mismas reglas (`AGENTS.md`) y pasan por el mismo CI. Claude Code y Codex tienen la integración completa desde la `0.1.0` (skills, servidor MCP y hooks). Cualquier otro agente que lea `AGENTS.md` y pueda ejecutar comandos, como Antigravity CLI, Cursor, Gemini CLI, GitHub Copilot, goose u OpenCode, trabaja con las reglas, el contexto compartido y la CLI, y el CI detiene sus errores. También se puede trabajar sin IA, con la CLI.
@@ -298,6 +300,8 @@ La [guía de uso](docs/es/README.md) va por perfil ([in English](docs/en/README.
 - **Investigador:** [preparar tu computadora y tu token, y un día de trabajo con el agente](docs/es/investigador.md).
 - **Responsable:** [preparar el proyecto una vez y revisar las entregas cada semana](docs/es/responsable.md).
 - **Al cerrar una etapa:** [resguardar las pruebas y publicar](docs/es/publicar-y-resguardar.md).
+- **Quien administra el repo:** [la firma del proyecto, una sola vez](docs/es/firma-del-proyecto.md).
+- **Quien revisa desde afuera:** [verificar un registro o un paquete](docs/es/verificar.md).
 - **Si pasa algo:** [choques, vencimientos, datos, tokens y fallas](docs/es/cuando-pasa.md).
 - **Para ver cómo se configura cada proyecto:** [cuatro equipos de ejemplo](docs/es/ejemplos.md).
 

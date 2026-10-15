@@ -68,6 +68,14 @@ core_invalid = "`core` ({core}) no es un especificador de versiones PEP 440 vál
 core_pin_range = "`core_pin` ({pin}) no satisface `core` ({core})"
 expiry_warning = "`limits.expiry_warning_days` ({warning}) debe ser menor que `limits.claim_expiry_days` ({expiry})"
 
+[config.project.evidence_key]
+invalid = "la llave no tiene la forma de `evidence_signing.keys` (03-esquemas §3.2)"
+type = "`public_key` debe ser una llave `ssh-ed25519`, como la escribe `ssh-keygen`"
+duplicate_id = "otra llave de `evidence_signing.keys` ya usa ese `id`"
+duplicate_key = "otra llave de `evidence_signing.keys` ya tiene esa `public_key`"
+until_not_after_since = "`until` debe ser posterior a `since`"
+too_many = "`evidence_signing.keys` tiene más de 50 llaves"
+
 [config.roles]
 lead_mismatch = "`lead` ({login}) no coincide con la persona de `role: lead` ({person})"
 lead_inactive = "la persona de `role: lead` ({login}) tiene `active: false`"

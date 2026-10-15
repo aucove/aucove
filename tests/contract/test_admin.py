@@ -1,16 +1,18 @@
 # SPDX-FileCopyrightText: 2026 The aucove Authors
 # SPDX-License-Identifier: Apache-2.0
-"""``ForgeAdmin`` (08-forja §2.2; 00-marco D-62): CT-ADM-01 a CT-ADM-03 con el falso.
+"""``ForgeAdmin`` (08-forja §2.2; 00-marco D-62): CT-ADM-01 a CT-ADM-04 con el falso.
 
 Las escrituras de configuración están fuera del adaptador normal (REQ-FORGE-3) y solo las
 hace ``init`` con el token de administración. El caso real necesita un token con
-Administration RW sobre un repo del sandbox y se agrega con T2 real (infraestructura D).
+Administration RW sobre un repo del sandbox y se agrega con T2 real (infraestructura D);
+el de CT-ADM-04 en ``ct-private`` es además la prueba empírica de 09-ci Q-CI-14.
 """
 
 from __future__ import annotations
 
 import pytest
 
+from aucove import _meta
 from aucove.forge.base import (
     REPO_SETTINGS,
     ForgeAdmin,
@@ -87,6 +89,41 @@ def test_ct_adm_03_permissions(fake: FakeForge) -> None:
         fake.admin("revoked-token").repo_settings()
     with pytest.raises(NoTokenError):
         fake.admin("  ")
+
+
+EVIDENCE_ENV = f"{_meta.NAME}-evidence"
+EVIDENCE_SECRET = f"{_meta.ENV_PREFIX}EVIDENCE_KEY"
+
+
+def test_ct_adm_04_evidence_environment(fake: FakeForge) -> None:
+    """00-marco D-72, REQ-FORGE-74: dos veces con la base, una sola regla de rama, que también
+    lee el token de uso diario; los secretos, solo por nombre."""
+    admin = fake.admin("admin-token")
+    assert admin.environment(EVIDENCE_ENV) is None and fake.environment(EVIDENCE_ENV) is None
+    first = admin.put_environment(EVIDENCE_ENV, branch="main")
+    again = admin.put_environment(EVIDENCE_ENV, branch="main")
+    assert first == again and first.only_branch("main")
+    assert fake.environment(EVIDENCE_ENV) == first  # con el token de uso diario (Actions R)
+    # un environment abierto a todas las ramas queda con la base como única regla
+    fake.seed_environment(EVIDENCE_ENV, policy="all")
+    assert not fake.environment(EVIDENCE_ENV).only_branch("main")  # type: ignore[union-attr]
+    assert admin.put_environment(EVIDENCE_ENV, branch="main").only_branch("main")
+    assert admin.secret_names("repo") == () and admin.secret_names("environment", EVIDENCE_ENV) == ()
+    fake.seed_secrets("org", ["OTRO", EVIDENCE_SECRET])
+    assert admin.secret_names("org") == tuple(sorted(("OTRO", EVIDENCE_SECRET)))
+    with pytest.raises(ForgeValidationError):
+        admin.secret_names("environment")
+
+
+def test_ct_adm_04_without_permission_and_on_a_private_free_repo(fake: FakeForge) -> None:
+    fake.seed_admin_token("researcher-token", RESEARCHER_A)
+    researcher = fake.admin("researcher-token")
+    assert researcher.secret_names("repo") is None  # sin permiso: desconocido, no un error
+    with pytest.raises(ForgePermissionError):
+        researcher.put_environment(EVIDENCE_ENV, branch="main")
+    advisory = new_fake("advisory")
+    with pytest.raises(ForgeUnsupported):  # org Free y privado: sin environments (Q-CI-14)
+        advisory.admin("admin-token").put_environment(EVIDENCE_ENV, branch="main")
 
 
 def test_fake_actions_workflow_and_retention(fake: FakeForge) -> None:

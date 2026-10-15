@@ -8,7 +8,7 @@ Each person is in charge of parts of the work, such as the methods, the results 
 2. **Submission.** Your work ready for review, with a note on what you did. It is sealed with a verifiable timestamp.
 3. **Approval.** Someone else reviews it and merges it into the shared version.
 
-GitHub's automatic checks (CI) review every submission and, if the project uses LaTeX, build the PDF. If the agent touches something it should not, CI stops it before it reaches the shared version. The seal proves that a text or a result existed on a given date, even if the repository stays private: everyone can defend their contribution without publishing early.
+GitHub's automatic checks (CI) review every submission and, if the project uses LaTeX, build the PDF. If the agent touches something it should not, CI stops it before it reaches the shared version. The seal proves that a text or a result existed on a given date, even if the repository stays private: everyone can defend their contribution without publishing early. With the [project signature](project-signature.md), a key that the group publishes also proves that the project issued the record.
 
 ## How the pieces fit together
 

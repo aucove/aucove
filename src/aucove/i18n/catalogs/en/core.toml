@@ -42,6 +42,14 @@ hint = "Run `git fetch` or `aucove switch <n>` and try again."
 message = "At least one `doctor` check failed."
 hint = "Follow the `fix` of each check in `fail`."
 
+[error.E_CONFIG_TOOL_MISSING]
+message = "A tool that the operation needs is missing: the `evidence` extra or `ssh-keygen`."
+hint = "Install what `hint` says: the extra, with the command of the `evidence_tools` check of `doctor`, or the OpenSSH client."
+
+[error.E_CONFIG_EVIDENCE_KEY]
+message = "The project key cannot be used."
+hint = "Check `details.reason`; the admin guide explains how to create, publish, rotate and store the key."
+
 [error.E_AUTH_NOT_AUTHENTICATED]
 message = "There is no forge credential."
 hint = "Sign in to the forge."

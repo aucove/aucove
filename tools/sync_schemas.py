@@ -36,7 +36,7 @@ SCHEMA_GLOB = "*.schema.json"
 KNOWN_SCHEMAS: tuple[str, ...] = tuple(
     f"{name}.schema.json"
     for name in (
-        "decision", "evidence-manifest", "evidence-openings", "evidence-record",
+        "decision", "evidence-manifest", "evidence-openings", "evidence-record", "evidence-signature",
         "pr-meta", "project", "result", "roles", "session-note",
     )
 )

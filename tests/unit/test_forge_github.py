@@ -27,6 +27,7 @@ from aucove.forge import github as gh
 from aucove.forge.base import (
     NULL_SHA,
     BaseNotDefault,
+    EnvironmentInfo,
     FileChange,
     ForgeAdapter,
     ForgeAuthError,
@@ -1699,6 +1700,102 @@ def test_reads_reserved_to_administration_are_unknown() -> None:
     assert adapter.workflow_permissions() is None and adapter.workflow_permissions("org") is None
     assert adapter.org_settings() == {}  # visible, pero sin los campos que solo ven los owners
     assert len(api.calls("GET", "")) == 1  # el dueño sale de la misma respuesta de GET /repos
+
+
+# ---------------------------------------------------------------------------
+# Environment de la firma del proyecto (06 §4.3b; REQ-FORGE-74; 00-marco D-72)
+# ---------------------------------------------------------------------------
+
+EVIDENCE_ENV = f"{_meta.NAME}-evidence"
+ENV_PATH = f"environments/{EVIDENCE_ENV}"
+POLICIES = f"{ENV_PATH}/deployment-branch-policies"
+CUSTOM = {"name": EVIDENCE_ENV, "deployment_branch_policy": {"protected_branches": False,
+                                                             "custom_branch_policies": True}}
+
+
+def policies(*items: tuple[int, str, str]) -> dict[str, Any]:
+    return {"total_count": len(items), "branch_policies": [{"id": i, "name": n, "type": t} for i, n, t in items]}
+
+
+def test_environment_reads_its_deployment_policy() -> None:
+    """Con el token de uso diario (Actions R): las reglas propias, ``all``, ``protected`` o ``None``."""
+    api = Api().on("GET", ENV_PATH, CUSTOM)
+    api.on("GET", POLICIES, policies((1, "main", "branch"), (2, "v*", "tag")))
+    info = make(api).environment(EVIDENCE_ENV)
+    assert info == EnvironmentInfo(EVIDENCE_ENV, "custom", (("branch", "main"), ("tag", "v*")))
+    assert not info.only_branch("main")
+    assert make(Api().on("GET", ENV_PATH, {"name": EVIDENCE_ENV, "deployment_branch_policy": None})).environment(
+        EVIDENCE_ENV) == EnvironmentInfo(EVIDENCE_ENV, "all")
+    protected = {"name": EVIDENCE_ENV, "deployment_branch_policy": {"protected_branches": True,
+                                                                  "custom_branch_policies": False}}
+    assert make(Api().on("GET", ENV_PATH, protected)).environment(EVIDENCE_ENV) == EnvironmentInfo(
+        EVIDENCE_ENV, "protected")
+    assert make(Api().on("GET", ENV_PATH, 404)).environment(EVIDENCE_ENV) is None
+    with pytest.raises(ForgePermissionError):
+        make(Api().on("GET", ENV_PATH, Reply(403, {"message": "Resource not accessible"}))).environment(EVIDENCE_ENV)
+    only = Api().on("GET", ENV_PATH, CUSTOM).on("GET", POLICIES, policies((1, "main", "branch")))
+    assert make(only).environment(EVIDENCE_ENV).only_branch("main")  # type: ignore[union-attr]
+
+
+def test_put_environment_creates_it_with_the_base_branch_only() -> None:
+    api = Api().on("PUT", ENV_PATH, CUSTOM)
+    api.on("GET", POLICIES, policies(), policies((5, "main", "branch")))
+    api.on("POST", POLICIES, Reply(200, {"id": 5, "name": "main", "type": "branch"}))
+    api.on("GET", ENV_PATH, CUSTOM)
+    info = make_admin(api).put_environment(EVIDENCE_ENV, branch="main")
+    assert info.only_branch("main")
+    assert api.body(api.calls("PUT", ENV_PATH)[0]) == {
+        "deployment_branch_policy": {"protected_branches": False, "custom_branch_policies": True}}
+    assert api.body(api.calls("POST", POLICIES)[0]) == {"name": "main", "type": "branch"}
+    assert api.calls("DELETE") == []
+    # sin revisores, temporizador ni secretos: solo el environment y sus reglas
+    assert {r.url.path for r in api.requests} <= {_full(ENV_PATH), _full(POLICIES)}
+
+
+def test_put_environment_removes_every_other_rule() -> None:
+    api = Api().on("PUT", ENV_PATH, CUSTOM)
+    api.on("GET", POLICIES, policies((1, "main", "tag"), (2, "main", "branch"), (3, "dev", "branch"),
+                                      (4, "main", "branch")), policies((2, "main", "branch")))
+    for ident in (1, 3, 4):
+        api.on("DELETE", f"{POLICIES}/{ident}", Reply(204))
+    api.on("GET", ENV_PATH, CUSTOM)
+    assert make_admin(api).put_environment(EVIDENCE_ENV, branch="main").only_branch("main")
+    assert sorted(r.url.path.rsplit("/", 1)[1] for r in api.calls("DELETE")) == ["1", "3", "4"]
+    assert api.calls("POST") == []  # la regla de la rama base ya estaba
+
+
+def test_put_environment_on_a_plan_without_environments_is_unsupported() -> None:
+    for reply in (Reply(404, {"message": "Not Found"}), Reply(422, {"message": "Upgrade to GitHub Pro"})):
+        with pytest.raises(ForgeUnsupported):
+            make_admin(Api().on("PUT", ENV_PATH, reply)).put_environment(EVIDENCE_ENV, branch="main")
+    with pytest.raises(ForgePermissionError):
+        make_admin(Api().on("PUT", ENV_PATH, Reply(403, {"message": "Must have admin rights"}))).put_environment(
+            EVIDENCE_ENV, branch="main")
+
+
+def test_put_environment_verifies_the_result() -> None:
+    """REQ-FORGE-11: si la lectura no muestra solo la rama base, el efecto no se dio por bueno."""
+    api = Api().on("PUT", ENV_PATH, CUSTOM)
+    api.on("GET", POLICIES, policies(), policies((5, "main", "branch"), (6, "dev", "branch")))
+    api.on("POST", POLICIES, Reply(200, {"id": 5}))
+    api.on("GET", ENV_PATH, CUSTOM)
+    with pytest.raises(ForgeValidationError):
+        make_admin(api).put_environment(EVIDENCE_ENV, branch="main")
+
+
+def test_secret_names_never_read_values() -> None:
+    secrets = {"total_count": 2, "secrets": [{"name": "B", "created_at": "x"}, {"name": "A"}]}
+    api = Api().on("GET", "actions/secrets", secrets).on("GET", "actions/organization-secrets", secrets)
+    api.on("GET", f"{ENV_PATH}/secrets", secrets)
+    admin = make_admin(api)
+    assert admin.secret_names("repo") == admin.secret_names("org") == ("A", "B")
+    assert admin.secret_names("environment", EVIDENCE_ENV) == ("A", "B")
+    assert all(r.method == "GET" and "/public-key" not in r.url.path for r in api.requests)
+    with pytest.raises(ForgeValidationError):
+        admin.secret_names("environment")
+    for status in (403, 404):
+        hidden = Api().on("GET", "actions/secrets", Reply(status, {"message": "x"}))
+        assert make_admin(hidden).secret_names("repo") is None
 
 
 def test_create_admin_takes_the_repository_of_the_context() -> None:

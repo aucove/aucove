@@ -7,7 +7,11 @@ la carpeta (nombres fijos):
 
 - ``record.json`` (el registro, con ``manifest``, ``openings`` y los ``data`` en
   ``null`` porque van en archivos), ``manifest.json`` (bytes exactos, sin salto de línea
-  final), ``openings.json`` (privado) y ``manifest.json.ots``;
+  final), ``openings.json`` (privado) y la prueba OTS del archivo sellado:
+  ``manifest.json.ots`` o, si el registro va firmado, ``manifest.json.sig.ots``;
+- si el registro va firmado con la llave del proyecto, la firma ``manifest.json.sig``
+  (11-trazabilidad §8.10; 00-marco D-72): las pruebas sellan entonces la firma, nunca el
+  manifiesto (``sealed``), y la firma va en el comentario completa, sin recortarse;
 - por TSA: ``tsa/<id>.tsr``, ``tsa/<id>.chain.pem``, ``tsa/<id>.root.pem`` y
   ``tsa/<id>.ocsp.der`` o ``tsa/<id>.crl.der``;
 - ``VERIFY.md`` y ``open_commitments.py``, que aporta ``ci seal`` (``extra``).
@@ -45,10 +49,12 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Literal
 
 from .. import _meta
+from ..domain.signing import FORMAT, NAMESPACE
 from .openings import Openings, OpeningsError, load_openings, parse_openings
 
 __all__ = [
     "COMMENT_LIMIT",
+    "INDEX_SIG_FILE",
     "KINDS",
     "MANIFEST_FILE",
     "MAX_FILE_BYTES",
@@ -58,6 +64,9 @@ __all__ = [
     "OTS_SOURCE",
     "RECORD_FILE",
     "RECORD_SCHEMA",
+    "SIGNATURE_HASHES",
+    "SIG_FILE",
+    "SUBJECTS",
     "TRUNCATION_ORDER",
     "VERIFY_FILE",
     "CommentJson",
@@ -66,6 +75,7 @@ __all__ = [
     "RecordError",
     "RecordFolder",
     "Revocation",
+    "Signature",
     "artifact_name",
     "chain_file",
     "comment_json",
@@ -73,6 +83,7 @@ __all__ = [
     "load_comment_json",
     "local_dirname",
     "parse_record",
+    "parse_signature",
     "read_record_dir",
     "record_dirname",
     "record_files",
@@ -88,6 +99,11 @@ RECORD_FILE = "record.json"
 MANIFEST_FILE = "manifest.json"
 OPENINGS_FILE = "openings.json"
 OTS_FILE = "manifest.json.ots"
+SIG_FILE = "manifest.json.sig"  # firma del proyecto (11-trazabilidad §8.10; D-72)
+INDEX_SIG_FILE = "index.txt.sig"  # firma del índice de un paquete (evidence sign)
+# Archivos que pueden sellar las pruebas: el manifiesto, su firma o la firma del índice.
+SUBJECTS: tuple[str, ...] = ("manifest.json", SIG_FILE, INDEX_SIG_FILE)
+SIGNATURE_HASHES: tuple[str, ...] = ("sha256", "sha512")
 VERIFY_FILE = "VERIFY.md"
 OPEN_SCRIPT = "open_commitments.py"
 OTS_SOURCE = "calendars"  # 'source' de una prueba OTS
@@ -108,6 +124,8 @@ _HEX64_RE = re.compile(r"[0-9a-f]{64}")
 _SOURCE_RE = re.compile(r"[a-z0-9-]{1,32}")
 _TIME_RE = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?Z")
 _B64_RE = re.compile(r"[A-Za-z0-9+/]*={0,2}")
+_FINGERPRINT_RE = re.compile(r"SHA256:[A-Za-z0-9+/]{43}")
+_KEY_ID_RE = re.compile(r"[a-z0-9][a-z0-9-]{0,31}")
 _HTML_ESCAPES = {"<": "\\u003c", ">": "\\u003e", "&": "\\u0026"}
 _HTML_RE = re.compile("[<>&]")
 
@@ -209,10 +227,12 @@ class Revocation:
 class Proof:
     """Prueba de fecha del registro (``$defs/proof``): bytes opacos más sus metadatos.
 
-    ``data`` son los bytes de ``manifest.json.ots`` o de ``tsa/<source>.tsr``; ``None`` si
-    no se tienen. ``chain_pem`` y ``root_pem`` (solo ``rfc3161``) van únicamente en la
-    carpeta; ``revocation``, también en el comentario. Con ``status == "error"`` solo
-    quedan ``type``, ``source`` y ``error`` (hasta 300 caracteres).
+    ``data`` son los bytes de la prueba OTS o de ``tsa/<source>.tsr``; ``None`` si no se
+    tienen. ``subject`` es el archivo que sella la prueba (``SUBJECTS``): da el nombre del
+    ``.ots`` (``<subject>.ots``) y no va en el JSON, porque lo dice ``sealed``.
+    ``chain_pem`` y ``root_pem`` (solo ``rfc3161``) van únicamente en la carpeta;
+    ``revocation``, también en el comentario. Con ``status == "error"`` solo quedan
+    ``type``, ``source`` y ``error`` (hasta 300 caracteres).
     """
 
     type: ProofType
@@ -224,9 +244,11 @@ class Proof:
     error: str | None = None
     chain_pem: bytes | None = None
     root_pem: bytes | None = None
+    subject: str = MANIFEST_FILE
 
     def __post_init__(self) -> None:
         _need(self.type in ("ots", "rfc3161"), "/type")
+        _need(self.subject in SUBJECTS, "/subject")
         _check_source(self.source)
         _need(self.status in ("ok", "error"), "/status")
         for name in ("data", "chain_pem", "root_pem"):
@@ -249,9 +271,9 @@ class Proof:
             _need(self.error is None, "/error")
 
     @classmethod
-    def ots(cls, data: bytes) -> Proof:
-        """Prueba OTS obtenida (pendiente de Bitcoin hasta que se complete)."""
-        return cls(type="ots", source=OTS_SOURCE, status="ok", data=data)
+    def ots(cls, data: bytes, *, subject: str = MANIFEST_FILE) -> Proof:
+        """Prueba OTS obtenida (pendiente de Bitcoin hasta que se complete) de ``subject``."""
+        return cls(type="ots", source=OTS_SOURCE, status="ok", data=data, subject=subject)
 
     @classmethod
     def rfc3161(
@@ -263,6 +285,7 @@ class Proof:
         revocation: Revocation | None = None,
         chain_pem: bytes | None = None,
         root_pem: bytes | None = None,
+        subject: str = MANIFEST_FILE,
     ) -> Proof:
         """Sello RFC 3161 obtenido y verificado de la TSA ``source`` (id del catálogo)."""
         return cls(
@@ -274,26 +297,64 @@ class Proof:
             revocation=revocation,
             chain_pem=chain_pem,
             root_pem=root_pem,
+            subject=subject,
         )
 
     @classmethod
-    def failed(cls, proof_type: ProofType, source: str, error: str) -> Proof:
+    def failed(cls, proof_type: ProofType, source: str, error: str, *, subject: str = MANIFEST_FILE) -> Proof:
         """Prueba que no se obtuvo; ``error`` va en una línea y se recorta a 300 caracteres."""
         text = " ".join(str(error).split()) or "error"
         if len(text) > MAX_ERROR_CHARS:
             text = text[: MAX_ERROR_CHARS - 1] + "…"
-        return cls(type=proof_type, source=source, status="error", error=text)
+        return cls(type=proof_type, source=source, status="error", error=text, subject=subject)
 
     @property
     def file(self) -> str | None:
         """Ruta de la prueba dentro de la carpeta; ``None`` si no se obtuvo."""
         if self.status != "ok":
             return None
-        return OTS_FILE if self.type == "ots" else tsr_file(self.source)
+        return f"{self.subject}.ots" if self.type == "ots" else tsr_file(self.source)
 
 
 def _b64(data: bytes | None, embed: bool) -> str | None:
     return base64.b64encode(data).decode("ascii") if embed and data is not None else None
+
+
+@dataclass(frozen=True)
+class Signature:
+    """Firma del proyecto (SSHSIG) de lo que se sella (11-trazabilidad §8.10; 00-marco D-72).
+
+    ``file`` es el archivo de la firma en la carpeta: ``manifest.json.sig`` en un registro e
+    ``index.txt.sig`` en una carpeta de firma de un paquete. ``key`` es la huella ``SHA256:…``
+    de la llave y ``key_id``, su ``id`` en ``evidence_signing.keys`` al firmar; el formato
+    (``sshsig``) y el espacio de nombres son fijos. ``data`` son los bytes de la firma, o
+    ``None`` si no se tienen (un ``record.json`` leído sin su archivo).
+    """
+
+    file: str
+    hash: str
+    key: str
+    key_id: str
+    data: bytes | None = None
+
+    def __post_init__(self) -> None:
+        _need(self.file in (SIG_FILE, INDEX_SIG_FILE), "/signature/file")
+        _need(self.hash in SIGNATURE_HASHES, "/signature/hash")
+        _need(isinstance(self.key, str) and _FINGERPRINT_RE.fullmatch(self.key) is not None, "/signature/key")
+        _need(isinstance(self.key_id, str) and _KEY_ID_RE.fullmatch(self.key_id) is not None, "/signature/key_id")
+        _need(self.data is None or isinstance(self.data, bytes), "/signature/data")
+
+    def document(self, *, embed: bool) -> dict[str, Any]:
+        """Objeto ``signature`` de ``evidence-record/v1`` o de ``evidence-signature/v1``."""
+        return {
+            "file": self.file,
+            "format": FORMAT,
+            "namespace": NAMESPACE,
+            "hash": self.hash,
+            "key": self.key,
+            "key_id": self.key_id,
+            "data": _b64(self.data, embed),
+        }
 
 
 def _proof_document(proof: Proof, *, embed: bool) -> dict[str, Any]:
@@ -325,9 +386,10 @@ class Record:
 
     ``manifest`` son los bytes exactos de ``manifest.json`` y ``openings``, las aperturas;
     los dos pueden faltar (``None``) en un registro leído de un comentario recortado o
-    de una carpeta incompleta. La coherencia con ``manifest_sha256`` se exige al escribir
-    (``record_files``), no al construir: quien verifica decide qué hacer con un registro
-    alterado.
+    de una carpeta incompleta. ``signature`` es la firma del proyecto, si la hay: entonces
+    lo sellado (``sealed``) es la firma y todas las pruebas son de ella. La coherencia con
+    ``manifest_sha256`` se exige al escribir (``record_files``), no al construir: quien
+    verifica decide qué hacer con un registro alterado.
     """
 
     kind: str
@@ -342,6 +404,7 @@ class Record:
     manifest: bytes | None = None
     openings: Openings | None = None
     truncated: bool = False
+    signature: Signature | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "proofs", tuple(self.proofs))
@@ -358,6 +421,14 @@ class Record:
         _need(1 <= len(self.proofs) <= MAX_PROOFS and all(isinstance(p, Proof) for p in self.proofs), "/proofs")
         _need(self.manifest is None or isinstance(self.manifest, bytes), "/manifest")
         _need(self.openings is None or isinstance(self.openings, Openings), "/openings")
+        signature = self.signature
+        _need(signature is None or (isinstance(signature, Signature) and signature.file == SIG_FILE), "/signature")
+        _need(all(p.subject == self.sealed for p in self.proofs), "/sealed")
+
+    @property
+    def sealed(self) -> str:
+        """Archivo que sellan las pruebas: la firma si la hay; si no, el manifiesto (REQ-TRACE-91)."""
+        return SIG_FILE if self.signature is not None else MANIFEST_FILE
 
     @property
     def artifact(self) -> str:
@@ -396,6 +467,8 @@ class Record:
             "plan": self.plan,
             "manifest_sha256": self.manifest_sha256,
             "manifest": manifest,
+            "sealed": self.sealed,
+            "signature": self.signature.document(embed=embed) if self.signature is not None else None,
             "openings": self.openings.to_json() if embed and self.openings is not None else None,
             "proofs": [_proof_document(proof, embed=embed) for proof in self.proofs],
             "truncated": self.truncated,
@@ -486,7 +559,28 @@ def _parse_revocation(obj: object, source: str, pointer: str) -> Revocation | No
     return Revocation(type=kind, data=_decode_b64(obj.get("data"), pointer + "/data"))  # type: ignore[arg-type]
 
 
-def _parse_proof(obj: object, pointer: str) -> Proof:
+def parse_signature(obj: object, pointer: str, file: str) -> Signature:
+    """``signature`` de un registro (``file`` = ``manifest.json.sig``) o de una carpeta de firma."""
+    _need(isinstance(obj, Mapping), pointer)
+    assert isinstance(obj, Mapping)
+    _need(obj.get("file") == file, pointer + "/file")
+    _need(obj.get("format") == FORMAT, pointer + "/format")
+    _need(obj.get("namespace") == NAMESPACE, pointer + "/namespace")
+    try:
+        return Signature(
+            file=file,
+            hash=obj.get("hash"),  # type: ignore[arg-type]
+            key=obj.get("key"),  # type: ignore[arg-type]
+            key_id=obj.get("key_id"),  # type: ignore[arg-type]
+            data=_decode_b64(obj.get("data"), pointer + "/data"),
+        )
+    except RecordError as exc:
+        if exc.pointer.startswith(pointer):
+            raise
+        raise RecordError(exc.reason, pointer + exc.pointer.removeprefix("/signature")) from None
+
+
+def _parse_proof(obj: object, pointer: str, subject: str = MANIFEST_FILE) -> Proof:
     _need(isinstance(obj, Mapping), pointer)
     assert isinstance(obj, Mapping)
     source = obj.get("source")
@@ -501,6 +595,7 @@ def _parse_proof(obj: object, pointer: str) -> Proof:
             time_utc=obj.get("time_utc"),
             revocation=_parse_revocation(obj.get("revocation"), source, pointer + "/revocation"),
             error=obj.get("error"),
+            subject=subject,
         )
     except RecordError as exc:
         if exc.pointer.startswith(pointer):
@@ -535,10 +630,16 @@ def parse_record(obj: object) -> Record:
             openings = parse_openings(openings_obj)
         except OpeningsError as exc:
             raise RecordError("invalid", "/openings" + exc.pointer) from None
+    # Sin sealed ni signature (registros de 0.1.0rc1): se selló el manifiesto, sin firma.
+    sealed = obj.get("sealed", MANIFEST_FILE)
+    _need(sealed in (MANIFEST_FILE, SIG_FILE), "/sealed")
+    signature_obj = obj.get("signature")
+    signature = parse_signature(signature_obj, "/signature", SIG_FILE) if signature_obj is not None else None
+    _need((signature is not None) == (sealed == SIG_FILE), "/sealed")
     proofs_obj = obj.get("proofs")
     _need(isinstance(proofs_obj, list), "/proofs")
     assert isinstance(proofs_obj, list)
-    proofs = tuple(_parse_proof(item, f"/proofs/{i}") for i, item in enumerate(proofs_obj))
+    proofs = tuple(_parse_proof(item, f"/proofs/{i}", str(sealed)) for i, item in enumerate(proofs_obj))
     record = Record(
         kind=obj.get("kind"),  # type: ignore[arg-type]
         commit=obj.get("commit"),  # type: ignore[arg-type]
@@ -552,6 +653,7 @@ def parse_record(obj: object) -> Record:
         manifest=manifest_bytes,
         openings=openings,
         truncated=obj.get("truncated"),  # type: ignore[arg-type]
+        signature=signature,
     )
     _need(obj.get("artifact") == record.artifact, "/artifact")
     return record
@@ -575,7 +677,7 @@ def load_comment_json(text: str | bytes) -> Record:
 # -- escritura de la carpeta -------------------------------------------------------------
 
 
-_RESERVED = frozenset({RECORD_FILE, MANIFEST_FILE, OPENINGS_FILE, OTS_FILE})
+_RESERVED = frozenset({RECORD_FILE, MANIFEST_FILE, OPENINGS_FILE, OTS_FILE, SIG_FILE, f"{SIG_FILE}.ots"})
 
 
 def _check_extra_name(name: object) -> str:
@@ -613,6 +715,8 @@ def record_files(record: Record, *, extra: Mapping[str, bytes] | None = None) ->
         files[MANIFEST_FILE] = record.manifest
     if record.openings is not None:
         files[OPENINGS_FILE] = record.openings.dumps()
+    if record.signature is not None and record.signature.data is not None:
+        files[SIG_FILE] = record.signature.data
     for proof in record.proofs:
         if proof.file is not None and proof.data is not None:
             files[proof.file] = proof.data
@@ -742,6 +846,9 @@ def read_record_dir(path: Path, *, max_file_bytes: int = MAX_FILE_BYTES) -> Reco
         return current
 
     manifest = take(MANIFEST_FILE, record.manifest)
+    signature = record.signature
+    if signature is not None:
+        signature = replace(signature, data=take(SIG_FILE, signature.data))
     openings = record.openings
     data, issue = _read_file(folder, OPENINGS_FILE, max_file_bytes)
     if data is not None:
@@ -772,7 +879,7 @@ def read_record_dir(path: Path, *, max_file_bytes: int = MAX_FILE_BYTES) -> Reco
                 root_pem=take(root_file(proof.source), None),
             )
         proofs.append(updated)
-    record = replace(record, manifest=manifest, openings=openings, proofs=tuple(proofs))
+    record = replace(record, manifest=manifest, openings=openings, proofs=tuple(proofs), signature=signature)
     return RecordFolder(path=folder, record=record, problems=tuple(problems))
 
 

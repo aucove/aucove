@@ -36,6 +36,7 @@ Principios, derivados de las decisiones del marco:
 | AS-9 | Disponibilidad del flujo: CI, cuota de la forja y de la API | Disponibilidad |
 | AS-10 | Aperturas (sales, rutas e identidades) y registros de evidencia (`.aucove/evidence/`, artefactos `evidence-*`, paquetes de los custodios) | Confidencialidad, porque permiten confirmar contenidos de baja entropía y revelan temas por las rutas; integridad; disponibilidad a 10 años |
 | AS-11 | Llaves age o GPG del depósito cifrado en OSF (D-47) | Disponibilidad y confidencialidad: sin ellas, el depósito no se recupera |
+| AS-12 | Llave privada del proyecto (D-72) | Confidencialidad, porque con ella se firman registros a nombre del proyecto; disponibilidad, porque sin ella no se firma, aunque lo ya firmado sigue valiendo |
 
 ### 2.2 Actores
 
@@ -62,7 +63,7 @@ Principios, derivados de las decisiones del marco:
 | TH-07 | AC-2, AC-5 → AS-5 | Exfiltración del token de forja (`gh auth token`, llavero, variables de entorno) | REQ-SEC-27..34 | **Medio.** Sin sandbox en Windows nativo |
 | TH-08 | AC-3 → AS-6 | Un `.tex` hostil lee archivos locales o ejecuta comandos al compilarse en otra máquina | REQ-SEC-54..60 | **Medio.** TeX siempre puede leer cualquier archivo (§7.1); solo el aislamiento lo evita |
 | TH-09 | AC-3 → AS-5, AS-8 | El PR compila en CI y exfiltra el `GITHUB_TOKEN` o falsea el PDF | REQ-SEC-57, REQ-SEC-58; D-14; el check requerido corre la definición de la rama por defecto (`pull_request_target`, 09 §5.2) | **Bajo** |
-| TH-10 | AC-3 → AS-5 | El colaborador edita un workflow en su rama para leer un secreto de CI | REQ-SEC-37, REQ-SEC-38; el check requerido corre la definición de la rama por defecto (`pull_request_target`, 09 §5.2) | **Bajo.** v0.1 no usa secretos de repositorio |
+| TH-10 | AC-3 → AS-5 | El colaborador edita un workflow en su rama para leer un secreto de CI | REQ-SEC-37, REQ-SEC-38; el check requerido corre la definición de la rama por defecto (`pull_request_target`, 09 §5.2) | **Bajo.** v0.1 no usa secretos de repositorio; la llave del proyecto vive en un environment cuya única rama es la base (REQ-SEC-87) |
 | TH-11 | AC-5 → AS-6, AS-5 | Una release o dependencia comprometida ejecuta código en cada máquina a través de los hooks | REQ-SEC-40..47, REQ-SEC-51, REQ-SEC-52 | **Medio.** Se confía en PyPI y GitHub; hay una ventana hasta la detección |
 | TH-12 | AC-5 → AS-3, AS-8 | Una GitHub Action comprometida (tag movido) | REQ-SEC-47, REQ-SEC-48 | **Bajo** |
 | TH-13 | AC-1 → AS-5 | Se sube un secreto al repo | REQ-SEC-33, REQ-SEC-35, REQ-SEC-36; §10 | **Medio.** El secreto sobrevive en los clones; rotarlo es obligatorio |
@@ -86,6 +87,7 @@ Principios, derivados de las decisiones del marco:
 | TH-31 | AC-1 → AS-1, AS-2 | Una apertura divulga algo patentable, datos personales o correos personales | Checklist de apertura (D-44, REQ-SEC-85) y correos noreply desde el día 1 | **Medio.** Depende del responsable |
 | TH-32 | AC-1, AC-2 → AS-3 | Un PR que toca LaTeX intenta pasar `aucove/editor-review` sin la aprobación del editor, alterando `editor-review-trigger.yml` o forjando un check con el mismo nombre | La decisión corre siempre con la definición de la rama por defecto (`pull_request_target` y `workflow_run`), lee todo por la API y publica un solo check run de GitHub Actions por cabeza (09-ci REQ-CI-58 a REQ-CI-60; 06-permisos §4.7, `integration_id`). Si el disparador falta, el check falla cerrado (00-marco D-56) | **Bajo** |
 | TH-33 | AC-1, AC-2 → AS-6 | Codex ejecuta sus hooks con una shell, y la shell podría tomar un `aucove` versionado en el directorio del proyecto en lugar del instalado | S6 lo verifica antes de entregar los hooks (00-marco D-58); el comando es una cadena fija, sin variables (07-hooks REQ-HOOK-1); SB09 rechaza un `aucove.*` versionado; `doctor` avisa de las entradas relativas del `PATH` (01-arquitectura REQ-ARCH-33) | **Bajo** (pendiente de S6) |
+| TH-34 | AC-2, AC-3, AC-5 → AS-12, AS-7 | Alguien obtiene la llave privada del proyecto, o la usa, y firma registros a su nombre: un workflow de otra rama o un job de `pull_request_target` que declara el environment, un secreto del repositorio puesto por error, o un agente en la computadora del admin | La regla del environment (solo la rama base) y SB10; ningún secreto del repositorio ni de la organización, que `init` comprueba (REQ-SEC-87); la llave del admin con frase de paso, fuera de todo repositorio y sin cargar en `ssh-agent` mientras corre un agente (REQ-SEC-33 niega su lectura); `evidence sign` es solo humana, y los hooks niegan `ssh-keygen -Y sign` (07-hooks §4.3); primero se firma y después se sella, así que una llave robada no fabrica firmas con fecha anterior al robo; la revocación con `until` (11-trazabilidad §8.10) | **Bajo.** Quien controle la computadora del admin mientras la llave está desbloqueada puede firmar; la revocación invalida lo firmado desde entonces |
 
 Riesgos residuales sin fila propia:
 
@@ -299,11 +301,12 @@ Hechos verificados en la documentación de Claude Code:
 | Credencial | Titular | Dónde vive | Alcance | Expuesta al agente |
 |---|---|---|---|---|
 | Token de forja por persona | Cada persona | Llavero del SO o almacén de `gh` | Fine-grained PAT al repo (§5.2) | **Sí**, en la máquina local (riesgo residual §5.3) |
-| Token de administración para `init` | `lead` | Solo en memoria, durante `init` | + Administration RW | No, si se usa desde una TTY (REQ-SEC-30) |
+| Token de administración para `init` | `lead` | Solo en memoria, durante `init` | + Administration RW, Secrets R y Environments R (solo los nombres de los secretos; 06-permisos REQ-PERM-61) | No, si se usa desde una TTY (REQ-SEC-30) |
 | `GITHUB_TOKEN` | CI | Efímero, por job | `permissions:` por job (REQ-SEC-37) | Solo a los procesos del job |
 | API key u OIDC de revisión con modelo (desactivada) | Institución | Environment protegido | Workspace dedicado con tope de gasto | Solo al job autorizado |
 | Cuenta de IA de cada persona | Cada persona | Herramienta de IA oficial | Individual; nunca compartida | El núcleo nunca la toca (D-15) |
 | Publicación en PyPI | Framework | OIDC (Trusted Publishing) | Un proyecto de PyPI | No hay secreto almacenado |
+| Llave privada del proyecto (D-72) | Admin del repositorio | Su computadora, cifrada con frase de paso; con `mode: ci`, también el secreto `AUCOVE_EVIDENCE_KEY` del environment `aucove-evidence` | Firma registros a nombre del proyecto | No: el núcleo no la lee en la computadora del admin (REQ-SEC-87) |
 
 ### 5.2 Token en modo mínimo
 
@@ -352,6 +355,7 @@ La protección de push por repositorio exige GitHub Secret Protection (de pago).
 - **REQ-SEC-36.** El CI DEBE ejecutar un escáner de secretos (gitleaks CLI con binario verificado por sha256) sobre los commits del PR, como regla `secrets` del check requerido `aucove/validate` (09 §4.1), con configuración empaquetada en el núcleo y sin leer `.gitleaks.toml` ni `.gitleaksignore` del PR, y fallar ante cualquier hallazgo. Las opciones de `--log-opts` las fija 09-ci §4.1 (incluyen el contenido que git trata como binario y el que agregan los commits de fusión de la rama de la tarea). La configuración extiende la de gitleaks y hereda su lista global de rutas permitidas, que se acepta en v0.1 como riesgo residual (§2.3; Q-SEC-10).
 - **REQ-SEC-37.** Cada job de los workflows de la plantilla DEBE declarar `permissions:` explícitos y mínimos, y la plantilla NO DEBE requerir secretos de repositorio ni de organización en v0.1.
 - **REQ-SEC-38.** Si se activa la revisión con modelo, su credencial DEBE vivir en un environment con *deployment branches* restringido a la rama base (y con *required reviewers* y *prevent self-review* donde el plan lo permita), provenir de un workspace dedicado con tope de gasto y no ser nunca un token de suscripción.
+- **REQ-SEC-87.** La llave privada del proyecto (00-marco D-72) DEBE vivir solo en la computadora del admin, cifrada con frase de paso y fuera de todo repositorio, y, con `mode: ci`, en el secreto `AUCOVE_EVIDENCE_KEY` del environment `aucove-evidence`, cuya única regla de despliegue es la rama base (06-permisos REQ-PERM-61). NUNCA DEBE ser un secreto del repositorio ni de la organización, porque esos los puede pedir un workflow de cualquier rama: `init` lo comprueba con el token de administración. Solo el job `integration` de `seal.yml` declara el environment (SB10). La guía del admin DEBE explicar cómo crearla, respaldarla, publicarla, rotarla y revocarla, y pedir que no se cargue en `ssh-agent` en una computadora donde corren agentes.
 - **REQ-SEC-39.** El núcleo NO DEBE leer, guardar ni reenviar credenciales ni tokens de sesión de cuentas de claude.ai u otros proveedores de IA, y la plantilla (incluido `.devcontainer/**`) NO DEBE preconfigurar ninguna.
 
 Los permisos de cada job los define 09-ci §1. En resumen:
@@ -375,7 +379,7 @@ Nota verificada: con *required reviewers*, en planes Free, Pro y Team los enviro
 | `.github/workflows/**` y Actions de terceros | Runners de CI | REQ-SEC-47, REQ-SEC-48 |
 | `.latexmkrc` (Perl) y paquetes de TeX | Local y CI | §7 |
 | Imágenes (TeX, devcontainer), gitleaks | CI y contenedores | REQ-SEC-47 |
-| Extra `evidence` (`rfc3161-client`, `opentimestamps`, `python-bitcoinlib`) | Jobs de `seal.yml` y máquinas de quien verifica | `requirements-lock.txt` con hashes (REQ-CI-12) |
+| Extra `evidence` (`rfc3161-client`, `opentimestamps`, `python-bitcoinlib`, `cryptography`) | Jobs de `seal.yml`, la máquina del admin que firma y las de quien verifica | `requirements-lock.txt` con hashes (REQ-CI-12) |
 
 ### 6.2 Releases del núcleo
 
@@ -435,7 +439,7 @@ jobs:
 ### 6.4 Integridad de los archivos generados y de la configuración ejecutable
 
 - **REQ-SEC-49.** El CI DEBE regenerar `.github/CODEOWNERS` y `.github/ISSUE_TEMPLATE/task.yml` desde el `roles.yaml` de la cabeza del PR (REQ-PERM-31) y `.claude/skills/**` y `.agents/skills/**` desde la fuente del `core_pin` de la cabeza (09 REQ-CI-45), y fallar si difieren. La autorización para modificarlos se evalúa con la base (D-08).
-- **REQ-SEC-50.** El CI DEBE verificar sobre la rama del PR las invariantes SB01–SB09 y fallar ante un `error`.
+- **REQ-SEC-50.** El CI DEBE verificar sobre la rama del PR las invariantes SB01–SB10 y fallar ante un `error`.
 
 | Regla | Invariante | Severidad |
 |---|---|---|
@@ -448,6 +452,7 @@ jobs:
 | SB07 | Un cambio en `.devcontainer/**` (comandos de ciclo de vida, *features* sin digest) | `warning` y `flag:instructions` |
 | SB08 | Build: sin `-shell-escape`, `--shell-escape`, `-enable-write18`, `--enable-write18` ni `shell_escape=t` (= TX06) | `error` |
 | SB09 | Ningún archivo versionado cuyo nombre base, sin distinguir mayúsculas, sea `aucove`, `git`, `gh`, `uv`, `python` o `latexmk` sin extensión o con `.exe`, `.com`, `.bat`, `.cmd` o `.ps1` | `error` |
+| SB10 | Workflows: solo el job `integration` de `.github/workflows/seal.yml` declara el environment `aucove-evidence`, y solo el paso de `ci seal` de ese job nombra el secreto `AUCOVE_EVIDENCE_KEY` (09-ci REQ-CI-61; lo implementa la regla `ci-policy`) | `error` |
 
 ### 6.5 Política de actualización
 
@@ -738,12 +743,13 @@ Solo se reservan estas formas (D-16): cómputo sin estado con almacén cifrado e
 | `flag:instructions` | Etiqueta de la forja | El lint encontró contenido que podría ser una instrucción oculta (consultiva) |
 | `E_VALIDATION_ACCOUNT_TYPE` | Código de hallazgo (00-marco §5.11) | Tipo de cuenta o nivel de dato no permitido por la matriz |
 | `E_STATE_BASE_REWRITTEN` | Código de error | El historial de la base fue reescrito; hay que volver a clonar |
-| `IL01`–`IL12`, `TX01`–`TX06`, `SB01`–`SB09` | Códigos de hallazgo de los checks | §3.6, §7.2, §6.4 |
+| `IL01`–`IL12`, `TX01`–`TX06`, `SB01`–`SB10` | Códigos de hallazgo de los checks | §3.6, §7.2, §6.4 |
 | `AS-<n>`, `AC-<n>`, `TH-<n>` | Etiquetas locales del capítulo | Activos, actores y amenazas |
 | `AS-10`, `AS-11` | Activos (§2.1) | Aperturas y registros de evidencia; llaves del depósito cifrado en OSF (D-45 a D-47) |
 | `TH-26`–`TH-31` | Amenazas (§2.3) | Sellado y custodia de la evidencia: registros borrados o vencidos, fechas falsas, aperturas filtradas, TSA comprometida, identidad publicada en Sigstore y aperturas indebidas |
 | `REQ-SEC-86` | Requisito (§8.2) | Cuenta de IA propia, con un cliente que admitan los términos de su proveedor; el framework no toca credenciales de IA (00-marco D-58) |
 | `REQ-SEC-85` | Requisito (§8.4) | Ningún contenido pasa de `internal` a `public` sin una decisión que cumpla la checklist de apertura (D-44) |
+| `AS-12`, `TH-34`, `REQ-SEC-87`, `SB10` | Activo, amenaza, requisito e invariante | La llave privada del proyecto y dónde puede vivir (§2, §5.4, §6.4; D-72) |
 
 ## 15. Preguntas abiertas
 

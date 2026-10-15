@@ -285,12 +285,20 @@ no_pseudonymize = "Exporta los logins tal cual, sin seudónimo (no hace falta la
 summary = "Evidencia verificable de fecha de las entregas y las integraciones."
 
 [cli.op.evidence.verify]
-summary = "Verifica registros de evidencia: manifiesto, sellos TSA y OTS, aperturas y actores."
+summary = "Verifica registros de evidencia: manifiesto, firma del proyecto, sellos TSA y OTS, aperturas y actores."
 
 [cli.op.evidence.verify.param]
 path = "Carpeta de un registro o carpeta que los contiene: un artefacto, un paquete o la copia local de evidencia."
 repo = "Repositorio git con el que se cotejan el commit, su árbol y los blobs de las aperturas."
 content = "Carpeta con archivos en sus rutas del repositorio, que se comparan con lo sellado."
 offline = "No usa la red. Sin esta opción, y con red, consulta los calendarios de OpenTimestamps para completar en memoria las pruebas OTS pendientes."
-upgrade = "Además de completar en memoria las pruebas OTS pendientes, reescribe `manifest.json.ots` con la prueba completa."
+upgrade = "Además de completar en memoria las pruebas OTS pendientes, reescribe cada prueba `.ots` con la prueba completa."
 tz = "Zona horaria de las horas locales; por defecto, America/Mexico_City."
+keys = "Lista de llaves del proyecto que publica el grupo (YAML con la clave `keys`) o un `project.yaml`; sin ella, las del proyecto donde se corre."
+
+[cli.op.evidence.sign]
+summary = "Solo humana: firma el índice de un paquete de evidencia con la llave del proyecto y sella la firma. Pide teclear `sign` y el nombre de la carpeta del paquete."
+
+[cli.op.evidence.sign.param]
+package = "Carpeta del paquete de evidencia, con su `index.txt`; fuera del árbol de trabajo del proyecto."
+key = "Llave con la que firma `ssh-keygen`: la privada del proyecto o, si está en `ssh-agent`, la pública."

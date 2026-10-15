@@ -8,7 +8,7 @@ Cada persona tiene a su cargo partes del trabajo, como los métodos, los resulta
 2. **Entrega.** Tu trabajo listo para revisión, con una nota de lo que hiciste. Queda sellado con una fecha verificable.
 3. **Aprobación.** Otra persona lo revisa y lo integra a la versión común.
 
-Los checks automáticos de GitHub (el CI) revisan cada entrega y, si el proyecto usa LaTeX, compilan el PDF. Si el agente toca algo que no debía, el CI lo detiene antes de que llegue a la versión común. El sello prueba que un texto o un resultado existía en una fecha, aunque el repositorio siga privado: cada quien puede defender su aporte sin publicar antes de tiempo.
+Los checks automáticos de GitHub (el CI) revisan cada entrega y, si el proyecto usa LaTeX, compilan el PDF. Si el agente toca algo que no debía, el CI lo detiene antes de que llegue a la versión común. El sello prueba que un texto o un resultado existía en una fecha, aunque el repositorio siga privado: cada quien puede defender su aporte sin publicar antes de tiempo. Con la [firma del proyecto](firma-del-proyecto.md), una llave que publica el grupo prueba además que el registro lo emitió el proyecto.
 
 ## Cómo se conectan las piezas
 

@@ -25,6 +25,8 @@ EXPECTED = {
     "decision.schema.json", "pr-meta.schema.json", "session-note.schema.json",
     # Evidencia de autoría (03-esquemas REQ-SCHEMA-93; 11-trazabilidad §8).
     "evidence-manifest.schema.json", "evidence-openings.schema.json", "evidence-record.schema.json",
+    # Firma del índice de un paquete (00-marco D-72; 11-trazabilidad §8.10).
+    "evidence-signature.schema.json",
 }
 
 

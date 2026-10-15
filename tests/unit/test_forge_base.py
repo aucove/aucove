@@ -262,10 +262,11 @@ SPEC_MEMBERS = {
     "upsert_check_run",  # desde H3 (D-56, REQ-FORGE-70)
 }
 D34H_MEMBERS = {"pulls_for_commit", "last_successful_run"}
-# 08 §2 (00-marco D-65; REQ-FORGE-73): las lecturas de la configuración, solo GET, para doctor
+# 08 §2 (00-marco D-65; REQ-FORGE-73): las lecturas de la configuración, solo GET, para doctor, con
+# el environment de la firma del proyecto (00-marco D-72)
 D65_READS = {
     "repo_settings", "rulesets", "list_labels", "collaborator_permission", "outside_collaborators",
-    "actions_policy", "workflow_permissions", "org_settings",
+    "actions_policy", "workflow_permissions", "org_settings", "environment",
 }
 # 08 §2.2 (00-marco D-62): la interfaz de administración que solo construye init
 ADMIN_MEMBERS = {
@@ -273,6 +274,7 @@ ADMIN_MEMBERS = {
     "workflow_permissions", "set_workflow_permissions", "retention_days", "set_retention_days",
     "collaborator_permission", "add_collaborator", "outside_collaborators", "user_id", "org_settings",
     "ruleset", "upsert_ruleset", "branch_rules",
+    "environment", "put_environment", "secret_names",  # 06 §4.3b (00-marco D-72)
 }
 
 

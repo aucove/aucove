@@ -79,7 +79,8 @@ def run_op(
     env: Mapping[str, str] | None = None,
     **kwargs: object,
 ) -> Result:
-    params: dict[str, object] = {"repo": None, "content": None, "offline": False, "upgrade": False, "tz": None}
+    params: dict[str, object] = {"repo": None, "content": None, "offline": False, "upgrade": False, "tz": None,
+                                 "keys": None}
     params.update(kwargs)
     folder = cwd or healthy.root
     inv = Invocation(root=None, lang=lang, json=True, dry_run=dry_run, surface="cli",
@@ -144,6 +145,7 @@ def test_verified_strong_envelope(healthy: corpus.Healthy) -> None:
     # de prueba completa en memoria la prueba OTS, cuyo bloque no se coteja: queda pendiente.
     assert rows(result) == [
         ("manifest", None, "pass", None),
+        ("signature", None, "skip", "unsigned"),  # sin firma del proyecto (D-72)
         ("tsa", "alpha", "pass", None),
         ("tsa", "beta", "pass", None),
         ("ots", "bitcoin", "pending", "bitcoin_unverified"),
@@ -199,7 +201,7 @@ def test_an_alteration_fails_with_the_complete_data(built: tuple[corpus.Healthy,
 def test_every_corpus_case_through_the_operation(case_id: str, built: tuple[corpus.Healthy, list[corpus.Built]]) -> None:
     healthy = built[0]
     item = case(built, case_id)
-    kwargs: dict[str, object] = {}
+    kwargs: dict[str, object] = {"keys": str(healthy.keys_path)}  # la lista publicada de llaves
     if item.case.repo:
         kwargs["repo"] = str(healthy.repo.path)
     if item.content is not None:
@@ -215,6 +217,66 @@ def test_every_corpus_case_through_the_operation(case_id: str, built: tuple[corp
     assert result.ok is not failing
     if failing:
         assert result.error is not None and result.error.code == "E_VALIDATION_EVIDENCE_FAILED"
+
+
+# -- firma del proyecto (00-marco D-72; 11-trazabilidad §8.10) ---------------------------------------------
+
+
+def test_a_signed_package_through_the_operation(healthy: corpus.Healthy) -> None:
+    """Un paquete con ``signature/``: ``signatures[]``, el origen de cada registro que cubre el
+    índice firmado y el veredicto global; sin la lista de llaves, todo queda ``unknown``."""
+    data = valid(run_op(healthy, healthy.package, keys=str(healthy.keys_path)))["data"]
+    assert isinstance(data, dict)
+    (folder,) = data["signatures"]
+    assert (folder["folder"], folder["key_id"], folder["verdict"], folder["confidence"], folder["origin"]) == (
+        "signature", corpus.KEY_ID, "verified", "strong", "project")
+    assert [(c["check"], c["source"], c["status"]) for c in folder["checks"]] == [
+        ("signature", corpus.KEY_ID, "pass"), ("tsa", "alpha", "pass"), ("tsa", "beta", "pass"),
+        ("ots", "calendars", "pending"), ("index", None, "pass")]
+    assert sorted((r["kind"], r["origin"]) for r in data["records"]) == [
+        ("integration", "project"), ("submission", "project")]
+    assert (data["verdict"], data["confidence"]) == ("pending", None)  # la entrega no tiene TSA
+    unchecked = valid(run_op(healthy, healthy.package))["data"]
+    assert isinstance(unchecked, dict) and unchecked["signatures"][0]["origin"] == "unknown"
+    assert {r["origin"] for r in unchecked["records"]} == {"unknown"}
+    # una carpeta suelta no es un paquete: sin signatures[]
+    alone = valid(run_op(healthy, healthy.signed, keys=str(healthy.keys_path)))["data"]
+    assert isinstance(alone, dict) and alone["signatures"] == [] and alone["records"][0]["origin"] == "project"
+
+
+def test_the_keys_option(healthy: corpus.Healthy, tmp_path: Path) -> None:
+    """``--keys`` es la lista publicada (solo ``keys``) o un ``project.yaml`` (su
+    ``evidence_signing.keys``); si no se entiende, ``E_VALIDATION_INPUT`` sin verificar nada."""
+    project = tmp_path / "project.yaml"
+    project.write_text(json.dumps({"evidence_signing": {"mode": "ci", "keys": corpus.keys_document()}}),
+                       encoding="utf-8")
+    for keys in (healthy.keys_path, project):
+        data = valid(run_op(healthy, healthy.signed, keys=str(keys)))["data"]
+        assert isinstance(data, dict) and data["records"][0]["origin"] == "project", keys
+    assert _input_errors(run_op(healthy, healthy.signed, keys=str(tmp_path / "nada.yaml"))) == [
+        {"param": "keys", "reason": "not_found"}]
+    bad = tmp_path / "bad.yaml"
+    other_type = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQC"
+    for text, expected in (
+        ("keys: []\nextra: 1\n", {"param": "keys", "reason": "invalid", "pointer": ""}),
+        ("[1, 2]\n", {"param": "keys", "reason": "invalid"}),
+        (f"keys:\n  - id: x\n    public_key: {other_type}\n    since: '2026-01-01T00:00:00Z'\n",
+         {"param": "keys", "reason": "invalid", "pointer": "/keys/0/public_key"}),
+    ):
+        bad.write_text(text, encoding="utf-8")
+        assert _input_errors(run_op(healthy, healthy.signed, keys=str(bad))) == [expected], text
+
+
+def test_cli_text_shows_the_origin_and_the_index_signature(healthy: corpus.Healthy) -> None:
+    t = translator("es")
+    result = run_cli(healthy, ["--lang", "es", "evidence", "verify", str(healthy.package),
+                               "--keys", str(healthy.keys_path), "--offline"])
+    assert result.code == 0, result.err
+    lines = result.out.splitlines()
+    # los dos registros que cubre el índice y la carpeta de firma
+    assert lines.count(t("evidence.render.origin", origin=t("evidence.origin.project"))) == 3, lines
+    assert any(line.startswith("Firma del índice `signature`:") for line in lines), lines
+    assert any(corpus.KEY_ID in line for line in lines), lines
 
 
 # -- errores de entrada y registros hostiles ----------------------------------------------------------------
@@ -355,6 +417,7 @@ def test_without_the_extra(healthy: corpus.Healthy, monkeypatch: pytest.MonkeyPa
     assert result.ok and result.data["verdict"] == "pending"  # type: ignore[index]
     assert rows(result) == [
         ("manifest", None, "pass", None),
+        ("signature", None, "skip", "unsigned"),
         ("tsa", "alpha", "skip", "missing_extra"),
         ("tsa", "beta", "skip", "missing_extra"),
         ("ots", "calendars", "skip", "missing_extra"),
@@ -582,7 +645,7 @@ def test_cli_help_lists_the_options() -> None:
     out, err = io.StringIO(), io.StringIO()
     code = cli.run(["evidence", "verify", "--help"], env={PREFIX + "LANG": "en"}, stdout=out, stderr=err)
     assert code == 0
-    for flag in ("--repo", "--content", "--offline", "--upgrade", "--tz", "PATH"):
+    for flag in ("--repo", "--content", "--offline", "--upgrade", "--tz", "--keys", "PATH"):
         assert flag in out.getvalue(), flag
 
 

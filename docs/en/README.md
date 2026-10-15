@@ -11,6 +11,8 @@ What each person in a research team that works with AI on a shared repository do
 | [Researcher](researcher.md) | Whoever works on their parts | Setting up your computer and your token; a day of work with the agent |
 | [Lead](lead.md) | Whoever coordinates the project | Setting up the project once; reviewing submissions every week; the board |
 | [Publish and safeguard](publish-and-safeguard.md) | The lead, when a stage closes | Keeping the evidence outside GitHub and publishing with a DOI |
+| [The project signature](project-signature.md) | Whoever administers the repo, once | Creating the project key, keeping it and publishing it; changing it |
+| [Verify](verify.md) | Whoever reviews from outside | Checking the date and the origin of a record or a package |
 | [When something happens](when-something-happens.md) | Everyone, when needed | Clashes, expired tasks, data, tokens and failures |
 | [Four teams](examples.md) | Everyone | How each of four example teams set up its project |
 

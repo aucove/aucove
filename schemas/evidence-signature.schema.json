@@ -1,0 +1,307 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aucove.invalid/schemas/evidence-signature/v1",
+  "title": "Firma del índice de un paquete de evidencia",
+  "description": "signature.json de cada carpeta signature/ o signature-<n>/ de un paquete de evidencia, que escribe aucove evidence sign (00-marco D-72; 11-trazabilidad §8.10; 05-operaciones §9.27). Lo firmado son los bytes de index.txt; lo sellado, los de su firma index.txt.sig.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "signed",
+    "signed_sha256",
+    "files",
+    "signature",
+    "sealed",
+    "proofs"
+  ],
+  "properties": {
+    "schema": {
+      "const": "https://aucove.invalid/schemas/evidence-signature/v1"
+    },
+    "signed": {
+      "const": "index.txt"
+    },
+    "signed_sha256": {
+      "$ref": "#/$defs/hex256"
+    },
+    "files": {
+      "description": "Cuántos archivos lista index.txt.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "signature": {
+      "$ref": "#/$defs/signature"
+    },
+    "sealed": {
+      "const": "index.txt.sig"
+    },
+    "proofs": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "$ref": "#/$defs/proof"
+      }
+    }
+  },
+  "$defs": {
+    "hex256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "revocation": {
+      "description": "Estado de revocación del certificado de la TSA capturado al sellar (OCSP de preferencia; si no, la CRL).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "file",
+        "data"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "ocsp",
+            "crl"
+          ]
+        },
+        "file": {
+          "type": "string",
+          "pattern": "^tsa/[a-z0-9-]{1,32}\\.(ocsp|crl)\\.der$"
+        },
+        "data": {
+          "description": "Siempre null: el OCSP o la CRL van en su archivo.",
+          "type": "null"
+        }
+      }
+    },
+    "signature": {
+      "description": "Firma SSHSIG de index.txt con la llave del proyecto (11-trazabilidad §8.10).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "format",
+        "namespace",
+        "hash",
+        "key",
+        "key_id",
+        "data"
+      ],
+      "properties": {
+        "file": {
+          "const": "index.txt.sig"
+        },
+        "format": {
+          "const": "sshsig"
+        },
+        "namespace": {
+          "const": "aucove-evidence"
+        },
+        "hash": {
+          "enum": [
+            "sha256",
+            "sha512"
+          ]
+        },
+        "key": {
+          "description": "Huella SHA256 de la llave pública, como la muestra ssh-keygen -l.",
+          "type": "string",
+          "pattern": "^SHA256:[A-Za-z0-9+/]{43}$"
+        },
+        "key_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,31}$",
+          "description": "id de la llave en evidence_signing.keys al firmar."
+        },
+        "data": {
+          "description": "Siempre null: la firma va en index.txt.sig.",
+          "type": "null"
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "source",
+        "status",
+        "file",
+        "data",
+        "time_utc",
+        "revocation",
+        "error"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "ots",
+            "rfc3161"
+          ]
+        },
+        "source": {
+          "description": "rfc3161: id del catálogo de TSA (11-trazabilidad §8.7); ots: 'calendars'.",
+          "type": "string",
+          "pattern": "^[a-z0-9-]{1,32}$"
+        },
+        "status": {
+          "description": "ok: prueba obtenida y verificada al sellar (la de OTS queda pendiente de Bitcoin); error: no se obtuvo.",
+          "enum": [
+            "ok",
+            "error"
+          ]
+        },
+        "file": {
+          "description": "Ruta dentro de la carpeta de la firma.",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(index\\.txt\\.sig\\.ots|tsa/[a-z0-9-]{1,32}\\.tsr)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "description": "Siempre null: la prueba va en su archivo.",
+          "type": "null"
+        },
+        "time_utc": {
+          "description": "genTime de la TSA (rfc3161), obligatorio si status es ok; null en ots. evidence verify lo coteja con el token.",
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revocation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/revocation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 300
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "error"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "file": {
+                "type": "null"
+              },
+              "data": {
+                "type": "null"
+              },
+              "revocation": {
+                "type": "null"
+              },
+              "error": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "ok"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "file": {
+                "type": "string"
+              },
+              "error": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "ots"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "properties": {
+              "revocation": {
+                "type": "null"
+              },
+              "time_utc": {
+                "type": "null"
+              },
+              "source": {
+                "const": "calendars"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "rfc3161"
+              },
+              "status": {
+                "const": "ok"
+              }
+            },
+            "required": [
+              "type",
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "time_utc": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

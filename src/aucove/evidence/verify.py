@@ -29,6 +29,20 @@ marcadores de su texto, que localiza ``ops.evidence_verify``. Por registro:
 - ``content`` (con una carpeta de archivos), uno por archivo: los bytes crudos contra
   ``c`` y, si no coinciden, la forma limpia de ``git hash-object --path``, calculada en un
   repositorio temporal aislado de la carpeta (:class:`CleanForm`).
+- ``signature``, si el registro va firmado (11-trazabilidad §8.10; 00-marco D-72): la
+  firma SSHSIG de ``manifest.json.sig`` sobre los bytes de ``manifest.json``, con una llave
+  de la lista del proyecto (``keys``; nunca la que trae la firma) que valga en la fecha del
+  sello: el ``genTime`` más antiguo de las TSA que dan ``pass`` o ``weak`` (REQ-TRACE-90 a
+  REQ-TRACE-92). Sin lista de llaves, ``skip`` (``no_keys``) tras comprobar la firma con su
+  llave; sin esa fecha, ``pending`` (``undated``). En un registro firmado, las pruebas son de
+  la firma: ``tsa`` y ``ots`` comparan el SHA-256 de ``manifest.json.sig``.
+
+Cada registro tiene un origen (``origin``): ``project`` si su firma da ``pass``, ``unsigned``
+si no va firmado y ``unknown`` si la firma no se pudo cotejar. En un paquete, cada carpeta
+``signature*/`` se verifica aparte (:func:`verify_signature_folder`: ``signature`` de
+``index.txt.sig`` sobre ``index.txt``, ``tsa``, ``ots`` e ``index``), y
+:func:`apply_coverage` sube el origen de los registros cuyo ``manifest.json`` lista el
+índice firmado.
 
 Veredicto de un registro: ``failed`` si algo da ``fail``; ``verified`` si ``manifest``
 pasa y alguna TSA da ``pass`` o ``weak`` (en v0.1 es la única prueba de fecha que lo
@@ -54,26 +68,38 @@ import secrets
 import sys
 import tempfile
 from collections.abc import Callable, Iterator, Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
+from ..domain.signing import EvidenceKey, find_key
 from ..vcs.git import EMPTY_TREE, Git, GitError, GitTimeout, GitUnavailable, MissingObject, is_oid, parse_commit
-from . import canon, ots, timefmt, tsa
-from .catalog import Catalog, Check
+from . import canon, ots, sshsig, timefmt, tsa
+from .catalog import TOOL_MISSING, Catalog, Check
 from .manifest import MAX_COMMITS, PLAN_PATHS, check_manifest, identity_value
 from .openings import EntryOpening, Openings, blob_hasher, blob_oid, check_actor, check_entry, manifest_entries
+from .package import (
+    INDEX_FILE,
+    SIGNATURE_FILE,
+    PackageIndexError,
+    index_files,
+    parse_index,
+    read_index,
+    read_signature_dir,
+)
 from .record import (
+    INDEX_SIG_FILE,
     KINDS,
     MANIFEST_FILE,
     MAX_FILE_BYTES,
     OPENINGS_FILE,
-    OTS_FILE,
     RECORD_FILE,
+    SIG_FILE,
     Proof,
     Record,
     RecordError,
+    Signature,
     find_record_dirs,
     read_record_dir,
 )
@@ -87,8 +113,11 @@ __all__ = [
     "CleanForm",
     "Content",
     "RecordResult",
+    "SignatureResult",
     "UnreadableRecord",
     "Upgrade",
+    "apply_coverage",
+    "package_root",
     "detail_key",
     "find_records",
     "missing_extra",
@@ -97,12 +126,14 @@ __all__ = [
     "unverifiable",
     "verdict",
     "verify_folder",
+    "verify_signature_folder",
 ]
 
-CheckId = Literal["manifest", "tsa", "ots", "openings", "actors", "git", "content"]
+CheckId = Literal["manifest", "signature", "tsa", "ots", "openings", "actors", "git", "content", "index"]
 Status = Literal["pass", "weak", "pending", "skip", "fail"]
 Verdict = Literal["verified", "pending", "failed"]
 Confidence = Literal["strong", "weak"] | None
+Origin = Literal["project", "unknown", "unsigned"]  # 11-trazabilidad §8.10
 Params = Mapping[str, "str | int"]
 UpgradeMode = Literal["memory", "dry_run", "write"]
 # Validador de esquemas que inyecta quien llama (esta capa no importa jsonschema):
@@ -110,7 +141,9 @@ UpgradeMode = Literal["memory", "dry_run", "write"]
 Validate = Callable[[str, object], Sequence[str]]
 
 # Orden de los checks en la salida (enum de $defs/evidence_check).
-CHECKS: tuple[CheckId, ...] = ("manifest", "tsa", "ots", "openings", "actors", "git", "content")
+CHECKS: tuple[CheckId, ...] = (
+    "manifest", "signature", "tsa", "ots", "openings", "actors", "git", "content", "index",
+)
 OTS_SOURCE = "calendars"
 # Pruebas de fecha que pueden llevar un registro a verified: en v0.1, solo una TSA. OTS da
 # a lo sumo pending, porque su bloque de Bitcoin no se coteja (05 §9.26).
@@ -136,12 +169,20 @@ REASONS: Mapping[str, tuple[str, ...]] = {
         "ok", "not_obtained", "missing", "unreadable", "time_mismatch", "missing_extra", "unknown_tsa",
         "invalid", "rejected", "digest_mismatch", "nonce_mismatch", "policy", "chain", "signature", "ess",
         "no_revocation", "ocsp_invalid", "ocsp_status", "ocsp_mismatch", "ocsp_signature", "ocsp_unknown",
-        "crl_invalid", "crl_signature", "stale", "after_expiry", "revoked", "revoked_later",
+        "crl_invalid", "crl_signature", "stale", "after_expiry", "revoked", "revoked_later", "subject_missing",
     ),
     "ots": (
         "pending", "bitcoin_unverified", "invalid", "digest_mismatch", "missing_extra", "not_obtained",
-        "missing", "unreadable",
+        "missing", "unreadable", "subject_missing",
     ),
+    # 11-trazabilidad §8.10 y REQ-TRACE-90 a REQ-TRACE-92 (00-marco D-72)
+    "signature": (
+        "ok", "unsigned", "no_keys", "undated", "missing", "unreadable", "no_manifest", "no_index",
+        "missing_extra", "invalid", "folder_invalid", "schema", "namespace", "unsupported", "bad_signature",
+        "metadata_mismatch",
+        "key_unknown", "key_not_valid",
+    ),
+    "index": ("ok", "missing", "unreadable", "changed", "bad_index", "mismatch", "missing_files"),
     "openings": ("ok", "missing", "unreadable", "invalid", "schema", "other_manifest", "no_manifest", "mismatch"),
     "actors": ("ok", "none", "missing", "no_manifest", "mismatch"),
     "git": (
@@ -203,7 +244,27 @@ class RecordResult:
     verdict: Verdict
     confidence: Confidence
     checks: tuple[CheckResult, ...]
-    upgraded: bool = False  # se reescribió manifest.json.ots con la prueba completa
+    upgraded: bool = False  # se reescribió la prueba .ots con la prueba completa
+    warnings: tuple[str, ...] = ()
+    origin: Origin = "unsigned"  # 11-trazabilidad §8.10
+
+
+@dataclass(frozen=True)
+class SignatureResult:
+    """Resultado de una carpeta de firma de un paquete (``signature*/``; 11-trazabilidad §8.10).
+
+    ``origin`` es ``project`` si su check ``signature`` da ``pass`` y ``unknown`` si no.
+    """
+
+    folder: Path
+    index_sha256: str
+    key: str | None
+    key_id: str | None
+    verdict: Verdict
+    confidence: Confidence
+    origin: Literal["project", "unknown"]
+    checks: tuple[CheckResult, ...]
+    upgraded: bool = False
     warnings: tuple[str, ...] = ()
 
 
@@ -393,12 +454,16 @@ def verdict(checks: Sequence[CheckResult]) -> tuple[Verdict, Confidence]:
     return "pending", None
 
 
-def overall(results: Sequence[RecordResult]) -> tuple[Verdict, Confidence]:
-    """Veredicto global: ``failed`` si falla alguno, ``verified`` si se verifican todos, si no ``pending``."""
-    if any(r.verdict == "failed" for r in results):
+def overall(
+    results: Sequence[RecordResult], signatures: Sequence[SignatureResult] = ()
+) -> tuple[Verdict, Confidence]:
+    """Veredicto global de los registros y las carpetas de firma: ``failed`` si falla alguno,
+    ``verified`` si se verifican todos, si no ``pending``."""
+    every: list[RecordResult | SignatureResult] = [*results, *signatures]
+    if any(r.verdict == "failed" for r in every):
         return "failed", None
-    if results and all(r.verdict == "verified" for r in results):
-        return "verified", "strong" if all(r.confidence == "strong" for r in results) else "weak"
+    if every and all(r.verdict == "verified" for r in every):
+        return "verified", "strong" if all(r.confidence == "strong" for r in every) else "weak"
     return "pending", None
 
 
@@ -489,7 +554,7 @@ def unverifiable(folder: Path, reason: str = "unverifiable", *, error: str | Non
     params: dict[str, str | int] = {"error": error} if error is not None else {}
     check = CheckResult("manifest", "fail", reason, params=params)
     kind, commit, sha = found.get("kind", "submission"), found.get("commit", "0" * 40), found.get("sha", "0" * 64)
-    return RecordResult(folder, kind, commit, sha, "failed", None, (check,))
+    return RecordResult(folder, kind, commit, sha, "failed", None, (check,), origin="unknown")
 
 
 # -- verificación de una carpeta ---------------------------------------------------------
@@ -503,13 +568,15 @@ def verify_folder(
     content: Content | None = None,
     upgrade: Upgrade | None = None,
     validate: Validate | None = None,
+    keys: Sequence[EvidenceKey] | None = None,
 ) -> RecordResult:
     """Verifica la carpeta de un registro (``<kind>-<commit>/`` o ``<kind>-<commit>-a<n>/``).
 
     Solo lee, salvo ``upgrade`` en modo ``write``; sin ``upgrade`` no consulta los
     calendarios. ``catalog`` es el de TSA (por defecto, el del núcleo). ``UnreadableRecord``
     si ``record.json`` no se entiende y el registro no se puede identificar con el
-    manifiesto ni con el nombre de la carpeta. Los datos de la carpeta son de terceros:
+    manifiesto ni con el nombre de la carpeta. ``keys`` es la lista de llaves del proyecto
+    (``None``: sin lista, la firma no se coteja). Los datos de la carpeta son de terceros:
     quien verifica varias aísla cada una (:func:`unverifiable`).
     """
     folder = Path(folder)
@@ -523,20 +590,17 @@ def verify_folder(
     rec = read.record
     problems = dict(read.problems)
     manifest_check, manifest_obj, sha = _check_manifest(rec, raw_record, problems, validate)
-    digest = bytes.fromhex(sha)
+    digest = _sealed_digest(rec.signature, sha)
 
+    proofs, upgraded, extra_warnings = _check_proofs(folder, rec.proofs, digest, catalog, problems, upgrade)
     checks: list[CheckResult] = [manifest_check]
-    upgraded = False
-    extra_warnings: list[str] = []
-    for proof in rec.proofs:
-        if proof.type == "rfc3161":
-            checks.append(_check_tsa(proof, digest, catalog, problems))
-    for proof in rec.proofs:
-        if proof.type == "ots":
-            result, written, warnings = _check_ots(folder, proof, digest, problems, upgrade)
-            checks.append(result)
-            upgraded = upgraded or written
-            extra_warnings.extend(warnings)
+    if rec.signature is not None:
+        checks.append(_check_signature(
+            rec.signature, problems.get(SIG_FILE), rec.manifest, "no_manifest", keys, _dated_at(proofs)
+        ))
+    else:
+        checks.append(CheckResult("signature", "skip", "unsigned"))
+    checks.extend(proofs)
     raw_openings = _json_file(folder / OPENINGS_FILE) if (folder / OPENINGS_FILE).is_file() else None
     if raw_openings is None and isinstance(raw_record, Mapping):
         raw_openings = raw_record.get("openings")
@@ -549,15 +613,214 @@ def verify_folder(
     final, confidence = verdict(checks)
     warnings = tuple(dict.fromkeys([w for c in checks for w in c.warnings] + extra_warnings))
     return RecordResult(
-        folder, rec.kind, rec.commit, rec.manifest_sha256, final, confidence, tuple(checks), upgraded, warnings
+        folder, rec.kind, rec.commit, rec.manifest_sha256, final, confidence, tuple(checks), upgraded, warnings,
+        origin=_origin(checks[1]),
     )
 
 
-def _absent(check: CheckId, source: str | None, problem: str | None) -> CheckResult:
-    """Prueba o archivo que no está (``missing``) o no se pudo leer (``unreadable``)."""
+def _sealed_digest(signature: Signature | None, manifest_sha: str) -> bytes | None:
+    """SHA-256 de lo sellado: el del manifiesto o, si el registro va firmado, el de la firma
+    (REQ-TRACE-91); ``None`` si falta la firma, que es lo sellado."""
+    if signature is None:
+        return bytes.fromhex(manifest_sha)
+    return hashlib.sha256(signature.data).digest() if signature.data is not None else None
+
+
+def _check_proofs(
+    folder: Path, proofs: Sequence[Proof], digest: bytes | None, catalog: Catalog | None,
+    problems: Mapping[str, str], upgrade: Upgrade | None,
+) -> tuple[list[CheckResult], bool, list[str]]:
+    """Checks ``tsa`` y ``ots`` de las pruebas de lo sellado, si se reescribió alguna prueba
+    ``.ots`` y los avisos de la consulta a los calendarios."""
+    checks: list[CheckResult] = []
+    upgraded = False
+    warnings: list[str] = []
+    for proof in proofs:
+        if proof.type == "rfc3161":
+            checks.append(_check_tsa(proof, digest, catalog, problems))
+    for proof in proofs:
+        if proof.type == "ots":
+            result, written, found = _check_ots(folder, proof, digest, problems, upgrade)
+            checks.append(result)
+            upgraded = upgraded or written
+            warnings.extend(found)
+    return checks, upgraded, warnings
+
+
+def _dated_at(checks: Sequence[CheckResult]) -> datetime | None:
+    """Fecha del sello para la firma: el ``genTime`` más antiguo de las TSA que dan ``pass`` o
+    ``weak`` (REQ-TRACE-90); ``None`` sin ninguna (por ejemplo, con solo OTS)."""
+    times = [c.time_utc for c in checks if c.check == "tsa" and c.status in ("pass", "weak") and c.time_utc]
+    return min(times) if times else None
+
+
+def _origin(signature: CheckResult) -> Origin:
+    """Origen de un registro por su check ``signature`` (11-trazabilidad §8.10)."""
+    if signature.status == "pass":
+        return "project"
+    return "unsigned" if signature.reason == "unsigned" else "unknown"
+
+
+def _check_signature(
+    meta: Signature,
+    problem: str | None,
+    signed: bytes | None,
+    no_signed: str,
+    keys: Sequence[EvidenceKey] | None,
+    dated_at: datetime | None,
+) -> CheckResult:
+    """Check ``signature`` de la firma ``meta`` (con sus bytes) sobre ``signed`` (REQ-TRACE-90 a
+    REQ-TRACE-92). ``no_signed`` es el motivo si faltan los bytes firmados. La llave sale de
+    ``keys``, nunca de la firma: la que trae solo se compara con la de los metadatos."""
+    source = meta.key_id
+    if meta.data is None:
+        return _absent("signature", source, problem, file=meta.file)
+    if signed is None:
+        return CheckResult("signature", "skip", no_signed, source)
+    try:
+        got = sshsig.verify(meta.data, signed)
+    except sshsig.SignatureError as exc:
+        if exc.reason == "missing_extra":
+            return CheckResult("signature", "skip", "missing_extra", source, warnings=(TOOL_MISSING,))
+        return CheckResult("signature", "fail", exc.reason, source)
+    params: dict[str, str | int] = {"key": got.fingerprint, "key_id": meta.key_id}
+    if got.fingerprint != meta.key or got.hash != meta.hash:
+        return CheckResult("signature", "fail", "metadata_mismatch", source, params=params)
+    if keys is None:
+        return CheckResult("signature", "skip", "no_keys", source, params=params)
+    known = find_key(keys, got.public_key)
+    if known is None:
+        return CheckResult("signature", "fail", "key_unknown", source, params=params)
+    params["key_id"] = known.id
+    if dated_at is None:
+        return CheckResult("signature", "pending", "undated", known.id, params=params)
+    if not known.valid_at(dated_at):
+        return CheckResult("signature", "fail", "key_not_valid", known.id, dated_at, params=params)
+    return CheckResult("signature", "pass", "ok", known.id, dated_at, params=params)
+
+
+def _absent(check: CheckId, source: str | None, problem: str | None, *, file: str | None = None) -> CheckResult:
+    """Prueba o archivo que no está (``missing``) o no se pudo leer (``unreadable``); ``file`` va
+    al detalle cuando el nombre depende de lo sellado."""
+    params: dict[str, str | int] = {"file": file} if file is not None else {}
     if problem in (None, "missing"):
-        return CheckResult(check, "skip", "missing", source)
-    return CheckResult(check, "skip", "unreadable", source, refs={"problem": f"evidence.folder.{problem}"})
+        return CheckResult(check, "skip", "missing", source, params=params)
+    return CheckResult(check, "skip", "unreadable", source, params=params,
+                       refs={"problem": f"evidence.folder.{problem}"})
+
+
+# -- paquete: carpetas de firma y cobertura (11-trazabilidad §8.10) ---------------------------
+
+
+def verify_signature_folder(
+    folder: Path,
+    package: Path,
+    *,
+    catalog: Catalog | None = None,
+    upgrade: Upgrade | None = None,
+    validate: Validate | None = None,
+    keys: Sequence[EvidenceKey] | None = None,
+) -> SignatureResult:
+    """Verifica una carpeta ``signature*/`` del paquete ``package``: la firma de ``index.txt``
+    (``signature``), sus sellos (``tsa`` y ``ots``, sobre ``index.txt.sig``) y las huellas del
+    índice (``index``). Solo lee, salvo ``upgrade`` en modo ``write``."""
+    folder, package = Path(folder), Path(package)
+    raw = _json_file(folder / SIGNATURE_FILE)
+    try:
+        read = read_signature_dir(folder)
+    except RecordError as exc:
+        broken = CheckResult(
+            "signature", "fail", "folder_invalid", refs={"problem": f"evidence.record_error.{exc.reason}"}
+        )
+        return SignatureResult(folder, "0" * 64, None, None, "failed", None, "unknown", (broken,))
+    doc, problems = read.folder, dict(read.problems)
+    schema: list[CheckResult] = []
+    if validate is not None and raw is not None:
+        pointers = validate("evidence-signature", raw)
+        if pointers:
+            schema.append(CheckResult("signature", "fail", "schema", doc.signature.key_id, params={"pointer": pointers[0]}))
+    index_data, index_problem = read_index(package)
+    digest = hashlib.sha256(doc.signature.data).digest() if doc.signature.data is not None else None
+    proofs, upgraded, extra = _check_proofs(folder, doc.proofs, digest, catalog, problems, upgrade)
+    signature = schema[0] if schema else _check_signature(
+        doc.signature, problems.get(INDEX_SIG_FILE), index_data, "no_index", keys, _dated_at(proofs)
+    )
+    checks = [signature, *proofs, _check_index(package, index_data, index_problem, doc.signed_sha256)]
+    if any(c.status == "fail" for c in checks):
+        final, confidence = "failed", None
+    else:
+        dated = [c for c in checks if c.check in DATED and c.status in ("pass", "weak")]
+        if dated:
+            final, confidence = "verified", "strong" if any(c.status == "pass" for c in dated) else "weak"
+        else:
+            final, confidence = "pending", None
+    warnings = tuple(dict.fromkeys([w for c in checks for w in c.warnings] + extra))
+    return SignatureResult(
+        folder, doc.signed_sha256, doc.signature.key, doc.signature.key_id, final, confidence,  # type: ignore[arg-type]
+        "project" if signature.status == "pass" else "unknown", tuple(checks), upgraded, warnings,
+    )
+
+
+def _check_index(package: Path, data: bytes | None, problem: str | None, signed_sha256: str) -> CheckResult:
+    """Check ``index``: el índice es el firmado y cada archivo que lista tiene su huella."""
+    if data is None:
+        return _absent("index", None, problem)
+    if hashlib.sha256(data).hexdigest() != signed_sha256:
+        return CheckResult("index", "fail", "changed")
+    try:
+        index = parse_index(data)
+    except PackageIndexError as exc:
+        return CheckResult("index", "fail", "bad_index", params={"line": exc.line or 0})
+    same, differ, missing = index_files(package, index)
+    total = len(index)
+    if differ:
+        return CheckResult("index", "fail", "mismatch", params={"n": differ, "total": total})
+    if missing:
+        return CheckResult("index", "skip", "missing_files", params={"n": missing, "total": total})
+    return CheckResult("index", "pass", "ok", params={"n": same})
+
+
+def _file_sha256(path: Path) -> str | None:
+    data = _read_bytes(path)
+    return hashlib.sha256(data).hexdigest() if data is not None else None
+
+
+def apply_coverage(results: Sequence[RecordResult], signatures: Sequence[SignatureResult],
+                   package: Path) -> list[RecordResult]:
+    """Origen de los registros de un paquete con la firma de su índice (11-trazabilidad §8.10).
+
+    Un registro lo cubre el índice si lista su ``manifest.json`` (la ruta relativa a la raíz
+    del paquete) con la misma huella. Las carpetas de firma que no dan ``failed`` firman el
+    mismo índice: si alguna tiene origen ``project``, los registros cubiertos pasan a
+    ``project``; si no, los ``unsigned`` cubiertos pasan a ``unknown``.
+    """
+    good = [s for s in signatures if s.verdict != "failed"]
+    data, _problem = read_index(package)
+    if not good or data is None:
+        return list(results)
+    try:
+        index = parse_index(data)
+    except PackageIndexError:
+        return list(results)
+    best: Origin = "project" if any(s.origin == "project" for s in good) else "unknown"
+    base = Path(os.path.abspath(package))
+    out: list[RecordResult] = []
+    for result in results:
+        try:
+            rel = Path(os.path.abspath(result.folder)).relative_to(base).as_posix()
+        except ValueError:
+            out.append(result)
+            continue
+        covered = index.get(f"{rel}/{MANIFEST_FILE}") == _file_sha256(result.folder / MANIFEST_FILE)
+        if covered and (result.origin == "unsigned" or (result.origin == "unknown" and best == "project")):
+            result = replace(result, origin=best)
+        out.append(result)
+    return out
+
+
+def package_root(path: Path) -> bool:
+    """``path`` es la raíz de un paquete: tiene ``index.txt``."""
+    return (Path(path) / INDEX_FILE).is_file()
 
 
 # -- manifest -----------------------------------------------------------------------------
@@ -635,12 +898,16 @@ def _first(found: Sequence[CheckResult]) -> CheckResult:
 # -- pruebas de fecha ------------------------------------------------------------------------
 
 
-def _check_tsa(proof: Proof, digest: bytes, catalog: Catalog | None, problems: Mapping[str, str]) -> CheckResult:
+def _check_tsa(
+    proof: Proof, digest: bytes | None, catalog: Catalog | None, problems: Mapping[str, str]
+) -> CheckResult:
     source = proof.source
     if proof.status != "ok":
         return CheckResult("tsa", "skip", "not_obtained", source)
     if proof.data is None:
         return _absent("tsa", source, problems.get(proof.file or ""))
+    if digest is None:
+        return CheckResult("tsa", "skip", "subject_missing", source, params={"file": proof.subject})
     revocation = None
     if proof.revocation is not None and proof.revocation.data is not None:
         revocation = Revocation(proof.revocation.type, proof.revocation.data)
@@ -669,15 +936,18 @@ def _declared_time_ok(declared: str | None, got: Check) -> bool:
 
 
 def _check_ots(
-    folder: Path, proof: Proof, digest: bytes, problems: Mapping[str, str], upgrade: Upgrade | None
+    folder: Path, proof: Proof, digest: bytes | None, problems: Mapping[str, str], upgrade: Upgrade | None
 ) -> tuple[CheckResult, bool, tuple[str, ...]]:
-    """Check ``ots``, si se reescribió ``manifest.json.ots`` y los avisos de la consulta a los
-    calendarios, que solo se hace con una prueba válida que todavía no tiene bloque."""
+    """Check ``ots``, si se reescribió la prueba (``<sellado>.ots``) y los avisos de la consulta
+    a los calendarios, que solo se hace con una prueba válida que todavía no tiene bloque."""
     if proof.status != "ok":
         return CheckResult("ots", "skip", "not_obtained", OTS_SOURCE), False, ()
     data = proof.data
+    ots_file = proof.file or f"{proof.subject}.ots"
     if data is None:
-        return _absent("ots", OTS_SOURCE, problems.get(OTS_FILE)), False, ()
+        return _absent("ots", OTS_SOURCE, problems.get(ots_file), file=ots_file), False, ()
+    if digest is None:
+        return CheckResult("ots", "skip", "subject_missing", OTS_SOURCE, params={"file": proof.subject}), False, ()
     got = ots.verify(data, digest)
     notes: list[tuple[str, Params]] = []
     warnings: tuple[str, ...] = ()
@@ -692,7 +962,7 @@ def _check_ots(
                 notes.append(("evidence.note.completed", {}))
             elif upgrade.mode == "dry_run":
                 notes.append(("evidence.note.upgrade_dry_run", {}))
-            elif _replace_file(folder / OTS_FILE, data):
+            elif _replace_file(folder / ots_file, data):
                 written = True
                 notes.append(("evidence.note.upgraded", {}))
             else:

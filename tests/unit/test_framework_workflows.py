@@ -160,7 +160,7 @@ def test_ci_policy_rule_has_no_findings_on_framework_workflows() -> None:
     files = framework_workflows()
     assert ".github/workflows/ci.yml" in files
     t = translator("en")
-    secrets_message = t("validate.ci_policy.secrets")
+    secrets_message = t("validate.ci_policy.secrets", secret=ci_policy.EVIDENCE_VAR)
     # release.yml hereda los secretos solo en el job que llama a nightly.yml (test_release_workflows).
     inherit_message = t("validate.ci_policy.secrets_inherit", job="live")
     findings = [f for f in ci_policy_findings(files)

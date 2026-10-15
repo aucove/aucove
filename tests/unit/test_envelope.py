@@ -124,16 +124,27 @@ def _evidence_check(check: str, status: str, source: str | None = None, *, dated
     }
 
 
-def _evidence_data(verdict: str, confidence: str | None, checks: list[dict[str, object]]) -> dict[str, object]:
+def _evidence_data(verdict: str, confidence: str | None, checks: list[dict[str, object]], *,
+                   origin: str = "unsigned", signatures: list[dict[str, object]] | None = None) -> dict[str, object]:
     record = {
         "kind": "integration",
         "commit": SHA,
         "manifest_sha256": "ab" * 32,
         "verdict": verdict,
         "confidence": confidence,
+        "origin": origin,
         "checks": checks,
     }
-    return {"target": f"integration-{SHA}", "verdict": verdict, "confidence": confidence, "records": [record]}
+    return {"target": f"integration-{SHA}", "verdict": verdict, "confidence": confidence, "records": [record],
+            "signatures": signatures or []}
+
+
+def _signature_folder(verdict: str, confidence: str | None, origin: str,
+                      checks: list[dict[str, object]]) -> dict[str, object]:
+    """Una carpeta ``signature*/`` de un paquete (05 §9.26; 11 §8.10)."""
+    return {"folder": "signature", "index_sha256": "cd" * 32, "key": "SHA256:" + "A" * 43,
+            "key_id": "admin-2026", "verdict": verdict, "confidence": confidence, "origin": origin,
+            "checks": checks}
 
 
 @pytest.mark.parametrize("lang", ["es", "en"])
@@ -157,8 +168,21 @@ def test_evidence_verify_envelopes_validate_against_schema(lang: str) -> None:
         *sound, _evidence_check("tsa", "skip", reason="missing_extra"), _evidence_check("ots", "skip", reason="missing_extra")])
     failed = _evidence_data("failed", None, [
         *sound, _evidence_check("tsa", "fail", "freetsa", reason="digest_mismatch", detail="huella distinta")])
+    # firmado por el proyecto (11 §8.10), y un paquete con su carpeta de firma
+    signed = _evidence_data("verified", "strong", [
+        *sound, _evidence_check("signature", "pass", "ci-2026"), _evidence_check("tsa", "pass", "freetsa", dated=True),
+    ], origin="project")
+    package = _evidence_data("verified", "strong", [
+        *sound, _evidence_check("signature", "skip", reason="unsigned"),
+        _evidence_check("tsa", "pass", "freetsa", dated=True),
+    ], origin="project", signatures=[_signature_folder("verified", "strong", "project", [
+        _evidence_check("signature", "pass", "admin-2026"), _evidence_check("tsa", "pass", "freetsa", dated=True),
+        _evidence_check("index", "pass"),
+    ])])
     samples = [
         ok("evidence.verify", strong),
+        ok("evidence.verify", signed),
+        ok("evidence.verify", package),
         ok("evidence.verify", weak, [make_warning("W_VALIDATION_EVIDENCE_WEAK", tr)]),
         ok("evidence.verify", no_extra, [make_warning("W_CONFIG_TOOL_MISSING", tr), make_warning("W_NET_OFFLINE", tr)]),
         fail("evidence.verify", make_error("E_VALIDATION_EVIDENCE_FAILED", tr), data=failed),
@@ -166,8 +190,8 @@ def test_evidence_verify_envelopes_validate_against_schema(lang: str) -> None:
     ]
     for r in samples:
         assert_valid(r)
-    err = samples[3].error
-    assert err is not None and (err.retryable, samples[3].exit_code()) == (False, 3)
+    err = samples[5].error
+    assert err is not None and (err.retryable, samples[5].exit_code()) == (False, 3)
     assert err.message != "error.E_VALIDATION_EVIDENCE_FAILED.message" and "`data.records[].checks[]`" in (err.hint or "")
     assert all(not w.message.startswith("warning.") for r in samples for w in r.warnings)
 
@@ -190,6 +214,13 @@ def test_evidence_verify_data_is_closed(t: Translator) -> None:
     for field, value in (("verdict", "ok"), ("confidence", "high")):
         bad = dict(good, **{field: value})
         assert _schema_errors(ok("evidence.verify", bad)), field
+    # el origen es uno de tres (11 §8.10), y una carpeta de firma no es unsigned
+    for origin in ("signed", None):
+        assert _schema_errors(ok("evidence.verify", _evidence_data("verified", "strong", [], origin=origin))), origin
+    folder = _signature_folder("verified", "strong", "unsigned", [])
+    assert _schema_errors(ok("evidence.verify", _evidence_data("verified", "strong", [], signatures=[folder])))
+    no_signatures = {k: v for k, v in good.items() if k != "signatures"}
+    assert _schema_errors(ok("evidence.verify", no_signatures))
     no_records = {k: v for k, v in good.items() if k != "records"}
     assert _schema_errors(fail("evidence.verify", make_error("E_VALIDATION_EVIDENCE_FAILED", t), data=no_records))
 

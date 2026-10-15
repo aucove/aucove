@@ -16,6 +16,8 @@ dos comparan contra lo mismo.
   activas de la base, REQ-PERM-38). ``base_rules_missing`` hace la misma comparación sobre el
   resumen ``BaseRules`` de la detección de capacidades (08 §3.1), que es lo que lee ``doctor``.
 - Ajustes de la organización (§4.10): ``ORG_RECOMMENDED``.
+- El environment de la firma del proyecto (§4.3b; 00-marco D-72): ``EVIDENCE_ENVIRONMENT``,
+  ``EVIDENCE_SECRET`` y ``environments_available``.
 """
 
 from __future__ import annotations
@@ -30,11 +32,13 @@ from ..domain.checks import GITHUB_ACTIONS_APP_ID
 from ..forge.base import REPO_SETTINGS, ActionsPolicy, Label, rules_summary
 
 if TYPE_CHECKING:
-    from ..forge.base import BaseRules
+    from ..forge.base import BaseRules, Capabilities
     from ..i18n import Translator
 
 __all__ = [
     "BASE_RULESET",
+    "EVIDENCE_ENVIRONMENT",
+    "EVIDENCE_SECRET",
     "LABELS",
     "ORG_RECOMMENDED",
     "TASK_RULESET",
@@ -44,6 +48,7 @@ __all__ = [
     "base_ruleset",
     "covers",
     "desired_settings",
+    "environments_available",
     "labels_for",
     "missing_rules",
     "settings_changes",
@@ -55,6 +60,20 @@ __all__ = [
 BASE_RULESET = f"{_meta.NAME}-base"
 TASK_RULESET = f"{_meta.NAME}-task-branches"
 WORKFLOWS_RULESET = f"{_meta.NAME}-workflows"
+# 06 §4.3b (00-marco D-72): el environment de la firma del proyecto y el secreto con la llave privada.
+EVIDENCE_ENVIRONMENT = f"{_meta.NAME}-evidence"
+EVIDENCE_SECRET = f"{_meta.ENV_PREFIX}EVIDENCE_KEY"
+
+
+def environments_available(caps: Capabilities) -> bool | None:
+    """El repositorio admite environments: es público, o privado con Pro, Team o Enterprise (los
+    mismos casos que el perfil ``enforced``, 06 REQ-PERM-61). ``None`` si la detección no fue
+    concluyente (08 §3.2)."""
+    if caps.visibility == "public":
+        return True
+    return caps.rules_available
+
+
 # 06-permisos §4.10: lo que conviene en la organización (init solo lo informa).
 ORG_RECOMMENDED: Mapping[str, object] = {
     "default_repository_permission": "none",

@@ -258,14 +258,14 @@ def test_ci_policy_still_accepts_trusted_data(expr: str) -> None:
 def test_ci_policy_sees_secrets_as_an_identifier(expr: str) -> None:
     text = GOOD.replace("      - run: echo ok\n", f"      - run: echo ok\n        env: {{ T: \"{expr}\" }}\n")
     (finding,) = run_ci_policy({WF: text})
-    assert detail("secrets") in finding.message
+    assert detail("secrets", secret=ci_policy.EVIDENCE_VAR) in finding.message
 
 
 def test_ci_policy_sees_secrets_in_a_bare_if() -> None:
     """``if:`` siempre es una expresión, aunque no lleve ``${{ }}``."""
     text = GOOD.replace("      - run: echo ok\n", "      - run: echo ok\n        if: secrets.TOKEN != ''\n")
     (finding,) = run_ci_policy({WF: text})
-    assert detail("secrets") in finding.message
+    assert detail("secrets", secret=ci_policy.EVIDENCE_VAR) in finding.message
     plain = GOOD.replace("      - run: echo ok\n", "      - run: echo ok\n        if: github.event_name == 'push'\n")
     assert run_ci_policy({WF: plain}) == []
 

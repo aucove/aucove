@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aucove.invalid/schemas/evidence-record/v1",
   "title": "Registro de evidencia",
-  "description": "Índice de un registro sellado (00-marco D-45; 11-trazabilidad §8.5). Es el JSON del comentario <!-- aucove:ci:evidence v1 kind=<kind> sha=<commit> attempt=<n> ... --> y el record.json de cada carpeta del artefacto evidence-<kind>-<sha>-a<n> y de la copia local .aucove/evidence/. Lo sellado son los bytes del manifiesto, nunca este índice. En el comentario, si el JSON pasa de 60 000 caracteres, se quitan en orden openings, manifest, los data de revocation y, si aún no cabe, los data de las pruebas, y truncated es true (09-ci REQ-CI-54); en record.json manifest, openings y los data son null porque van en archivos de la misma carpeta.",
+  "description": "Índice de un registro sellado (00-marco D-45; 11-trazabilidad §8.5). Es el JSON del comentario <!-- aucove:ci:evidence v1 kind=<kind> sha=<commit> attempt=<n> ... --> y el record.json de cada carpeta del artefacto evidence-<kind>-<sha>-a<n> y de la copia local .aucove/evidence/. Lo sellado son los bytes del manifiesto o, si el registro va firmado con la llave del proyecto (00-marco D-72), los de su firma manifest.json.sig; nunca este índice. En el comentario, si el JSON pasa de 60 000 caracteres, se quitan en orden openings, manifest, los data de revocation y, si aún no cabe, los data de las pruebas, y truncated es true (09-ci REQ-CI-54); en record.json manifest, openings y los data son null porque van en archivos de la misma carpeta.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -71,6 +71,24 @@
       ],
       "maxLength": 2000000
     },
+    "sealed": {
+      "description": "Archivo cuyo SHA-256 sellan las pruebas: manifest.json o, si el registro va firmado, su firma manifest.json.sig (11-trazabilidad §8.4 y §8.10). Si falta, como en los registros de 0.1.0rc1, equivale a manifest.json.",
+      "enum": [
+        "manifest.json",
+        "manifest.json.sig"
+      ]
+    },
+    "signature": {
+      "description": "Firma del proyecto sobre los bytes de manifest.json (09-ci REQ-CI-61); null, o ausente en los registros de 0.1.0rc1, si el registro no va firmado.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/signature"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "openings": {
       "description": "Aperturas (evidence-openings/v1); null si no cupieron y siempre en record.json (van en openings.json).",
       "anyOf": [
@@ -109,6 +127,38 @@
       "pattern": "^evidence-(submission|integration)-[0-9a-f]{40}-a[1-9][0-9]{0,2}$"
     }
   },
+  "allOf": [
+    {
+      "description": "Con firma, lo sellado es la firma; sin firma, el manifiesto (11-trazabilidad REQ-TRACE-91).",
+      "if": {
+        "required": [
+          "signature"
+        ],
+        "properties": {
+          "signature": {
+            "type": "object"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "sealed"
+        ],
+        "properties": {
+          "sealed": {
+            "const": "manifest.json.sig"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "sealed": {
+            "const": "manifest.json"
+          }
+        }
+      }
+    }
+  ],
   "$defs": {
     "oid": {
       "type": "string",
@@ -145,6 +195,58 @@
         },
         "data": {
           "description": "DER en base64; null en record.json o si no cupo.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/b64"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "signature": {
+      "description": "Firma SSHSIG con la llave del proyecto (11-trazabilidad §8.10).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "file",
+        "format",
+        "namespace",
+        "hash",
+        "key",
+        "key_id",
+        "data"
+      ],
+      "properties": {
+        "file": {
+          "const": "manifest.json.sig"
+        },
+        "format": {
+          "const": "sshsig"
+        },
+        "namespace": {
+          "const": "aucove-evidence"
+        },
+        "hash": {
+          "enum": [
+            "sha256",
+            "sha512"
+          ]
+        },
+        "key": {
+          "description": "Huella SHA256 de la llave pública, como la muestra ssh-keygen -l.",
+          "type": "string",
+          "pattern": "^SHA256:[A-Za-z0-9+/]{43}$"
+        },
+        "key_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,31}$",
+          "description": "id de la llave en evidence_signing.keys al firmar."
+        },
+        "data": {
+          "description": "Bytes de manifest.json.sig en base64; null en record.json, porque van en el archivo. En el comentario nunca se quita (09-ci REQ-CI-54).",
           "anyOf": [
             {
               "$ref": "#/$defs/b64"
@@ -193,7 +295,7 @@
           "anyOf": [
             {
               "type": "string",
-              "pattern": "^(manifest\\.json\\.ots|tsa/[a-z0-9-]{1,32}\\.tsr)$"
+              "pattern": "^(manifest\\.json(\\.sig)?\\.ots|tsa/[a-z0-9-]{1,32}\\.tsr)$"
             },
             {
               "type": "null"

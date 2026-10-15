@@ -8,6 +8,13 @@
 [evidence]
 verify = "Verificación de evidencia"
 
+[evidence.sign]
+summary = "Firma del índice del paquete de evidencia (00-marco D-72).\n  Paquete: {package}\n  `index.txt`: {files} archivos, SHA-256 `{sha256}`\n  Llave para `ssh-keygen`: {key}\n  Llaves vigentes del proyecto: {keys}\n`ssh-keygen` pedirá la frase de paso de la llave; después se sella la firma con las TSA y OpenTimestamps, y queda en una carpeta `signature/` del paquete."
+effect = "Firmaría `index.txt` de {folder} con la llave del proyecto y escribiría la firma sellada en una carpeta `signature/` del paquete."
+done = "Firma del índice en `{folder}` ({package}): la llave `{key_id}` (`{key}`) firmó `index.txt`; {ok} de {total} pruebas obtenidas."
+proof = "  {proof} `{source}`: {state}"
+no_tsa = "Ninguna TSA respondió: la firma quedó solo con OpenTimestamps. Repite `evidence sign` más tarde para sumar una carpeta con TSA."
+
 [evidence.verdict]
 verified = "verificado"
 pending = "pendiente"
@@ -36,6 +43,8 @@ openings = "aperturas"
 actors = "actores"
 git = "git"
 content = "contenido"
+signature = "firma"
+index = "índice"
 
 [evidence.render]
 header = "{title} · {target}: {verdict}"
@@ -44,12 +53,19 @@ check = "  [{status}] {check}{source}: {detail}"
 time = "      {utc}"
 time_local = "      {utc} · {local}"
 confidence = "(confianza {confidence})"
+origin = "  origen: {origin}"
+signature_folder = "Firma del índice `{folder}`: {verdict}"
+
+[evidence.origin]
+project = "del proyecto (lo firmó una llave del proyecto que valía en la fecha del sello)"
+unknown = "desconocido (hay una firma, pero no se pudo cotejar con las llaves del proyecto)"
+unsigned = "sin firma del proyecto"
 
 [evidence.note]
 more = "Otros problemas: {n}."
-upgraded = "Se completó con los calendarios y se reescribió `manifest.json.ots`."
+upgraded = "Se completó con los calendarios y se reescribió la prueba `.ots`."
 upgrade_dry_run = "Se completó con los calendarios; con `--dry-run` no se reescribió."
-upgrade_not_written = "Se completó, pero no se pudo reescribir `manifest.json.ots`."
+upgrade_not_written = "Se completó, pero no se pudo reescribir la prueba `.ots`."
 completed = "Se completó en memoria con los calendarios; `--upgrade` la guarda."
 
 # -- checks de evidence verify (evidence.check.<check>.<motivo>) ---------------------------
@@ -78,7 +94,7 @@ missing_extra = "Falta el extra `evidence`: no se verificó la prueba."
 unknown_tsa = "La TSA no está en el catálogo del núcleo."
 invalid = "El sello no se puede leer."
 rejected = "La TSA rechazó la solicitud."
-digest_mismatch = "El sello no es del SHA-256 del manifiesto."
+digest_mismatch = "El sello no es del SHA-256 de lo sellado (el manifiesto o, si va firmado, su firma)."
 nonce_mismatch = "El nonce del sello no es el de la solicitud."
 policy = "La política del sello no está en el catálogo."
 chain = "La cadena no llega a una raíz del catálogo vigente en `genTime`."
@@ -96,16 +112,47 @@ stale = "Sello válido, pero el OCSP o la CRL guardados no cubren `genTime`."
 after_expiry = "Sello válido, pero el OCSP o la CRL guardados son posteriores al vencimiento del certificado de la TSA, cuando su estado ya no se garantiza."
 revoked = "El certificado de la TSA estaba revocado: el sello no vale."
 revoked_later = "El certificado de la TSA se revocó después de `genTime` por un motivo que no invalida el sello."
+subject_missing = "Falta `{file}`, lo sellado: no se puede comprobar el sello."
 
 [evidence.check.ots]
-pending = "La prueba compromete el manifiesto y espera el bloque de Bitcoin; calendarios pendientes: {n}."
-bitcoin_unverified = "La prueba compromete el manifiesto y termina en el bloque {height} de Bitcoin (raíz de Merkle {merkle_root}), que esta versión no coteja: cotéjalo a mano como explica `VERIFY.md`."
+pending = "La prueba compromete lo sellado y espera el bloque de Bitcoin; calendarios pendientes: {n}."
+bitcoin_unverified = "La prueba compromete lo sellado y termina en el bloque {height} de Bitcoin (raíz de Merkle {merkle_root}), que esta versión no coteja: cotéjalo a mano como explica `VERIFY.md`."
 invalid = "La prueba `.ots` no se puede leer."
-digest_mismatch = "La prueba `.ots` no es del SHA-256 del manifiesto."
+digest_mismatch = "La prueba `.ots` no es del SHA-256 de lo sellado."
 missing_extra = "Falta el extra `evidence`: no se verificó la prueba."
 not_obtained = "La prueba no se obtuvo al sellar."
-missing = "Falta `manifest.json.ots`."
-unreadable = "No se pudo leer `manifest.json.ots`. {problem}"
+missing = "Falta `{file}`."
+unreadable = "No se pudo leer `{file}`. {problem}"
+subject_missing = "Falta `{file}`, lo sellado: no se puede comprobar la prueba."
+
+[evidence.check.signature]
+ok = "Firma del proyecto válida: la llave `{key_id}` (`{key}`) valía en la fecha del sello."
+unsigned = "El registro no va firmado por el proyecto."
+no_keys = "La firma es válida con su llave (`{key}`), pero no hay lista de llaves del proyecto para cotejarla: usa `--keys` con la lista que publica el grupo, o compara la huella a mano."
+undated = "La firma es de la llave `{key_id}` del proyecto, pero sin un sello RFC 3161 válido no hay fecha para comprobar que la llave valía."
+missing = "Falta `{file}`, la firma del proyecto."
+unreadable = "No se pudo leer `{file}`. {problem}"
+no_manifest = "Sin `manifest.json` no se puede comprobar la firma."
+no_index = "Sin `index.txt` no se puede comprobar la firma del índice."
+missing_extra = "Falta el extra `evidence`: no se comprobó la firma."
+invalid = "La firma no tiene la forma de una firma de OpenSSH (SSHSIG)."
+folder_invalid = "`signature.json` no se entiende. {problem}"
+schema = "`signature.json` no cumple el esquema `evidence-signature/v1` en {pointer}."
+namespace = "La firma es de otro espacio de nombres: no es una firma de evidencia del proyecto."
+unsupported = "La firma usa una llave o un hash que no se admiten (solo `ssh-ed25519`, con `sha256` o `sha512`)."
+bad_signature = "La firma no verifica con estos bytes: lo firmado cambió o la firma se alteró."
+metadata_mismatch = "La llave o el hash de la firma (`{key}`) no son los que declara el registro."
+key_unknown = "La llave de la firma (`{key}`) no está en la lista de llaves del proyecto."
+key_not_valid = "La llave `{key_id}` del proyecto no valía en la fecha del sello."
+
+[evidence.check.index]
+ok = "Cada archivo que lista `index.txt` tiene su huella: {n}."
+missing = "Falta `index.txt`."
+unreadable = "No se pudo leer `index.txt`. {problem}"
+changed = "`index.txt` no es el índice firmado: cambió después de firmarse."
+bad_index = "`index.txt` no tiene el formato de `sha256sum` (línea {line})."
+mismatch = "Archivos con otra huella que la del índice: {n} de {total}."
+missing_files = "Faltan archivos que lista el índice: {n} de {total}. Una copia parcial del paquete no es una alteración."
 
 [evidence.check.openings]
 ok = "Las aperturas de archivos reproducen su compromiso: {n}."

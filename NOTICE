@@ -12,8 +12,8 @@ the license texts in LICENSES/.
 
 The optional "evidence" extra installs third-party packages that are not
 included in the distribution: opentimestamps and python-bitcoinlib
-(LGPL-3.0-or-later), rfc3161-client (Apache-2.0) and, on Windows, tzdata
-(Apache-2.0) (00-marco D-07 d).
+(LGPL-3.0-or-later), rfc3161-client (Apache-2.0), cryptography (Apache-2.0
+or BSD-3-Clause) and, on Windows, tzdata (Apache-2.0) (00-marco D-07 d).
 
 Titularidad (00-marco D-07 b, REQ-TRACE-73)
 -------------------------------------------

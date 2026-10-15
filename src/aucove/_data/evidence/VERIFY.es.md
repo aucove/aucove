@@ -6,6 +6,9 @@ Esta carpeta es una **prueba de existencia en una fecha** del commit `{{commit}}
 
 - **Prueba** que el contenido descrito en `manifest.json` ya existía cuando se pidieron los sellos y que no cambió después. La fecha verificable la dan los sellos de tiempo RFC 3161 y Bitcoin, por medio de OpenTimestamps; no la da el reloj de quien selló.
 - **No prueba** quién es el autor ni quién es el titular del contenido. La autoría se apoya en el acuerdo de autoría, en la declaración CRediT y en los registros de la forja.
+<!-- signature -->
+- **Va firmado por el proyecto:** la llave `{{key_id}}` (huella `{{key}}`) firmó `manifest.json`, y los sellos fechan esa firma. La firma prueba que el registro lo emitió quien tiene la llave privada del proyecto, no quién escribió cada cambio. Compara la huella con la que publica el grupo en su repositorio público o en su registro de Zenodo (punto 4).
+<!-- /signature -->
 - `manifest.json` no contiene archivos, rutas ni nombres, solo huellas con sal (compromisos). `openings.json` guarda las sales, las rutas y las identidades que abren esos compromisos. Es **privado**: compártelo solo con quien deba verificar.
 
 ## Qué hay en la carpeta
@@ -15,7 +18,10 @@ Esta carpeta es una **prueba de existencia en una fecha** del commit `{{commit}}
 | `manifest.json` | Lo que se selló, en sus bytes exactos. Su huella SHA-256 es `{{manifest_sha256}}`. |
 | `record.json` | El índice del registro: qué pruebas se pidieron y cuáles se obtuvieron. |
 | `openings.json` | Las aperturas privadas de los compromisos. |
-| `manifest.json.ots` | La prueba de OpenTimestamps, si se obtuvo. |
+<!-- signature -->
+| `manifest.json.sig` | La firma del proyecto sobre `manifest.json`: es lo que sellaron las pruebas. |
+<!-- /signature -->
+| `{{sealed}}.ots` | La prueba de OpenTimestamps, si se obtuvo. |
 | `tsa/<id>.tsr` | Cada sello RFC 3161, tal como lo devolvió la autoridad de sellado de tiempo (TSA). |
 | `tsa/<id>.chain.pem` y `tsa/<id>.root.pem` | La cadena de certificados de la TSA y la raíz con la que se comprobó al sellar. |
 | `tsa/<id>.ocsp.der` o `tsa/<id>.crl.der` | El estado de revocación del certificado de la TSA, capturado al sellar. |
@@ -28,8 +34,18 @@ Con [uv](https://docs.astral.sh/uv/) instalado, desde esta carpeta:
 ```sh
 uvx --from "{{name}}[evidence]=={{version}}" {{name}} evidence verify .
 ```
+<!-- signature -->
 
-Es la versión del núcleo que selló este registro. La respuesta es `verified` (verificado: lo respalda un sello RFC 3161 válido), `pending` (pendiente) o `failed` (algo no coincide), con las horas en UTC y en la hora del centro de México. Un registro con solo OpenTimestamps queda en `pending` aunque su prueba ya esté completa: esta versión no coteja el bloque de Bitcoin, así que hazlo a mano con las órdenes del punto 3. Con red, consulta los calendarios de OpenTimestamps para completar en memoria una prueba pendiente; `--upgrade` además la guarda en `manifest.json.ots`, y `--offline` no usa la red.
+Para comprobar también la firma, agrega la lista de llaves que publica el grupo (un archivo YAML con la clave `keys`):
+
+```sh
+uvx --from "{{name}}[evidence]=={{version}}" {{name}} evidence verify . --keys <lista>
+```
+
+Con ella, la respuesta dice el origen del registro: `project` si lo firmó una llave del proyecto que valía en la fecha del sello. Sin ella, el origen queda `unknown` y hay que comparar la huella a mano.
+<!-- /signature -->
+
+Es la versión del núcleo que selló este registro. La respuesta es `verified` (verificado: lo respalda un sello RFC 3161 válido), `pending` (pendiente) o `failed` (algo no coincide), con las horas en UTC y en la hora del centro de México. Un registro con solo OpenTimestamps queda en `pending` aunque su prueba ya esté completa: esta versión no coteja el bloque de Bitcoin, así que hazlo a mano con las órdenes del punto 3. Con red, consulta los calendarios de OpenTimestamps para completar en memoria una prueba pendiente; `--upgrade` además la guarda en `{{sealed}}.ots`, y `--offline` no usa la red.
 
 ## 2. Los sellos RFC 3161, con OpenSSL
 
@@ -60,13 +76,35 @@ Este registro no trae sellos RFC 3161. El sello de una entrega usa solo OpenTime
 Con el cliente oficial (`pip install opentimestamps-client`):
 
 ```sh
-ots --no-bitcoin verify manifest.json.ots
-ots info manifest.json.ots
+ots --no-bitcoin verify {{sealed}}.ots
+ots info {{sealed}}.ots
 ```
 
-Al sellar, la prueba queda pendiente hasta que Bitcoin incluye su bloque, lo que toma unas horas. `ots upgrade manifest.json.ots` la completa cuando los calendarios ya la tienen. Una vez completa, `ots info` muestra la altura del bloque y su raíz de Merkle: compárala con la de ese bloque en un explorador de Bitcoin o en un nodo propio. Ese cotejo es el que da la fecha: `evidence verify` muestra la misma altura y la misma raíz, pero no las coteja, porque cualquiera puede escribir una atestación de Bitcoin falsa; por eso deja el registro en `pending`. Si la carpeta no trae `manifest.json.ots`, esa prueba no se obtuvo, y `record.json` dice por qué.
+Al sellar, la prueba queda pendiente hasta que Bitcoin incluye su bloque, lo que toma unas horas. `ots upgrade {{sealed}}.ots` la completa cuando los calendarios ya la tienen. Una vez completa, `ots info` muestra la altura del bloque y su raíz de Merkle: compárala con la de ese bloque en un explorador de Bitcoin o en un nodo propio. Ese cotejo es el que da la fecha: `evidence verify` muestra la misma altura y la misma raíz, pero no las coteja, porque cualquiera puede escribir una atestación de Bitcoin falsa; por eso deja el registro en `pending`. Si la carpeta no trae `{{sealed}}.ots`, esa prueba no se obtuvo, y `record.json` dice por qué.
 
-## 4. Abrir los compromisos sin el núcleo
+<!-- signature -->
+## 4. La firma del proyecto, con ssh-keygen
+
+`manifest.json.sig` es la firma de OpenSSH (SSHSIG) de `manifest.json`, con el espacio de nombres `{{namespace}}` y la llave `{{key_id}}`, de huella `{{key}}`. Los sellos de los puntos 2 y 3 son de la firma: fechan la firma y, con ella, el manifiesto.
+
+Con el archivo `allowed_signers` que publica el grupo y OpenSSH 9.1 o posterior (el `ssh-keygen` de Windows 11 y el de Git para Windows lo son):
+
+```sh
+ssh-keygen -Y verify -f allowed_signers -I {{key_id}} -n {{namespace}} -s manifest.json.sig -O verify-time={{verify_time}} < manifest.json
+```
+
+Debe responder `Good "{{namespace}}" signature for {{key_id}}`. `verify-time` es la fecha verificable del sello RFC 3161 más antiguo: así `ssh-keygen` comprueba que la llave valía cuando se firmó, aunque hoy ya se haya rotado o revocado.
+
+Sin ese archivo, este comando comprueba la firma y muestra la huella de la llave:
+
+```sh
+ssh-keygen -Y check-novalidate -n {{namespace}} -s manifest.json.sig < manifest.json
+```
+
+Compara esa huella con la que publica el grupo y revisa en su lista de llaves que la llave valía en la fecha del sello (`since` y `until`).
+
+<!-- /signature -->
+## {{open_section}}. Abrir los compromisos sin el núcleo
 
 ```sh
 python open_commitments.py manifest.json openings.json
@@ -81,4 +119,9 @@ Las fórmulas, con `‖` como concatenación de bytes y SHA-256 en hexadecimal:
 - contenido: `c = SHA-256("evidence.blob.v1" ‖ 0x00 ‖ sal ‖ contenido)`, con los bytes del archivo en git; `c` es nulo si el archivo se borró;
 - actor: `a = SHA-256("evidence.actor.v1" ‖ 0x00 ‖ sal ‖ rol ‖ 0x00 ‖ valor)`, con el rol `pr_author`, `merged_by`, `author` o `committer`.
 
+<!-- no-signature -->
 La huella de `manifest.json` (`sha256sum manifest.json`) debe ser `{{manifest_sha256}}`: la misma de `record.json` y la que sellaron las pruebas.
+<!-- /no-signature -->
+<!-- signature -->
+La huella de `manifest.json` (`sha256sum manifest.json`) debe ser `{{manifest_sha256}}`: la misma de `record.json`. Las pruebas sellaron la firma `manifest.json.sig`, que solo verifica con estos bytes.
+<!-- /signature -->

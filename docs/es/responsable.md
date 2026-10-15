@@ -70,7 +70,7 @@ git push -u origin main
 
 Necesitas el token de uso diario, igual que todos ([los pasos están en Investigador](investigador.md#tu-token-de-github)). Para `init` necesitas además un token de administración, que solo se usa ese día:
 
-- el mismo formulario, con el permiso **Administration** en «Read and write» además de los otros, y una expiración de 1 día;
+- el mismo formulario, con el permiso **Administration** en «Read and write», y **Secrets** y **Environments** en «Read-only», además de los otros, y una expiración de 1 día;
 - no lo guardes en `GH_TOKEN`: lo pegas cuando `init` lo pide, y no se muestra ni se guarda;
 - al terminar `init`, bórralo en GitHub.
 
@@ -107,7 +107,7 @@ Después te pediré un token de administración de GitHub de vida corta; no se m
 Para confirmar, escribe exactamente «init labfe/ising-diluido» y pulsa Intro: init labfe/ising-diluido
 No hay suplente en roles.yaml: tus PR no tienen quién los apruebe. Si confirmas, quedarás (lmendez) como actor de bypass …
 Para confirmar, escribe exactamente «bypass lmendez» y pulsa Intro: bypass lmendez
-Token de administración de GitHub (permiso Administration de lectura y escritura; no se muestra ni se guarda): (pegas el token; no se ve)
+Token de administración de GitHub (permisos Administration de lectura y escritura, y Secrets y Environments de lectura; no se muestra ni se guarda): (pegas el token; no se ve)
 init en labfe/ising-diluido (perfil enforced):
 Archivos (39):
   updated: project.yaml
@@ -123,7 +123,7 @@ Pendiente:
 Antes de trabajar: cada persona activa el correo noreply de GitHub y firma el acuerdo de autoría y de apertura (00-marco D-44 y D-49).
 ```
 
-Qué dejó: GitHub configurado (protecciones, etiquetas y cuánto tiempo se guardan las pruebas), los archivos del proyecto en un commit y tu tarea de preparación, la #1, ya aceptada. Ahora borra el token de administración en GitHub.
+Qué dejó: GitHub configurado (protecciones, etiquetas, cuánto tiempo se guardan las pruebas y el environment `aucove-evidence` para la firma del proyecto), los archivos del proyecto en un commit y tu tarea de preparación, la #1, ya aceptada. Ahora borra el token de administración en GitHub.
 
 ### 6. Abre tu agente y prepara el proyecto
 
@@ -200,6 +200,8 @@ Para confirmar, escribe exactamente «accept 2» y pulsa Intro: accept 2
 ### 8. Avisa a tu equipo
 
 Comprueba que cada persona aceptó la invitación a la organización y pásale la [guía del investigador](investigador.md): instalar, crear su token, clonar y abrir su agente. Aprueba sus tokens cuando aparezcan en Pending requests. Si alguien trabajará desde el navegador, instala la app de Claude para GitHub en el repo.
+
+Cuando termines, prepara la [firma del proyecto](firma-del-proyecto.md), que toma unos 15 minutos: con ella, quien revise el trabajo desde afuera comprueba que cada registro lo emitió tu proyecto, y no solo cuándo existía.
 
 ## Cada semana
 

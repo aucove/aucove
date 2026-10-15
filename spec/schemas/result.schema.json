@@ -143,6 +143,9 @@
       "$ref": "#/$defs/rule_evidence_verify"
     },
     {
+      "$ref": "#/$defs/rule_evidence_sign"
+    },
+    {
       "$ref": "#/$defs/rule_task_propose"
     },
     {
@@ -207,6 +210,7 @@
         "check-path",
         "metrics",
         "evidence.verify",
+        "evidence.sign",
         "task.propose",
         "task.accept",
         "task.cancel",
@@ -238,6 +242,8 @@
         "E_CONFIG_BASE_NOT_DEFAULT",
         "E_CONFIG_POLICY_UNAVAILABLE",
         "E_CONFIG_DOCTOR_FAILED",
+        "E_CONFIG_TOOL_MISSING",
+        "E_CONFIG_EVIDENCE_KEY",
         "E_AUTH_NOT_AUTHENTICATED",
         "E_AUTH_TOKEN_INVALID",
         "E_AUTH_INSUFFICIENT_SCOPE",
@@ -1435,7 +1441,8 @@
                   "mcp_config",
                   "half_states",
                   "cache",
-                  "evidence_tools"
+                  "evidence_tools",
+                  "evidence_signing"
                 ]
               },
               "status": {
@@ -2328,7 +2335,8 @@
         "target",
         "verdict",
         "confidence",
-        "records"
+        "records",
+        "signatures"
       ],
       "properties": {
         "target": {
@@ -2336,7 +2344,7 @@
           "minLength": 1
         },
         "verdict": {
-          "description": "Global: failed si algún registro da failed; verified si todos dan verified; pending en otro caso (05-operaciones §9.26).",
+          "description": "Global: failed si algún registro o carpeta de firma da failed; verified si todos dan verified; pending en otro caso (05-operaciones §9.26).",
           "enum": [
             "verified",
             "pending",
@@ -2362,7 +2370,8 @@
               "manifest_sha256",
               "verdict",
               "confidence",
-              "checks"
+              "checks",
+              "origin"
             ],
             "properties": {
               "kind": {
@@ -2393,6 +2402,92 @@
                   null
                 ],
                 "description": "Con verified: strong si alguna TSA da pass; weak si no. null en otro caso."
+              },
+              "origin": {
+                "description": "Origen (11-trazabilidad §8.10): project si su firma, o la del índice que lo cubre, da pass; unknown si lo cubre una firma que no se pudo cotejar con las llaves del proyecto; unsigned si ninguna firma lo cubre.",
+                "enum": [
+                  "project",
+                  "unknown",
+                  "unsigned"
+                ]
+              },
+              "checks": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/evidence_check"
+                }
+              }
+            }
+          }
+        },
+        "signatures": {
+          "description": "Carpetas de firma signature*/ de un paquete (05-operaciones §9.26); vacía si no hay.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "folder",
+              "index_sha256",
+              "key",
+              "key_id",
+              "verdict",
+              "confidence",
+              "origin",
+              "checks"
+            ],
+            "properties": {
+              "folder": {
+                "type": "string",
+                "pattern": "^signature(-[1-9][0-9]*)?$"
+              },
+              "index_sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "key": {
+                "anyOf": [
+                  {
+                    "description": "Huella SHA256 de la llave pública, como la muestra ssh-keygen -l.",
+                    "type": "string",
+                    "pattern": "^SHA256:[A-Za-z0-9+/]{43}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "key_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "verdict": {
+                "enum": [
+                  "verified",
+                  "pending",
+                  "failed"
+                ]
+              },
+              "confidence": {
+                "enum": [
+                  "strong",
+                  "weak",
+                  null
+                ]
+              },
+              "origin": {
+                "description": "project si su check signature da pass; unknown si no.",
+                "enum": [
+                  "project",
+                  "unknown"
+                ]
               },
               "checks": {
                 "type": "array",
@@ -2426,11 +2521,13 @@
             "openings",
             "actors",
             "git",
-            "content"
+            "content",
+            "signature",
+            "index"
           ]
         },
         "source": {
-          "description": "Id de la TSA del catálogo, 'calendars' o 'bitcoin' (ots), o null.",
+          "description": "Id de la TSA del catálogo, 'calendars' o 'bitcoin' (ots), el id de la llave (signature), o null.",
           "type": [
             "string",
             "null"
@@ -2481,6 +2578,97 @@
             "null"
           ],
           "maxLength": 300
+        }
+      }
+    },
+    "data_evidence_sign": {
+      "description": "Firma del índice de un paquete de evidencia (05-operaciones §9.27).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "package",
+        "folder",
+        "index_sha256",
+        "files",
+        "key",
+        "key_id",
+        "proofs"
+      ],
+      "properties": {
+        "package": {
+          "type": "string",
+          "minLength": 1
+        },
+        "folder": {
+          "type": "string",
+          "pattern": "^signature(-[1-9][0-9]*)?$"
+        },
+        "index_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "key": {
+          "description": "Huella SHA256 de la llave pública, como la muestra ssh-keygen -l.",
+          "type": "string",
+          "pattern": "^SHA256:[A-Za-z0-9+/]{43}$"
+        },
+        "key_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]{0,31}$"
+        },
+        "proofs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "source",
+              "status",
+              "time_utc",
+              "error"
+            ],
+            "properties": {
+              "type": {
+                "enum": [
+                  "ots",
+                  "rfc3161"
+                ]
+              },
+              "source": {
+                "type": "string",
+                "pattern": "^[a-z0-9-]{1,32}$"
+              },
+              "status": {
+                "enum": [
+                  "ok",
+                  "error"
+                ]
+              },
+              "time_utc": {
+                "oneOf": [
+                  {
+                    "$ref": "#/$defs/datetime"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 300
+              }
+            }
+          }
         }
       }
     },
@@ -4054,6 +4242,42 @@
             "anyOf": [
               {
                 "$ref": "#/$defs/data_evidence_verify"
+              },
+              {
+                "$ref": "#/$defs/failure_data"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "rule_evidence_sign": {
+      "$comment": "Si op='evidence.sign' y data es un objeto que no es de dry-run: data_evidence_sign (o failure_data si ok=false).",
+      "if": {
+        "required": [
+          "op",
+          "data"
+        ],
+        "properties": {
+          "op": {
+            "const": "evidence.sign"
+          },
+          "data": {
+            "type": "object",
+            "not": {
+              "required": [
+                "dry_run"
+              ]
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/data_evidence_sign"
               },
               {
                 "$ref": "#/$defs/failure_data"

@@ -11,6 +11,8 @@ Qué hace cada persona de un equipo de investigación que trabaja con IA sobre u
 | [Investigador](investigador.md) | Quien trabaja en sus partes | Preparar tu computadora y tu token; un día de trabajo con el agente |
 | [Responsable](responsable.md) | Quien coordina el proyecto | Preparar el proyecto una vez; revisar las entregas cada semana; el tablero |
 | [Publicar y resguardar](publicar-y-resguardar.md) | El responsable, al cerrar una etapa | Guardar las pruebas fuera de GitHub y publicar con un DOI |
+| [La firma del proyecto](firma-del-proyecto.md) | Quien administra el repo, una vez | Crear la llave del proyecto, guardarla y publicarla; cambiarla |
+| [Verificar](verificar.md) | Quien revisa desde afuera | Comprobar la fecha y el origen de un registro o de un paquete |
 | [Cuando pasa](cuando-pasa.md) | Todos, cuando haga falta | Choques, vencimientos, datos, tokens y fallas |
 | [Cuatro equipos](ejemplos.md) | Todos | Cómo preparó su proyecto cada uno de cuatro equipos de ejemplo |
 

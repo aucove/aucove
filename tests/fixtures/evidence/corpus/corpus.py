@@ -27,6 +27,18 @@ copia alterada por cada caso de ``CASES``.
   ``--content`` un ``.git`` con un filtro ``clean`` que devolvería lo sellado, y que la
   verificación nunca debe ejecutar. Las alteraciones del OCSP o la CRL no invalidan el
   sello (la revocación no va sellada): bajan esa TSA a ``weak``.
+- **Firma del proyecto (00-marco D-72):** llaves ``ssh-ed25519`` deterministas (la semilla
+  da la llave, y Ed25519 no usa azar: la firma sale igual en cualquier máquina): la vigente
+  del proyecto (``KEY_ID``), una anterior que dejó de valer antes de los sellos
+  (``OLD_KEY_ID``) y una ajena. ``signed/integration-<c2>-a2`` es el registro de
+  integración firmado y sellado sobre la firma (``origin: project`` con ``keys``), y
+  ``package/hito-1``, un paquete con los registros sanos, un PDF, ``index.txt`` y
+  ``signature/`` (el índice firmado y sellado, como ``evidence sign``). ``keys.yaml`` es la
+  lista publicada, para ``--keys``. Los casos de la firma alteran el registro firmado:
+  un byte de la firma, otra llave, una llave que ya no valía, una firma sin sellar, el
+  manifiesto cambiado después de firmar.
+- **Casos del paquete (``PACKAGE_CASES``):** alteraciones del paquete firmado (un archivo,
+  el índice, la firma del índice, la llave), que delata su carpeta de firma.
 
 Para generar el corpus a mano: ``python -m tests.fixtures.evidence.corpus.corpus <carpeta>``.
 """
@@ -39,15 +51,18 @@ import json
 import shutil
 import sys
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.x509.oid import ExtendedKeyUsageOID
 
 from aucove import _meta
-from aucove.evidence import canon, manifest, record, timefmt, tsa
+from aucove.domain import signing
+from aucove.evidence import canon, manifest, record, sshsig, timefmt, tsa
+from aucove.evidence import package as pkg
 from aucove.evidence.catalog import Catalog, parse_catalog
 from aucove.vcs.git import Git
 from tests.conftest import GitRepo, isolated_git_env
@@ -59,6 +74,11 @@ REPOSITORY = "org-x/demo"
 REPOSITORY_ID = 4242
 CREATED = "2026-10-06T11:59:00Z"
 OTHER_DIGEST = hashlib.sha256(b"otro manifiesto").digest()
+KEY_ID = "corpus-2026"  # la llave vigente del proyecto
+OLD_KEY_ID = "corpus-2025"  # la anterior: dejó de valer antes de los sellos
+KEY_SEEDS: Mapping[str, str] = {KEY_ID: "corpus: llave del proyecto", OLD_KEY_ID: "corpus: llave anterior"}
+OTHER_SEED = "corpus: llave ajena"
+PAPER = "paper.pdf"  # un archivo del paquete que no es de un registro
 
 FILES_C1: Mapping[bytes, bytes | None] = {
     b"plan.md": b"# Plan\n\nP-1 Medir.\n",
@@ -147,10 +167,15 @@ class Healthy:
     integration: Path
     submission: Path
     submission_complete: Path  # la copia local con la prueba OTS completa
+    signed: Path  # el registro de integración firmado por el proyecto (D-72)
+    package: Path  # paquete del hito: los registros sanos, un PDF, index.txt y signature/
+    keys: tuple[signing.EvidenceKey, ...]  # evidence_signing.keys del proyecto
+    keys_path: Path  # la lista publicada (YAML), para --keys
+    router: ft.Router  # las TSA de prueba, para sellar de nuevo en las alteraciones
     calendar_routes: dict[str, bytes] = field(default_factory=dict)  # upgrade: URL -> respuesta
 
     def folder(self, which: str) -> Path:
-        return {"integration": self.integration, "submission": self.submission}[which]
+        return {"integration": self.integration, "submission": self.submission, "signed": self.signed}[which]
 
 
 def _write_files(root: Path, files: Mapping[bytes, bytes | None]) -> None:
@@ -163,8 +188,8 @@ def _write_files(root: Path, files: Mapping[bytes, bytes | None]) -> None:
         target.write_bytes(data)
 
 
-def _rfc3161(proof: tsa.TsaProof) -> record.Proof:
-    """Prueba del registro desde un sello verificado (la receta de EV-06)."""
+def _rfc3161(proof: tsa.TsaProof, *, subject: str = record.MANIFEST_FILE) -> record.Proof:
+    """Prueba del registro desde un sello verificado (la receta de EV-06) de ``subject``."""
     assert proof.status == "ok" and proof.tsr is not None and proof.gen_time is not None, proof
     revocation = record.Revocation(proof.revocation.type, proof.revocation.der) if proof.revocation else None
     return record.Proof.rfc3161(
@@ -174,7 +199,100 @@ def _rfc3161(proof: tsa.TsaProof) -> record.Proof:
         revocation=revocation,
         chain_pem=proof.chain_pem,
         root_pem=proof.root_pem,
+        subject=subject,
     )
+
+
+def make_router(pkis: Mapping[str, ft.Pki]) -> ft.Router:
+    """Las TSA de prueba, con su OCSP o su CRL."""
+    router = ft.Router()
+    for pki in pkis.values():
+        router.routes[pki.tsa_url] = ft.FakeTsa(pki)
+        if pki.ocsp_url:
+            router.routes[pki.ocsp_url] = ft.ocsp_response(pki)
+        if pki.crl_url:
+            router.routes[pki.crl_url] = ft.crl(pki)
+    return router
+
+
+# -- firma del proyecto (00-marco D-72; 11-trazabilidad §8.10) -------------------------------------
+
+
+def _ed25519(seed: str) -> Ed25519PrivateKey:
+    return Ed25519PrivateKey.from_private_bytes(hashlib.sha256(seed.encode("utf-8")).digest())
+
+
+def signer(seed: str) -> sshsig.PrivateKey:
+    """Llave privada de ``seed``: siempre la misma, y Ed25519 firma igual en cualquier máquina."""
+    text = _ed25519(seed).private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.OpenSSH,
+                                        serialization.NoEncryption())
+    return sshsig.load_private_key(text)
+
+
+def public_line(seed: str) -> str:
+    """``ssh-ed25519 AAAA…`` de la llave de ``seed``, como va en ``project.yaml``."""
+    public = _ed25519(seed).public_key()
+    return public.public_bytes(serialization.Encoding.OpenSSH, serialization.PublicFormat.OpenSSH).decode("ascii")
+
+
+def keys_document() -> list[dict[str, str]]:
+    """``evidence_signing.keys`` del proyecto del corpus: la vigente y la anterior, que valió
+    hasta febrero (los sellos de prueba son de octubre)."""
+    return [
+        {"id": KEY_ID, "public_key": public_line(KEY_SEEDS[KEY_ID]), "since": "2026-02-01T00:00:00Z"},
+        {"id": OLD_KEY_ID, "public_key": public_line(KEY_SEEDS[OLD_KEY_ID]), "since": "2025-01-01T00:00:00Z",
+         "until": "2026-02-01T00:00:00Z"},
+    ]
+
+
+def signature_of(data: bytes, seed: str, key_id: str, file: str = record.SIG_FILE) -> record.Signature:
+    """Firma SSHSIG de ``data`` con la llave de ``seed``; ``key_id`` va en los metadatos."""
+    armored = signer(seed).sign(data)
+    got = sshsig.verify(armored, data)
+    return record.Signature(file, got.hash, got.fingerprint, key_id, armored)
+
+
+def stamp(data: bytes, subject: str, catalog: Catalog, router: ft.Router) -> tuple[record.Proof, ...]:
+    """Las pruebas de ``data`` (``subject``): las dos TSA de prueba y OTS pendiente."""
+    batch = tsa.stamp(data, catalog=catalog, transport=router.transport(), sleep=lambda _s: None)
+    assert batch.status == "complete" and [p.source for p in batch.proofs] == ["alpha", "beta"], batch
+    pending = ots_proofs(hashlib.sha256(data).digest())[0]
+    return (*(_rfc3161(p, subject=subject) for p in batch.proofs), record.Proof.ots(pending, subject=subject))
+
+
+def sign_record(rec: record.Record, seed: str, key_id: str, catalog: Catalog, router: ft.Router,
+                **changes: Any) -> record.Record:
+    """``rec`` firmado con la llave de ``seed`` y sellado sobre la firma, como en ``ci seal``
+    (REQ-TRACE-91)."""
+    assert rec.manifest is not None
+    signature = signature_of(rec.manifest, seed, key_id)
+    assert signature.data is not None
+    return replace(rec, signature=signature, proofs=stamp(signature.data, record.SIG_FILE, catalog, router),
+                   **changes)
+
+
+def write_index(package: Path) -> bytes:
+    """``index.txt`` del paquete: la huella de cada archivo, sin las carpetas de firma, en el
+    formato de ``sha256sum`` (11-trazabilidad §8.8)."""
+    files = sorted(
+        p for p in package.rglob("*")
+        if p.is_file() and p.relative_to(package).as_posix() != pkg.INDEX_FILE
+        and pkg.SIGNATURE_DIR_RE.fullmatch(p.relative_to(package).parts[0]) is None
+    )
+    data = "".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(package).as_posix()}\n"
+                   for p in files).encode("utf-8")
+    (package / pkg.INDEX_FILE).write_bytes(data)
+    return data
+
+
+def sign_package(package: Path, seed: str, key_id: str, catalog: Catalog, router: ft.Router) -> Path:
+    """``signature/`` (o la siguiente) con ``index.txt`` firmado y sellado, como ``evidence sign``."""
+    data = (package / pkg.INDEX_FILE).read_bytes()
+    signature = signature_of(data, seed, key_id, record.INDEX_SIG_FILE)
+    assert signature.data is not None
+    folder = pkg.SignatureFolder(hashlib.sha256(data).hexdigest(), len(pkg.parse_index(data)), signature,
+                                 stamp(signature.data, record.INDEX_SIG_FILE, catalog, router))
+    return pkg.write_signature_dir(package, folder, name=pkg.next_signature_dirname(package))
 
 
 def build_healthy(dest: Path) -> Healthy:
@@ -203,13 +321,7 @@ def build_healthy(dest: Path) -> Healthy:
     catalog_path = dest / "tsa-catalog.json"
     catalog_path.write_text(json.dumps(catalog_doc, indent=2) + "\n", encoding="utf-8")
     catalog = parse_catalog(catalog_path.read_text(encoding="utf-8"))
-    router = ft.Router()
-    for pki in pkis.values():
-        router.routes[pki.tsa_url] = ft.FakeTsa(pki)
-        if pki.ocsp_url:
-            router.routes[pki.ocsp_url] = ft.ocsp_response(pki)
-        if pki.crl_url:
-            router.routes[pki.crl_url] = ft.crl(pki)
+    router = make_router(pkis)
     batch = tsa.stamp(integration.data, catalog=catalog, transport=router.transport(), sleep=lambda _s: None)
     assert batch.status == "complete" and [p.source for p in batch.proofs] == ["alpha", "beta"], batch
 
@@ -245,6 +357,25 @@ def build_healthy(dest: Path) -> Healthy:
     )
     fake_module = dest / "evidence_fake.py"
     fake_module.write_text(FAKE_MODULE.format(package=_meta.NAME), encoding="utf-8")
+    integration_dir = record.write_record_dir(root, integ)
+    submission_dir = record.write_record_dir(root, sub)
+    complete_dir = record.write_record_dir(root, complete, name=complete.local_dirname)
+
+    # La firma del proyecto (D-72): su lista de llaves, el registro firmado y el paquete del hito.
+    keys_doc = keys_document()
+    keys, problems = signing.parse_keys(keys_doc)
+    assert not problems, problems
+    keys_path = dest / "keys.yaml"
+    keys_path.write_text(json.dumps({"keys": keys_doc}, indent=2) + "\n", encoding="utf-8")
+    signed = sign_record(integ, KEY_SEEDS[KEY_ID], KEY_ID, catalog, router, run_id=104, run_attempt=2)
+    (dest / "signed").mkdir()
+    signed_dir = record.write_record_dir(dest / "signed", signed, name=signed.local_dirname)
+    package = dest / "package" / "hito-1"
+    for folder in (integration_dir, submission_dir):
+        shutil.copytree(folder, package / folder.name)
+    (package / PAPER).write_bytes(b"%PDF-1.7\n% borrador del hito\n")
+    write_index(package)
+    sign_package(package, KEY_SEEDS[KEY_ID], KEY_ID, catalog, router)
     return Healthy(
         root=root,
         repo=repo,
@@ -254,9 +385,14 @@ def build_healthy(dest: Path) -> Healthy:
         catalog=catalog,
         pkis=pkis,
         sha=sha,
-        integration=record.write_record_dir(root, integ),
-        submission=record.write_record_dir(root, sub),
-        submission_complete=record.write_record_dir(root, complete, name=complete.local_dirname),
+        integration=integration_dir,
+        submission=submission_dir,
+        submission_complete=complete_dir,
+        signed=signed_dir,
+        package=package,
+        keys=keys,
+        keys_path=keys_path,
+        router=router,
         calendar_routes=routes,
     )
 
@@ -552,6 +688,97 @@ def _content_filter(content: Path) -> None:
     (content / ".gitattributes").write_bytes(b"sections/intro/intro.md filter=evil\n")
 
 
+# -- alteraciones de la firma del proyecto ----------------------------------------------------------
+
+
+def _rewrite(folder: Path, rec: record.Record) -> None:
+    """Reescribe la carpeta del registro con ``rec``, con el mismo nombre."""
+    shutil.rmtree(folder)
+    record.write_record_dir(folder.parent, rec, name=folder.name)
+
+
+def _flip_base64(path: Path) -> None:
+    """Un carácter de la última línea del cuerpo de una firma ASCII: cambia un byte de la firma."""
+    lines = path.read_bytes().split(b"\n")  # [..., última del cuerpo, -----END…-----, ""]
+    body = bytearray(lines[-3])
+    body[5] = ord("A") if body[5] != ord("A") else ord("B")
+    lines[-3] = bytes(body)
+    path.write_bytes(b"\n".join(lines))
+
+
+def _signature_byte(folder: Path, h: Healthy) -> None:
+    _flip_base64(folder / record.SIG_FILE)
+
+
+def _resign(seed: str, key_id: str) -> Callable[[Path, Healthy], None]:
+    """Firma el manifiesto con la llave de ``seed`` (``key_id`` en los metadatos) y lo sella de
+    nuevo con sellos válidos, como haría quien tiene otra llave o una que ya no vale."""
+
+    def alter(folder: Path, h: Healthy) -> None:
+        _rewrite(folder, sign_record(record.read_record_dir(folder).record, seed, key_id, h.catalog, h.router))
+
+    return alter
+
+
+def _signature_unsealed(folder: Path, h: Healthy) -> None:
+    """Una firma válida del proyecto agregada a un registro ya sellado, sin sellos nuevos: las
+    pruebas siguen siendo del manifiesto, no de la firma (REQ-TRACE-91)."""
+    rec = record.read_record_dir(folder).record
+    assert rec.manifest is not None
+    signature = signature_of(rec.manifest, KEY_SEEDS[KEY_ID], KEY_ID)
+    proofs = tuple(replace(p, subject=record.SIG_FILE) for p in rec.proofs)
+    _rewrite(folder, replace(rec, signature=signature, proofs=proofs))
+
+
+def _signed_manifest_changed(folder: Path, h: Healthy) -> None:
+    """El manifiesto cambiado después de firmar, con sus huellas puestas al día: los sellos
+    son de la firma, y la firma ya no es de él."""
+    _reseal_obj(folder, lambda o: o.__setitem__("created_at", "2026-10-06T12:00:00Z"))
+
+
+def _signature_metadata(folder: Path, h: Healthy) -> None:
+    other = signer(OTHER_SEED).fingerprint
+    _edit_json(folder / record.RECORD_FILE, lambda o: o["signature"].__setitem__("key", other))
+
+
+def _signature_stripped(folder: Path, h: Healthy) -> None:
+    """La firma quitada de un registro firmado, para que pase por uno sin firma."""
+    rec = record.read_record_dir(folder).record
+    proofs = tuple(replace(p, subject=record.MANIFEST_FILE) for p in rec.proofs)
+    _rewrite(folder, replace(rec, signature=None, proofs=proofs))
+
+
+# -- alteraciones del paquete firmado ----------------------------------------------------------------
+
+
+def _paper_changed(package: Path, h: Healthy) -> None:
+    _flip_last(package / PAPER)
+
+
+def _paper_removed(package: Path, h: Healthy) -> None:
+    (package / PAPER).unlink()
+
+
+def _index_altered(package: Path, h: Healthy) -> None:
+    """``paper.pdf`` cambiado y su huella puesta al día en ``index.txt``: el índice ya no es el firmado."""
+    _flip_last(package / PAPER)
+    write_index(package)
+
+
+def _index_signature_byte(package: Path, h: Healthy) -> None:
+    _flip_base64(package / "signature" / record.INDEX_SIG_FILE)
+
+
+def _index_resigned(seed: str, key_id: str) -> Callable[[Path, Healthy], None]:
+    """El índice firmado de nuevo, con sellos válidos, por la llave de ``seed``."""
+
+    def alter(package: Path, h: Healthy) -> None:
+        shutil.rmtree(package / "signature")
+        sign_package(package, seed, key_id, h.catalog, h.router)
+
+    return alter
+
+
 # -- casos ---------------------------------------------------------------------------------------
 
 
@@ -573,7 +800,7 @@ class Case:
     what: str  # qué se altera (A17 b: manifiesto, .tsr, cadena, OCSP, apertura, actor, blob)
     expect: tuple[Expect, ...]
     alter: Callable[[Path, Healthy], None] | None = None
-    record: str = "integration"
+    record: str = "integration"  # el registro sano que se altera: integration, submission o signed
     repo: bool = False  # verificar con --repo
     alter_content: Callable[[Path], None] | None = None  # verificar con --content alterado
 
@@ -637,6 +864,34 @@ CASES: tuple[Case, ...] = (
     # entrega
     Case("submission-manifest-byte", "un byte del manifiesto de una entrega", (_fail("manifest", "sha_mismatch"), _fail("ots", "digest_mismatch", "calendars")), _manifest_byte, record="submission"),
     Case("submission-ots-other-digest", "el .ots de una entrega cambiado por el de otro digest", (_fail("ots", "digest_mismatch", "calendars"),), _ots_other_digest, record="submission"),
+    # firma del proyecto (00-marco D-72; 11-trazabilidad §8.10)
+    Case("signature-byte", "un byte de la firma del proyecto", (_fail("signature", "bad_signature", KEY_ID), _fail("tsa", "digest_mismatch", "alpha")), _signature_byte, record="signed"),
+    Case("signature-other-key", "el manifiesto firmado y sellado con una llave que no es del proyecto", (_fail("signature", "key_unknown", KEY_ID),), _resign(OTHER_SEED, KEY_ID), record="signed"),
+    Case("signature-key-expired", "firmado y sellado con una llave del proyecto que ya no valía en la fecha del sello", (_fail("signature", "key_not_valid", OLD_KEY_ID),), _resign(KEY_SEEDS[OLD_KEY_ID], OLD_KEY_ID), record="signed"),
+    Case("signature-unsealed", "una firma del proyecto agregada a un registro sellado sin ella", (_fail("tsa", "digest_mismatch", "alpha"), Expect("signature", KEY_ID, "pending", "undated")), _signature_unsealed),
+    Case("signature-manifest-changed", "el manifiesto cambiado después de firmar", (_fail("signature", "bad_signature", KEY_ID),), _signed_manifest_changed, record="signed"),
+    Case("signature-metadata", "la huella de la llave en record.json", (_fail("signature", "metadata_mismatch", KEY_ID),), _signature_metadata, record="signed"),
+    Case("signature-stripped", "la firma quitada para que el registro pase por uno sin firma", (_fail("tsa", "digest_mismatch", "alpha"),), _signature_stripped, record="signed"),
+)
+
+
+@dataclass(frozen=True)
+class PackageCase:
+    """Una alteración del paquete firmado sano y lo que la delata en su carpeta de firma."""
+
+    id: str
+    what: str
+    expect: tuple[Expect, ...]
+    alter: Callable[[Path, Healthy], None]
+
+
+PACKAGE_CASES: tuple[PackageCase, ...] = (
+    PackageCase("index-file-changed", "un archivo del paquete cambiado después de firmar el índice", (_fail("index", "mismatch"),), _paper_changed),
+    PackageCase("index-file-removed", "un archivo del índice borrado del paquete", (Expect("index", None, "skip", "missing_files"),), _paper_removed),
+    PackageCase("index-altered", "index.txt puesto al día después de firmarlo", (_fail("index", "changed"), _fail("signature", "bad_signature", KEY_ID)), _index_altered),
+    PackageCase("index-signature-byte", "un byte de la firma del índice", (_fail("signature", "bad_signature", KEY_ID), _fail("tsa", "digest_mismatch", "alpha")), _index_signature_byte),
+    PackageCase("index-other-key", "el índice firmado y sellado con una llave que no es del proyecto", (_fail("signature", "key_unknown", KEY_ID),), _index_resigned(OTHER_SEED, KEY_ID)),
+    PackageCase("index-key-expired", "el índice firmado y sellado con una llave del proyecto que ya no valía", (_fail("signature", "key_not_valid", OLD_KEY_ID),), _index_resigned(KEY_SEEDS[OLD_KEY_ID], OLD_KEY_ID)),
 )
 
 
@@ -672,7 +927,19 @@ def build(dest: Path) -> tuple[Healthy, list[Built]]:
     return healthy, [build_case(case, healthy, altered) for case in CASES]
 
 
+def build_packages(healthy: Healthy, dest: Path) -> dict[str, Path]:
+    """Una copia alterada del paquete sano por elemento de ``PACKAGE_CASES``, en ``dest/<id>/``."""
+    out: dict[str, Path] = {}
+    for case in PACKAGE_CASES:
+        target = dest / case.id / healthy.package.name
+        shutil.copytree(healthy.package, target)
+        case.alter(target, healthy)
+        out[case.id] = target
+    return out
+
+
 if __name__ == "__main__":
     target = Path(sys.argv[1] if len(sys.argv) > 1 else "evidence-corpus")
-    _healthy, cases = build(target)
-    print(f"{len(cases)} casos en {target / 'altered'}")
+    healthy, cases = build(target)
+    packages = build_packages(healthy, target / "packages")
+    print(f"{len(cases)} casos de registro y {len(packages)} de paquete en {target}")

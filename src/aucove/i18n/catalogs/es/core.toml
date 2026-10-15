@@ -42,6 +42,14 @@ hint = "Ejecuta `git fetch` o `aucove switch <n>` y repite."
 message = "Falló al menos una comprobación de `doctor`."
 hint = "Sigue el `fix` de cada check en `fail`."
 
+[error.E_CONFIG_TOOL_MISSING]
+message = "Falta una herramienta que la operación necesita: el extra `evidence` o `ssh-keygen`."
+hint = "Instala lo que indica `hint`: el extra, con el comando del check `evidence_tools` de `doctor`, o el cliente de OpenSSH."
+
+[error.E_CONFIG_EVIDENCE_KEY]
+message = "La llave del proyecto no se puede usar."
+hint = "Revisa `details.reason`; la guía del admin explica cómo crear, publicar, rotar y guardar la llave."
+
 [error.E_AUTH_NOT_AUTHENTICATED]
 message = "No hay credencial de la forja."
 hint = "Inicia sesión en la forja."

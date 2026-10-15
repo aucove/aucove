@@ -194,6 +194,8 @@ integration = "Integration record"
 [ci.seal.comment]
 line = "**{check}**: {record} of commit `{sha}` (attempt {attempt}), `{status}` with {ok} of {total} proofs. Sealing time (runner clock): {utc} (UTC), {local} in Central Mexico time. The JSON of this comment is the record; the full folder is in artifact `{artifact}`."
 line_utc = "**{check}**: {record} of commit `{sha}` (attempt {attempt}), `{status}` with {ok} of {total} proofs. Sealing time (runner clock): {utc} (UTC). The JSON of this comment is the record; the full folder is in artifact `{artifact}`."
+signed = "Signed by the project with key `{key_id}` (`{key}`): the proofs stamp the signature."
+unsigned = "Without the project signature (`{reason}`): {text}"
 
 [ci.seal.summary]
 headline = "**{record}** of commit `{sha}` (attempt {attempt}): `{status}`, {ok} of {total} proofs obtained."
@@ -225,6 +227,8 @@ proof_error = "not obtained (`{reason}`): {text}"
 skip_not_task = "PR #{pr} is not from a task (its branch is not `task/<n>`): it is not sealed."
 skip_fork = "PR #{pr} comes from a fork: it is not sealed."
 not_built = "Could not build the record of commit `{sha}` (`{reason}`): {text}"
+signed = "Project signature: key `{key_id}` (`{key}`) signed `manifest.json`, and the proofs stamp the signature `manifest.json.sig`."
+unsigned = "Without the project signature (`{reason}`): {text} The record was stamped anyway, because the date comes first; the signature on the index of the milestone package covers it later."
 
 [ci.seal.summary.commits]
 one = "1 commit"
@@ -252,6 +256,14 @@ tls = "The secure connection (TLS) failed."
 calendars = "Fewer OpenTimestamps calendars than the minimum answered."
 missing_extra = "The `evidence` extra is missing: the proof was not requested."
 internal = "Internal error of the proof client."
+
+[ci.seal.unsigned]
+no_secret = "the secret `{var}` is missing from the environment `{environment}`."
+key_mismatch = "the key in the secret is not a current key in `evidence_signing.keys` of `project.yaml`."
+sign_failed = "the key in the secret could not be read (it must be an OpenSSH `ssh-ed25519` key without a passphrase) or signing failed."
+
+[ci.seal.warning]
+unsigned = "Integration record without the project signature (`{reason}`): {text}"
 
 [ci.seal.note]
 policy_unreadable = "Could not read the `project.yaml` of the policy: the default language and branch are used."

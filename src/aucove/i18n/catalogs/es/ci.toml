@@ -194,6 +194,8 @@ integration = "Registro de integración"
 [ci.seal.comment]
 line = "**{check}**: {record} del commit `{sha}` (intento {attempt}), `{status}` con {ok} de {total} pruebas. Hora del sellado (reloj del runner): {utc} (UTC), {local} en la hora del centro de México. El JSON de este comentario es el registro; la carpeta completa está en el artefacto `{artifact}`."
 line_utc = "**{check}**: {record} del commit `{sha}` (intento {attempt}), `{status}` con {ok} de {total} pruebas. Hora del sellado (reloj del runner): {utc} (UTC). El JSON de este comentario es el registro; la carpeta completa está en el artefacto `{artifact}`."
+signed = "Firmado por el proyecto con la llave `{key_id}` (`{key}`): las pruebas sellan la firma."
+unsigned = "Sin la firma del proyecto (`{reason}`): {text}"
 
 [ci.seal.summary]
 headline = "**{record}** del commit `{sha}` (intento {attempt}): `{status}`, {ok} de {total} pruebas obtenidas."
@@ -225,6 +227,8 @@ proof_error = "no obtenida (`{reason}`): {text}"
 skip_not_task = "El PR #{pr} no es de una tarea (su rama no es `task/<n>`): no se sella."
 skip_fork = "El PR #{pr} viene de un fork: no se sella."
 not_built = "No se pudo armar el registro del commit `{sha}` (`{reason}`): {text}"
+signed = "Firma del proyecto: la llave `{key_id}` (`{key}`) firmó `manifest.json`, y las pruebas sellan la firma `manifest.json.sig`."
+unsigned = "Sin la firma del proyecto (`{reason}`): {text} El registro se selló igual, porque la fecha va primero; la firma del índice del paquete del hito lo cubre después."
 
 [ci.seal.summary.commits]
 one = "1 commit"
@@ -252,6 +256,14 @@ tls = "Falló la conexión segura (TLS)."
 calendars = "Respondieron menos calendarios de OpenTimestamps que el mínimo."
 missing_extra = "Falta el extra `evidence`: la prueba no se pidió."
 internal = "Error interno del cliente de la prueba."
+
+[ci.seal.unsigned]
+no_secret = "falta el secreto `{var}` en el environment `{environment}`."
+key_mismatch = "la llave del secreto no es una llave vigente de `evidence_signing.keys` del `project.yaml`."
+sign_failed = "no se pudo leer la llave del secreto (debe ser una llave `ssh-ed25519` de OpenSSH, sin frase de paso) o no se pudo firmar."
+
+[ci.seal.warning]
+unsigned = "Registro de integración sin la firma del proyecto (`{reason}`): {text}"
 
 [ci.seal.note]
 policy_unreadable = "No se pudo leer el `project.yaml` de la política: se usan el idioma y la rama por omisión."

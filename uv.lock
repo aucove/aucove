@@ -66,6 +66,7 @@ dependencies = [
 
 [package.optional-dependencies]
 evidence = [
+    { name = "cryptography" },
     { name = "opentimestamps" },
     { name = "rfc3161-client" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
@@ -84,6 +85,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cryptography", marker = "extra == 'evidence'", specifier = ">=44" },
     { name = "httpx2", specifier = ">=2.13,<3" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.23,<5" },
     { name = "mcp", specifier = ">=2.2,<3" },

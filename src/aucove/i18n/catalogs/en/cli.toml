@@ -285,12 +285,20 @@ no_pseudonymize = "Exports the logins as they are, without pseudonyms (no salt n
 summary = "Verifiable date evidence of submissions and integrations."
 
 [cli.op.evidence.verify]
-summary = "Verify evidence records: manifest, TSA and OTS stamps, openings and actors."
+summary = "Verify evidence records: manifest, project signature, TSA and OTS stamps, openings and actors."
 
 [cli.op.evidence.verify.param]
 path = "Folder of a record or a folder that contains records: an artifact, a package or the local evidence copy."
 repo = "Git repository against which the commit, its tree and the opening blobs are checked."
 content = "Folder with files at their repository paths, compared with what was sealed."
 offline = "Do not use the network. Without this option, and with a network, the OpenTimestamps calendars are queried to complete pending OTS proofs in memory."
-upgrade = "Besides completing pending OTS proofs in memory, rewrite `manifest.json.ots` with the complete proof."
+upgrade = "Besides completing pending OTS proofs in memory, rewrites each `.ots` proof with the complete proof."
 tz = "Time zone of the local times; by default, America/Mexico_City."
+keys = "List of keys of the project that the group publishes (YAML with the key `keys`) or a `project.yaml`; without it, those of the project where it runs."
+
+[cli.op.evidence.sign]
+summary = "Human only: signs the index of an evidence package with the project key and stamps the signature. Asks you to type `sign` and the name of the package folder."
+
+[cli.op.evidence.sign.param]
+package = "Folder of the evidence package, with its `index.txt`; outside the working tree of the project."
+key = "Key that `ssh-keygen` signs with: the private key of the project or, if it is in `ssh-agent`, the public one."

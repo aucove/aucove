@@ -461,7 +461,7 @@ def test_notice_keeps_the_ownership_note_and_the_evidence_extra() -> None:
     assert text.split("\n")[1] == COPYRIGHT_LINE
     assert "D-07 b" in text and "REQ-TRACE-73" in text
     # D-07 (d): NOTICE lista las dependencias del extra evidence, que no van en la rueda.
-    for package in ("opentimestamps", "python-bitcoinlib", "rfc3161-client"):
+    for package in ("opentimestamps", "python-bitcoinlib", "rfc3161-client", "cryptography"):
         assert package in text, package
 
 

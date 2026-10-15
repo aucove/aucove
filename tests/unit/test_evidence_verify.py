@@ -5,7 +5,9 @@
 Los registros salen del generador ``tests/fixtures/evidence/corpus/corpus.py``: un
 repositorio fijo, la TSA de prueba (``fake_tsa``) y las pruebas OTS de ``make_ots``. El
 corpus de alteraciones se detecta al 100 %: cada caso da el check que lo delata y un
-resultado distinto del registro sano. Sin red: el calendario es un ``MockTransport`` y git
+resultado distinto del registro sano, también los del registro firmado por el proyecto y
+los del paquete con su índice firmado (00-marco D-72), que se verifican con su lista de
+llaves. Sin red: el calendario es un ``MockTransport`` y git
 corre sin red. Las carpetas de ``--content`` hostiles traen su propio ``.git``, escrito a
 mano (las pruebas nunca ejecutan ``git config``).
 """
@@ -18,6 +20,7 @@ import re
 import shutil
 import sys
 import tempfile
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,7 +29,9 @@ import pytest
 pytest.importorskip("rfc3161_client", reason="falta el extra evidence (el CI lo instala)")
 pytest.importorskip("opentimestamps", reason="falta el extra evidence (el CI lo instala)")
 
+from aucove.domain.signing import EvidenceKey  # noqa: E402
 from aucove.evidence import manifest, ots, record  # noqa: E402
+from aucove.evidence import package as pkg  # noqa: E402
 from aucove.evidence import openings as op  # noqa: E402
 from aucove.evidence import verify as ev  # noqa: E402
 from aucove.evidence.catalog import TOOL_MISSING  # noqa: E402
@@ -66,6 +71,7 @@ def verify(
     repo: bool = False,
     content: Path | None = None,
     upgrade: ev.Upgrade | None = None,
+    keys: Sequence[EvidenceKey] | None = None,
 ) -> ev.RecordResult:
     repo_git = _git(healthy.repo.path, healthy) if repo else None
     with contextlib.ExitStack() as stack:
@@ -73,7 +79,8 @@ def verify(
         if content is not None:
             source = ev.Content(content, stack.enter_context(ev.CleanForm(content, env=healthy.repo.env)))
         return ev.verify_folder(
-            folder, catalog=healthy.catalog, repo=repo_git, content=source, upgrade=upgrade, validate=_schema_pointers
+            folder, catalog=healthy.catalog, repo=repo_git, content=source, upgrade=upgrade, validate=_schema_pointers,
+            keys=keys,
         )
 
 
@@ -134,6 +141,7 @@ def test_healthy_integration_is_verified_with_strong_confidence(healthy: corpus.
     assert (got.verdict, got.confidence, got.kind, got.commit) == ("verified", "strong", "integration", healthy.sha["c2"])
     assert table(got) == [
         ("manifest", None, "pass", "ok"),
+        ("signature", None, "skip", "unsigned"),  # sin firma del proyecto (D-72)
         ("tsa", "alpha", "pass", "ok"),
         ("tsa", "beta", "pass", "ok"),
         ("ots", "calendars", "pending", "pending"),
@@ -151,6 +159,7 @@ def test_healthy_submission_is_pending_without_network(healthy: corpus.Healthy) 
     assert (got.verdict, got.confidence) == ("pending", None)
     assert table(got) == [
         ("manifest", None, "pass", "ok"),
+        ("signature", None, "skip", "unsigned"),  # sin firma del proyecto (D-72)
         ("ots", "calendars", "pending", "pending"),
         ("openings", None, "pass", "ok"),
         ("actors", None, "pass", "ok"),
@@ -241,7 +250,8 @@ class Outcome:
 
 @pytest.fixture(scope="module")
 def outcomes(built: tuple[corpus.Healthy, list[corpus.Built]]) -> dict[str, Outcome]:
-    """Cada caso del corpus se verifica una vez por módulo (git es lento en Windows)."""
+    """Cada caso del corpus se verifica una vez por módulo (git es lento en Windows), con la
+    lista de llaves del proyecto (``--keys``)."""
     healthy, cases = built
     sane: dict[tuple[str, bool, bool], ev.RecordResult] = {}
     out: dict[str, Outcome] = {}
@@ -249,8 +259,9 @@ def outcomes(built: tuple[corpus.Healthy, list[corpus.Built]]) -> dict[str, Outc
         key = (item.case.record, item.case.repo, item.content is not None)
         if key not in sane:
             content = healthy.content if item.content is not None else None
-            sane[key] = verify(healthy.folder(item.case.record), healthy, repo=item.case.repo, content=content)
-        got = verify(item.folder, healthy, repo=item.case.repo, content=item.content)
+            sane[key] = verify(healthy.folder(item.case.record), healthy, repo=item.case.repo, content=content,
+                               keys=healthy.keys)
+        got = verify(item.folder, healthy, repo=item.case.repo, content=item.content, keys=healthy.keys)
         out[item.case.id] = Outcome(item.case, got, sane[key])
     return out
 
@@ -266,15 +277,148 @@ def test_every_alteration_is_detected(case_id: str, outcomes: dict[str, Outcome]
         assert (outcome.got.verdict, outcome.got.confidence) == ("failed", None)
 
 
-def test_the_corpus_is_detected_at_100_percent(outcomes: dict[str, Outcome]) -> None:
-    assert len(outcomes) >= 20
-    assert sum(o.detected for o in outcomes.values()) / len(outcomes) == 1.0
+def test_the_corpus_is_detected_at_100_percent(
+    outcomes: dict[str, Outcome], package_outcomes: dict[str, PackageOutcome]
+) -> None:
+    detected = [o.detected for o in outcomes.values()] + [o.detected for o in package_outcomes.values()]
+    assert len(detected) >= 25
+    assert sum(detected) / len(detected) == 1.0
     # cubre lo que pide A17 b: byte del manifiesto, .tsr, cadena, OCSP, apertura, actor y blob;
-    # y los casos hostiles: filtro de la carpeta, base ausente u otra, hora nula
+    # byte de la firma, llave equivocada, llave que ya no valía, firma sin sellar y manifiesto
+    # cambiado después de firmar; y los casos hostiles: filtro de la carpeta, base ausente u
+    # otra, hora nula
     for wanted in ("manifest-byte", "tsr-signature", "chain-self-signed", "ocsp-other-cert", "opening-salt",
                    "actor-value", "opening-blob", "content-modified", "content-filter", "manifest-base-unknown",
-                   "manifest-base-not-ancestor", "record-time-null"):
+                   "manifest-base-not-ancestor", "record-time-null", "signature-byte", "signature-other-key",
+                   "signature-key-expired", "signature-unsealed", "signature-manifest-changed"):
         assert wanted in outcomes, wanted
+    # e índice alterado
+    for wanted in ("index-altered", "index-file-changed"):
+        assert wanted in package_outcomes, wanted
+
+
+# -- firma del proyecto (00-marco D-72; 11-trazabilidad §8.10) ---------------------------------------
+
+
+def test_a_signed_record_is_from_the_project_with_its_keys(healthy: corpus.Healthy) -> None:
+    """Las pruebas sellan la firma; con la lista de llaves, ``origin: project``; sin ella, la
+    firma queda sin cotejar (``unknown``). La llave vale en la fecha de la TSA más antigua."""
+    result = verify(healthy.signed, healthy, keys=healthy.keys)
+    assert (result.verdict, result.confidence, result.origin) == ("verified", "strong", "project")
+    rows = table(result)
+    assert ("signature", corpus.KEY_ID, "pass", "ok") in rows
+    assert [r[:3] for r in rows if r[0] in ("tsa", "ots")] == [
+        ("tsa", "alpha", "pass"), ("tsa", "beta", "pass"), ("ots", "calendars", "pending")]
+    (signature,) = [c for c in result.checks if c.check == "signature"]
+    stamps = [c.time_utc for c in result.checks if c.check == "tsa"]
+    assert signature.time_utc is not None and signature.time_utc == min(t for t in stamps if t is not None)
+    unchecked = verify(healthy.signed, healthy)
+    assert (unchecked.verdict, unchecked.confidence, unchecked.origin) == ("verified", "strong", "unknown")
+    assert ("signature", corpus.KEY_ID, "skip", "no_keys") in table(unchecked)
+    # un registro sin firma es unsigned, con llaves o sin ellas
+    for keys in (None, healthy.keys):
+        plain = verify(healthy.integration, healthy, keys=keys)
+        assert plain.origin == "unsigned" and ("signature", None, "skip", "unsigned") in table(plain)
+
+
+def test_a_signature_without_its_file_is_missing_and_its_proofs_lose_their_subject(
+    healthy: corpus.Healthy, tmp_path: Path
+) -> None:
+    """Sin ``manifest.json.sig``, la firma falta y las pruebas no tienen qué sellaron: nada se verifica."""
+    folder = _copy(healthy.signed, tmp_path)
+    (folder / record.SIG_FILE).unlink()
+    result = verify(folder, healthy, keys=healthy.keys)
+    rows = table(result)
+    assert ("signature", corpus.KEY_ID, "skip", "missing") in rows
+    assert result.verdict != "verified" and result.origin != "project", rows
+
+
+def verify_package(
+    package: Path, healthy: corpus.Healthy, *, keys: Sequence[EvidenceKey] | None = None
+) -> tuple[list[ev.RecordResult], list[ev.SignatureResult]]:
+    """Como ``evidence verify <paquete>``: cada registro y cada ``signature*/``, con la cobertura del índice."""
+    folders = sorted(p for p in package.iterdir() if p.is_dir() and pkg.SIGNATURE_DIR_RE.fullmatch(p.name) is None)
+    records = [ev.verify_folder(f, catalog=healthy.catalog, validate=_schema_pointers, keys=keys) for f in folders]
+    signatures = [
+        ev.verify_signature_folder(d, package, catalog=healthy.catalog, validate=_schema_pointers, keys=keys)
+        for d in pkg.signature_dirs(package)
+    ]
+    return ev.apply_coverage(records, signatures, package), signatures
+
+
+def sig_table(result: ev.SignatureResult) -> list[tuple[str, str | None, str, str]]:
+    return [(c.check, c.source, c.status, c.reason) for c in result.checks]
+
+
+def test_a_signed_package_covers_its_records(healthy: corpus.Healthy) -> None:
+    """El índice firmado y sellado (``evidence sign``) da ``origin: project`` a los registros que
+    lista con su huella; sin la lista de llaves, ``unknown``. Fuera del paquete, nada cambia."""
+    records, (folder,) = verify_package(healthy.package, healthy, keys=healthy.keys)
+    assert (folder.folder.name, folder.key_id, folder.verdict, folder.confidence, folder.origin) == (
+        "signature", corpus.KEY_ID, "verified", "strong", "project")
+    assert [r[:3] for r in sig_table(folder)] == [
+        ("signature", corpus.KEY_ID, "pass"), ("tsa", "alpha", "pass"), ("tsa", "beta", "pass"),
+        ("ots", "calendars", "pending"), ("index", None, "pass")]
+    assert folder.index_sha256 == hashlib.sha256((healthy.package / pkg.INDEX_FILE).read_bytes()).hexdigest()
+    assert sorted((r.kind, r.verdict, r.origin) for r in records) == [
+        ("integration", "verified", "project"), ("submission", "pending", "project")]
+    assert ev.overall(records, [folder]) == ("pending", None)  # la entrega, sin TSA
+    records, (folder,) = verify_package(healthy.package, healthy)
+    assert folder.origin == "unknown" and ("signature", corpus.KEY_ID, "skip", "no_keys") in sig_table(folder)
+    assert {r.origin for r in records} == {"unknown"}
+
+
+def test_a_record_the_index_does_not_list_keeps_its_origin(healthy: corpus.Healthy, tmp_path: Path) -> None:
+    """Un registro agregado al paquete después de firmar el índice no queda cubierto."""
+    package = tmp_path / healthy.package.name
+    shutil.copytree(healthy.package, package)
+    shutil.copytree(healthy.submission_complete, package / healthy.submission_complete.name)
+    records, (folder,) = verify_package(package, healthy, keys=healthy.keys)
+    origins = {r.folder.name: r.origin for r in records}
+    assert origins[healthy.submission_complete.name] == "unsigned"
+    assert origins[healthy.integration.name] == "project" and folder.verdict == "verified"
+
+
+@dataclass(frozen=True)
+class PackageOutcome:
+    """Resultado de la carpeta de firma de un paquete alterado y el de la del paquete sano."""
+
+    case: corpus.PackageCase
+    got: ev.SignatureResult
+    sane: ev.SignatureResult
+    records: tuple[ev.RecordResult, ...]  # los registros del paquete alterado, con la cobertura
+
+    @property
+    def detected(self) -> bool:
+        rows = sig_table(self.got)
+        expected = all((e.check, e.source, e.status, e.reason) in rows for e in self.case.expect)
+        return expected and [r[:3] for r in rows] != [r[:3] for r in sig_table(self.sane)]
+
+
+@pytest.fixture(scope="module")
+def package_outcomes(
+    healthy: corpus.Healthy, tmp_path_factory: pytest.TempPathFactory
+) -> dict[str, PackageOutcome]:
+    packages = corpus.build_packages(healthy, tmp_path_factory.mktemp("packages"))
+    _records, (sane,) = verify_package(healthy.package, healthy, keys=healthy.keys)
+    out: dict[str, PackageOutcome] = {}
+    for case in corpus.PACKAGE_CASES:
+        records, (got,) = verify_package(packages[case.id], healthy, keys=healthy.keys)
+        out[case.id] = PackageOutcome(case, got, sane, tuple(records))
+    return out
+
+
+@pytest.mark.parametrize("case_id", [c.id for c in corpus.PACKAGE_CASES])
+def test_every_package_alteration_is_detected(case_id: str, package_outcomes: dict[str, PackageOutcome]) -> None:
+    outcome = package_outcomes[case_id]
+    rows = sig_table(outcome.got)
+    for expect in outcome.case.expect:
+        assert (expect.check, expect.source, expect.status, expect.reason) in rows, (case_id, rows)
+    assert outcome.detected
+    if any(e.status == "fail" for e in outcome.case.expect):
+        assert (outcome.got.verdict, outcome.got.confidence) == ("failed", None)
+    if outcome.got.verdict == "failed":  # una carpeta de firma que falla no cubre a nadie
+        assert {r.origin for r in outcome.records} == {"unsigned"}
 
 
 # -- sin el extra (REQ-ARCH-99) ----------------------------------------------------------------------
@@ -289,6 +433,7 @@ def test_without_the_extra_tsa_and_ots_skip_and_the_rest_is_verified(
     assert (got.verdict, got.confidence) == ("pending", None)
     assert table(got) == [
         ("manifest", None, "pass", "ok"),
+        ("signature", None, "skip", "unsigned"),  # sin firma del proyecto (D-72)
         ("tsa", "alpha", "skip", "missing_extra"),
         ("tsa", "beta", "skip", "missing_extra"),
         ("ots", "calendars", "skip", "missing_extra"),

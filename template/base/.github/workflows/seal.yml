@@ -58,6 +58,7 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-slim
     timeout-minutes: 10
+    environment: { name: aucove-evidence, deployment: false }   # la llave del proyecto (D-72, REQ-CI-61)
     permissions: { contents: read, pull-requests: write, actions: read }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -75,9 +76,11 @@ jobs:
           curl -fsSL --proto '=https' -o lock.txt \
             "https://github.com/{{var:framework_repo}}/releases/download/v${PIN}/requirements-lock.txt"
           uv tool install "aucove[evidence]==${PIN}" --constraints lock.txt
-      - name: Sellar la integración (2 TSA RFC 3161 + OpenTimestamps)
+      - name: Firmar y sellar la integración (firma del proyecto + 2 TSA RFC 3161 + OpenTimestamps)
         working-directory: ${{ runner.temp }}
-        env: { GITHUB_TOKEN: "${{ github.token }}" }
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AUCOVE_EVIDENCE_KEY: ${{ secrets.AUCOVE_EVIDENCE_KEY }}   # vacía sin el secreto: sella sin firmar
         run: >-
           aucove ci seal --kind integration --policy "$GITHUB_WORKSPACE" --repo-dir "$GITHUB_WORKSPACE"
           --commit "$GITHUB_SHA" --out "$RUNNER_TEMP/evidence" --summary "$GITHUB_STEP_SUMMARY"

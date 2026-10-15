@@ -259,6 +259,7 @@ class ForgeAdapter(Protocol):
     def actions_policy(self, level: AdminLevel = "repo") -> ActionsPolicy | None: ...
     def workflow_permissions(self, level: AdminLevel = "repo") -> WorkflowPermissions | None: ...
     def org_settings(self) -> dict[str, object] | None: ...
+    def environment(self, name: str) -> EnvironmentInfo | None: ...   # None si no existe (00-marco D-72)
 ```
 
 - **REQ-FORGE-8:** Las listas DEBEN paginarse hasta agotar `Link: rel="next"`, con un tope de 10 páginas de 100 elementos. Si se alcanza el tope, el método DEBE lanzar `ForgeValidationError` y NO DEBE devolver una lista truncada en silencio. Excepción: `list_pull_request_files` admite hasta 30 páginas, los 3000 archivos que da GitHub, para que el alcance falle con `too_many_files` y no con un error de forja (06-permisos REQ-PERM-15).
@@ -268,7 +269,7 @@ class ForgeAdapter(Protocol):
 - Las operaciones asignan con `set_assignees`, que reemplaza el conjunto completo. `add_assignees` queda solo para `CT-ISS-01` (§10.3).
 - `PullRequest.same_repo` sale de `head.repo.full_name` (`True` si la cabeza es del mismo repositorio). `find_pull_request` (`GET pulls?head={o}:{b}`) excluye los PR desde forks; `list_pull_requests` los devuelve con `same_repo=False`, y `derive_state` los ignora (`fork_pr_ignored`, 04-tareas §1.5). `FakeForge` DEBE poder sembrar los dos casos.
 - **REQ-FORGE-69:** `successful_runs` DEBE pedir `status=success`, `branch` y `event` exactos (`ci seal` usa `event=push`: un run de `pull_request_target` lleva como `head_sha` la punta de la base) y devolver los runs por fecha de creación descendente.
-- **REQ-FORGE-73 (00-marco D-65):** Las lecturas de configuración de `ForgeAdapter` DEBEN usar solo GET y el token de §5.1. Como en `ForgeAdmin`, `actions_policy`, `workflow_permissions` y `org_settings` devuelven `None` ante un 403 o un 404 (sin Administration o sin ser owner). `repo_settings` devuelve solo las claves que trae `GET /repos/{o}/{r}` (los ajustes de integración piden Contents W) y, si `capabilities` ya leyó ese recurso en el mismo proceso, no repite la petición. `rulesets` omite `bypass_actors` cuando la forja no los muestra (solo a quien puede editar el ruleset) y, sin rulesets en el plan, lanza `ForgeUnsupported`. `collaborator_permission` y `outside_collaborators` lanzan `ForgePermissionError` ante un 403 (la lista de colaboradores exige escritura en el repositorio).
+- **REQ-FORGE-73 (00-marco D-65):** Las lecturas de configuración de `ForgeAdapter` DEBEN usar solo GET y el token de §5.1. Como en `ForgeAdmin`, `actions_policy`, `workflow_permissions` y `org_settings` devuelven `None` ante un 403 o un 404 (sin Administration o sin ser owner). `repo_settings` devuelve solo las claves que trae `GET /repos/{o}/{r}` (los ajustes de integración piden Contents W) y, si `capabilities` ya leyó ese recurso en el mismo proceso, no repite la petición. `rulesets` omite `bypass_actors` cuando la forja no los muestra (solo a quien puede editar el ruleset) y, sin rulesets en el plan, lanza `ForgeUnsupported`. `collaborator_permission` y `outside_collaborators` lanzan `ForgePermissionError` ante un 403 (la lista de colaboradores exige escritura en el repositorio). `environment` devuelve `None` si el environment no existe (404) y lanza `ForgePermissionError` ante un 403.
 
 ### 2.1 Errores
 
@@ -331,6 +332,14 @@ class RulesetInfo:
     id: int; name: str; target: str; enforcement: str
     payload: Mapping[str, object]           # conditions, bypass_actors y rules, como los da la forja
 
+@frozen
+class EnvironmentInfo:                      # 06-permisos REQ-PERM-61 (00-marco D-72)
+    name: str
+    policy: Literal["all", "protected", "custom"]   # deployment_branch_policy: null, protected_branches o propias
+    rules: tuple[tuple[Literal["branch", "tag"], str], ...]   # las reglas propias, solo con "custom"
+
+SecretScope = Literal["repo", "org", "environment"]
+
 @runtime_checkable
 class ForgeAdmin(Protocol):
     repo: RepoRef
@@ -353,12 +362,17 @@ class ForgeAdmin(Protocol):
     def ruleset(self, name: str) -> RulesetInfo | None: ...
     def upsert_ruleset(self, name: str, payload: Mapping[str, object]) -> int: ...
     def branch_rules(self, branch: str) -> list[dict[str, object]]: ...  # reglas activas en la rama
+    def environment(self, name: str) -> EnvironmentInfo | None: ...
+    def put_environment(self, name: str, *, branch: str) -> EnvironmentInfo: ...  # una sola regla: la rama
+    def secret_names(self, scope: SecretScope, environment: str | None = None
+                     ) -> tuple[str, ...] | None: ...   # solo nombres, nunca valores; None sin permiso
 ```
 
 - **REQ-FORGE-71:** `ForgeAdmin` DEBE recibir el token explícito, nunca resolverlo de las fuentes de §5.1, y NO DEBE guardar nada en disco: ni respuestas (§7.4), ni identidad, ni capacidades. Solo `init` lo construye.
 - **REQ-FORGE-72:** `update_repo_settings` DEBE rechazar con `ForgeValidationError`, sin llamar a la forja, toda clave fuera de `REPO_SETTINGS`, y verificar en la respuesta que se aplicó cada cambio (REQ-FORGE-11). `set_actions_policy` y `set_workflow_permissions` escriben solo en el repositorio: la configuración de la organización afecta a otros repos y la cambia un owner (06-permisos §4.10).
 - Las lecturas que pueden no estar permitidas con el token (`actions_policy`, `workflow_permissions` y `org_settings`) devuelven `None` ante un 403 o un 404, para que `init` informe el resultado como desconocido (06-permisos REQ-PERM-56). Con un repo de una cuenta personal, las de nivel `org` devuelven `None` sin llamar a la forja. Desde 00-marco D-65, las mismas lecturas están en `ForgeAdapter` (§2); la implementación GitHub de `ForgeAdmin` las delega en su adaptador, con el token de administración.
 - `add_collaborator` devuelve `invited` si GitHub crea una invitación (201) y `added` si la persona ya tenía acceso (204); `init` la usa solo con miembros de la organización (06-permisos REQ-PERM-55).
+- **REQ-FORGE-74 (00-marco D-72):** `put_environment` DEBE dejar el environment con `policy: "custom"` y una sola regla, `("branch", branch)`: crea la que falta, borra las demás y verifica el resultado con una lectura (REQ-FORGE-11). No toca revisores, temporizador ni secretos. `secret_names` devuelve solo los nombres de los secretos de Actions del repositorio, de los de la organización visibles para el repositorio o de los de un environment, y `None` ante un 403 o un 404, para que `init` informe el resultado como desconocido.
 
 ## 3. Capacidades y perfiles
 
@@ -507,6 +521,7 @@ Rutas relativas a `/repos/{o}/{r}` salvo que empiecen por `/`. Permisos de token
 | `repo_settings` | `GET /repos/{o}/{r}` (la respuesta de `capabilities` del mismo proceso, si la hay; 00-marco D-65) | Metadata R; los ajustes de integración, Contents W | 200 → las claves de `REPO_SETTINGS` que vienen | — |
 | `rulesets` | `GET rulesets?includes_parents=false` y `GET rulesets/{id}` de cada uno | Metadata R (`bypass_actors`, solo a quien puede editar el ruleset) | 200 → `RulesetInfo` | 403/404 sin el plan → `ForgeUnsupported` |
 | `list_labels` | `GET labels?per_page=100` | Issues R* | 200 → `Label` | — |
+| `environment` | `GET environments/{name}` y, con reglas propias, `GET environments/{name}/deployment-branch-policies` (00-marco D-72) | Actions R | 200 → `EnvironmentInfo` | 404 → `None`; 403 → `ForgePermissionError` |
 | `collaborator_permission`, `outside_collaborators`, `actions_policy`, `workflow_permissions`, `org_settings` | como en `ForgeAdmin` (abajo), con el token de la persona (00-marco D-65) | ídem | ídem | ídem; `outside_collaborators` exige escritura en el repo (403 → `ForgePermissionError`) |
 
 Métodos de `ForgeAdmin` (§2.2; solo `init`, con el token de administración):
@@ -527,6 +542,9 @@ Métodos de `ForgeAdmin` (§2.2; solo `init`, con el token de administración):
 | `ruleset` | `GET rulesets` y `GET rulesets/{id}` | Administration R | 200 → `RulesetInfo` o `None` | 403/404 sin el plan → `ForgeUnsupported` |
 | `upsert_ruleset` | `GET rulesets`, `POST rulesets` o `PUT rulesets/{id}` | Administration W | 201/200 → id (no prueba que se exija: REQ-FORGE-65) | 403/404/422 → `ForgeUnsupported` si el plan no lo permite |
 | `branch_rules` | `GET rules/branches/{b}` | Metadata R | 200 → reglas activas | — |
+| `environment` | como en `ForgeAdapter` (arriba) | Actions R | ídem | ídem |
+| `put_environment` | `PUT environments/{name}` `{"deployment_branch_policy": {"protected_branches": false, "custom_branch_policies": true}}`; `GET`, `POST` `{name, type: "branch"}` y `DELETE environments/{name}/deployment-branch-policies[/{id}]` | Administration W | 200 → `EnvironmentInfo` con una sola regla | 403 → `ForgePermissionError`; 404/422 sin environments en el plan → `ForgeUnsupported` |
+| `secret_names` | `GET actions/secrets`, `GET actions/organization-secrets` o `GET environments/{name}/secrets` | Secrets R (environment: Environments R) | 200 → los nombres | 403/404 → `None` |
 
 ### 4.3 Pasar un PR de borrador a listo
 
@@ -866,7 +884,7 @@ assert fake.calls.count(kind="E") <= 5           # presupuesto de claim (§7.5)
 
 - `fake.admin(token)` da el `ForgeAdmin` del falso sobre el mismo estado (§2.2): exige administración del repo para escribir y para leer la configuración, y en un repo privado del perfil `advisory` no admite rulesets. `seed_admin(...)` cambia la configuración de partida y `seed_admin_token(token, login)` asocia un token a otra cuenta (o lo invalida con `None`).
 - Las lecturas de configuración del adaptador (00-marco D-65) siguen los permisos de GitHub: los ajustes de integración y los colaboradores externos, con escritura; la política de Actions, el token de los workflows, la organización y los actores de bypass, solo si la cuenta administra y el token lo hereda (`classic_pat` u `oauth`; el fine-grained de uso diario no lleva Administration). `seed_user(token_scope=...)` fija lo que mide `GET /user/repos` (§5.2) y `seed_admin(plan_visible=False)` simula un plan que el visor no ve (§3.2).
-- `create_comment` acepta hasta 65,536 caracteres, como GitHub, y rechaza los cuerpos más largos; `seed_run(workflow, sha, event, conclusion)` alimenta `successful_runs`; `admin_merge` registra `merged_by`, que, como en GitHub, solo devuelve `get_pull_request` (§4.2).
+- `create_comment` acepta hasta 65,536 caracteres, como GitHub, y rechaza los cuerpos más largos; los environments y los nombres de sus secretos se siembran con `seed_environment(name, policy, rules, secrets)` y los secretos del repositorio y de la organización con `seed_secrets(scope, names)`, y en un repo privado del perfil `advisory` `put_environment` lanza `ForgeUnsupported` (00-marco D-72); `seed_run(workflow, sha, event, conclusion)` alimenta `successful_runs`; `admin_merge` registra `merged_by`, que, como en GitHub, solo devuelve `get_pull_request` (§4.2).
 - **REQ-FORGE-59:** `FakeForge` DEBE reproducir estas semánticas de GitHub: `create_ref` atómico (bajo un lock) y `RefAlreadyExists` si la ref existe; `update_ref` solo con avance rápido; `PATCH` con `assignees` reemplaza el conjunto y lo descarta en silencio si el actor no tiene push; no se abre un PR sin commits de diferencia; un PR abierto por cabeza; `PATCH` de PR sin `draft`; `Closes #n` cierra el Issue solo al integrar en la rama por defecto; revisiones en orden cronológico; el autor no puede aprobar su propio PR; los tokens fine-grained no leen check runs. Y, medido en T2 real (00-marco D-68): volver a agregar una etiqueta presente registra otro `labeled` (GitHub lo hace a veces; el falso, siempre); borrar con `commit_files` una ruta ausente da 422; en un repo público, abrir un Issue no exige el permiso Issues.
 - **REQ-FORGE-60:** `FakeForge` DEBE contar las peticiones por método HTTP y por tipo (L, E, C) para verificar los presupuestos de §7.5.
 - **REQ-FORGE-61:** `FakeForge` DEBE admitir fallas inyectables por método y por número de llamada: `timeout_before` (sin efecto), `timeout_after` (con efecto), `http_5xx`, `http_422`, `rate_limit_primary`, `rate_limit_secondary`, `race` (muta el estado justo antes del efecto) y `latency`.
@@ -909,6 +927,7 @@ assert fake.calls.count(kind="E") <= 5           # presupuesto de claim (§7.5)
 | `CT-ADM-01` | `ForgeAdmin` con el token de administración: `repo_settings` y `update_repo_settings` con unas claves y otra vez con las mismas (idempotente); una clave fuera de `REPO_SETTINGS` → `ForgeValidationError` sin petición (REQ-FORGE-72) |
 | `CT-ADM-02` | `upsert_ruleset` dos veces con el mismo nombre → un solo ruleset; `ruleset` lo devuelve y `branch_rules` de la base da sus reglas; en un repo privado de una org Free → `ForgeUnsupported` |
 | `CT-ADM-03` | Con un token sin Administration: las escrituras → `ForgePermissionError` y las lecturas que pueden no estar permitidas → `None`; con un token inválido → `ForgeAuthError` |
+| `CT-ADM-04` | En `ct-public`, con el token de administración (00-marco D-72): `put_environment` dos veces con la base → un environment con una sola regla de rama, la base, que `environment` devuelve también con el token de uso diario; `secret_names` del repositorio, de la organización y del environment → nombres, o `None` sin permiso, registrando `X-Accepted-GitHub-Permissions`. En `ct-private` (org Free), registrar qué responden `PUT environments/{name}` y `GET environments/{name}` (Q-CI-14) |
 | `CT-CFG-01` | Con el token de uso diario de §5.4 (00-marco D-65): `repo_settings` trae los ajustes de integración; `rulesets` no muestra `bypass_actors` a quien no puede editarlos; `list_labels`; `collaborator_permission` de un colaborador (escritura) y de una cuenta que no existe (`None`); `outside_collaborators`; `actions_policy` y `workflow_permissions` → `None`, y `org_settings` sin las claves de 06-permisos §4.10 |
 | `CT-CFG-02` | En un repo privado de una org Free: `rulesets` → `ForgeUnsupported`. Sin escritura: `repo_settings` sin los ajustes de integración y `outside_collaborators` → `ForgePermissionError` |
 | `CT-SEAL-01` | Un PR integrado en la web: `pulls_for_commit` devuelve el PR con `merged=True` y sin `merged_by`, y `get_pull_request` da su `merged_by`. Con dos pushes a la base y un run de `seal.yml` fallido entre ellos, `successful_runs('seal.yml', base, event='push')` no lista el fallido ni los runs de `pull_request_target`. Real en H3. |
@@ -951,6 +970,7 @@ assert fake.calls.count(kind="E") <= 5           # presupuesto de claim (§7.5)
 | `live` | marcador de pytest | Pruebas contra la forja real |
 | `ForgeAdapter`, `GitHubAdapter`, `FakeForge`, `HumanConfirmation` | nombre de clase Python | §2, §10 |
 | `ForgeAdmin`, `GitHubAdmin`, `FakeAdmin`, `ActionsPolicy`, `WorkflowPermissions`, `RulesetInfo`, `REPO_SETTINGS`, `ORG_SETTINGS` | nombres de Python | §2.2: la interfaz de administración de `init` (00-marco D-62) |
+| `EnvironmentInfo`, `SecretScope`, `environment`, `put_environment`, `secret_names`, REQ-FORGE-74, `CT-ADM-04` | nombres de Python, métodos, requisito y prueba de contrato | El environment de la firma del proyecto y los nombres de los secretos (§2, §2.2; 00-marco D-72) |
 | REQ-FORGE-71, REQ-FORGE-72 | requisito | §2.2: token explícito sin disco y claves admitidas |
 | `CT-ADM-01` a `CT-ADM-03` | ID de prueba | §10.3: la interfaz de administración |
 | `repo_settings`, `rulesets`, `list_labels`, `collaborator_permission`, `outside_collaborators`, `actions_policy`, `workflow_permissions`, `org_settings` | métodos de `ForgeAdapter` | §2: lecturas de configuración con el token de la persona (00-marco D-65) |

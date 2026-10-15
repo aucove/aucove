@@ -66,17 +66,40 @@ find . -type f ! -name index.txt -print0 | xargs -0 sha256sum > index.txt
 cd ..
 ```
 
-### 6. Comprueba que los registros estén bien
+### 6. Firma el índice del paquete
 
-Opcional. Revisa cada registro del paquete y da un veredicto por registro.
+Con la [firma del proyecto](firma-del-proyecto.md), en los dos modos. Firmas `index.txt` con tu llave, y la firma queda sellada en una carpeta `signature/` dentro del paquete. Así queda probado que el paquete lo armó el proyecto, incluidas las entregas, que el CI no firma. Se corre en la carpeta del proyecto y en una terminal normal, no dentro de tu agente: te pide escribir una confirmación y la frase de tu llave, y nada de eso debe pasar por la IA.
 
 ```bash
-aucove evidence verify evidencia-hito1/artefactos
+cd ising-diluido
+aucove evidence sign ../evidencia-hito1 --key $HOME/.ssh/aucove-ising-diluido
 ```
 
-Cada registro trae su propio `VERIFY.md`, así que cualquiera puede verificarlo después, incluso sin aucove.
+Así se ve (ejemplo abreviado):
 
-### 7. Guárdalo en dos lugares fuera de GitHub
+```text
+Firma del índice del paquete de evidencia (00-marco D-72).
+  Paquete: C:\Users\laura\investigacion\evidencia-hito1
+  `index.txt`: 214 archivos, SHA-256 `5f2c…`
+  …
+Para confirmar, escribe exactamente «sign evidencia-hito1» y pulsa Intro: sign evidencia-hito1
+Enter passphrase: (tu frase; no se ve)
+Firma del índice en `signature` (…\evidencia-hito1): la llave `llave-2026` (`SHA256:8jmj…`) firmó `index.txt`; 3 de 3 pruebas obtenidas.
+```
+
+Después de firmarlo, el paquete no se modifica: lo nuevo va en el paquete del hito siguiente. Sin la firma del proyecto, sáltate este paso.
+
+### 7. Comprueba el paquete
+
+Opcional, en la carpeta del proyecto. Revisa cada registro, la firma del índice y que cada archivo coincida con su huella:
+
+```bash
+aucove evidence verify ../evidencia-hito1
+```
+
+Con la firma, cada registro dice «origen: del proyecto». Cada registro trae su propio `VERIFY.md`, y la carpeta `signature/` también, así que cualquiera puede verificarlo después, incluso sin aucove ([Verificar](verificar.md)).
+
+### 8. Guárdalo en dos lugares fuera de GitHub
 
 Por ejemplo, el repositorio de datos de tu institución, en acceso cerrado, y tu propia copia. Zenodo no sirve para esto, porque lo que se sube ahí es público.
 
@@ -99,7 +122,7 @@ Se cifra el paquete para dos personas (tú y la institución, o tú y el suplent
 
 </details>
 
-### 8. Anota el resguardo en una decisión
+### 9. Anota el resguardo en una decisión
 
 En tu agente, con `/decision`: la fecha, dónde quedó el paquete (y, si usaste OSF, el identificador del registro y el fin del embargo) y la huella SHA-256 del archivo que guardaste. Esa decisión queda sellada en la siguiente integración.
 

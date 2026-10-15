@@ -46,6 +46,8 @@ _ERROR_TABLE: tuple[tuple[str, bool], ...] = (
     ("E_CONFIG_BASE_NOT_DEFAULT", False),
     ("E_CONFIG_POLICY_UNAVAILABLE", False),
     ("E_CONFIG_DOCTOR_FAILED", False),
+    ("E_CONFIG_TOOL_MISSING", False),  # evidence sign sin el extra o sin ssh-keygen (D-72)
+    ("E_CONFIG_EVIDENCE_KEY", False),  # la llave del proyecto no se puede usar (D-72)
     ("E_AUTH_NOT_AUTHENTICATED", False),
     ("E_AUTH_TOKEN_INVALID", False),
     ("E_AUTH_INSUFFICIENT_SCOPE", False),

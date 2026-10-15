@@ -63,7 +63,7 @@ main-broken = "Base branch fails build or validation"
 flag_bypass = "Merged without meeting the approval matrix"
 
 [init.token]
-prompt = "GitHub administration token (Administration read and write permission; neither shown nor stored): "
+prompt = "GitHub administration token (Administration read and write, and Secrets and Environments read-only; neither shown nor stored): "
 
 [init]
 commit = "Set up the project with init"
@@ -98,6 +98,9 @@ bypass_declined = "Without a deputy or bypass, your PRs stay blocked until you d
 invited = "`{login}` got an invitation as an outside collaborator: the right way is to invite them to the organization (06-permisos REQ-PERM-55)."
 org = "Organization settings that an owner should change (06-permisos §4.10): {changes}."
 setup_task = "Prepare the project in task #{task}, “{title}”: open your agent in the project folder and ask it to guide you through the plan, the people and the parts."
+evidence_secrets_repo = "The names of the Actions secrets of the repository could not be read: check on the web that none is called `{secret}`. The project key only goes in the environment (10-seguridad REQ-SEC-87)."
+evidence_secrets_org = "The names of the Actions secrets of the organization could not be read: check with an owner that none visible to this repository is called `{secret}`."
+evidence_secret = "Add the private key of the project as the secret `{secret}` of the environment `{environment}`, on the web or with `gh secret set {secret} --env {environment}` (admin guide)."
 
 # Readable view of the result.
 [init.render]

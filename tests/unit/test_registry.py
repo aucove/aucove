@@ -32,6 +32,7 @@ MARCO_OPS: dict[str, tuple[str | None, bool]] = {
     "check-path": ("check_path", False),
     "metrics": (None, False),
     "evidence.verify": (None, False),  # sin MCP (REQ-OPS-65; D-50)
+    "evidence.sign": (None, True),  # solo humana, sin MCP (D-72)
     "task.propose": ("propose_task", False),
     "task.accept": (None, True),
     "task.cancel": (None, True),
@@ -67,6 +68,7 @@ H2_ATTRS = {
     "check-path": ("none", "local", 8000),
     "metrics": ("none", "online", None),
     "evidence.verify": ("none", "degraded", None),
+    "evidence.sign": ("local", "online", None),
     "task.propose": ("forge", "online", 4000),
     "claim": ("forge", "online", 8000),
     "release": ("forge", "online", 4000),
@@ -96,9 +98,10 @@ def test_registry_content() -> None:
     """H2 (D-31 y D-50), status y context (paso 2 de H3), task propose y claim (paso 4a),
     release, save, update y switch (paso 4b), record-assessment y submit (paso 4c), y task accept
     y cancel, expire-claims, decision propose y direction propose (paso 4d), review list y show
-    (paso 5a), review approve y request-changes (paso 5b), init (paso 6c) y metrics."""
+    (paso 5a), review approve y request-changes (paso 5b), init (paso 6c), metrics y evidence sign (D-72)."""
     assert [spec.id for spec in REGISTRY] == [
         "doctor", "init", "sync-roles", "validate", "status", "context", "check-path", "metrics", "evidence.verify",
+        "evidence.sign",
         "task.propose", "task.accept", "task.cancel", "claim", "release", "save", "update", "switch",
         "record-assessment", "submit", "expire-claims", "decision.propose", "direction.propose", "review.list",
         "review.show", "review.approve", "review.request-changes",
@@ -242,11 +245,11 @@ def test_validate_cli_params() -> None:
 
 
 def test_evidence_verify_spec() -> None:
-    """05 §9.26: ``evidence verify <ruta> [--repo] [--content] [--offline] [--upgrade] [--tz]``, sin MCP."""
+    """05 §9.26: ``evidence verify <ruta> [--repo] [--content] [--keys] [--offline] [--upgrade] [--tz]``, sin MCP."""
     spec = next(s for s in REGISTRY if s.id == "evidence.verify")
     assert (spec.cli, spec.mcp_tool, spec.human_only, spec.module) == (("evidence", "verify"), None, False, "ops.evidence_verify")
     by_name = {p.name: p for p in spec.params}
-    assert list(by_name) == ["path", "repo", "content", "offline", "upgrade", "tz"]
+    assert list(by_name) == ["path", "repo", "content", "offline", "upgrade", "tz", "keys"]
     path = by_name["path"]
     assert (path.type, path.positional, path.required, path.repeatable) == ("string", True, True, False)
     assert by_name["offline"].type == by_name["upgrade"].type == "boolean"

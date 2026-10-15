@@ -104,6 +104,7 @@ from .base import (
     Comment,
     CommitInfo,
     Comparison,
+    EnvironmentInfo,
     FileChange,
     FileContent,
     ForgeAuthError,
@@ -134,6 +135,7 @@ from .base import (
     RepoRef,
     Review,
     RulesetInfo,
+    SecretScope,
     WorkflowPermissions,
     WorkflowRun,
     rules_summary,
@@ -274,6 +276,7 @@ _PERMISSIONS: Mapping[str, str | None] = {
     "actions_policy": "administration=read",
     "workflow_permissions": "administration=read",
     "org_settings": "organization_administration=read",
+    "environment": "actions=read",  # el de la firma del proyecto (00-marco D-72)
 }
 ADAPTER_METHODS: frozenset[str] = frozenset(_PERMISSIONS)
 # Métodos de ForgeAdmin (08 §2.2; 00-marco D-62) -> permiso del hint de un 403.
@@ -295,6 +298,10 @@ _ADMIN_PERMISSIONS: Mapping[str, str | None] = {
     "ruleset": "administration=read",
     "upsert_ruleset": "administration=write",
     "branch_rules": "metadata=read",
+    # 06 §4.3b (00-marco D-72): el environment de la llave y los nombres de los secretos
+    "environment": "actions=read",
+    "put_environment": "administration=write",
+    "secret_names": "secrets=read",
 }
 ADMIN_METHODS: frozenset[str] = frozenset(_ADMIN_PERMISSIONS)
 # Stubs: cumplen la firma y lanzan ForgeUnsupported (kind 'unsupported'). H3 implementó los
@@ -698,6 +705,11 @@ class _AdminState:
     # ¿El visor ve el plan de la organización? Sin verlo, en un repo privado que sí puede exigir
     # reglas el sondeo no es concluyente (08 §3.2): rules_available None y perfil advisory.
     plan_visible: bool = True
+    # Environments (06 §4.3b; 00-marco D-72): nombre -> {"policy": all | protected | custom,
+    # "rules": [[tipo, nombre]], "secrets": [nombres]}.
+    environments: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # Nombres de los secretos de Actions del repositorio y de los de la organización visibles para él.
+    secrets: dict[str, list[str]] = field(default_factory=lambda: {"repo": [], "org": []})
 
 
 def _default_admin(visibility: str) -> _AdminState:
@@ -787,6 +799,13 @@ def _workflow_permissions(s: _State, level: AdminLevel, *, admin: bool) -> Workf
     if data is None or not admin:
         return None
     return WorkflowPermissions(data["default_workflow_permissions"], bool(data["can_approve_pull_request_reviews"]))
+
+
+def _environment_info(name: str, env: Mapping[str, Any]) -> EnvironmentInfo:
+    """``EnvironmentInfo`` de un environment del estado (06 §4.3b)."""
+    policy = env.get("policy", "all")
+    rules = tuple((str(kind), str(name_)) for kind, name_ in env.get("rules") or ()) if policy == "custom" else ()
+    return EnvironmentInfo(name, policy, rules)
 
 
 def _ruleset_info(ident: int, rs: Mapping[str, Any], *, bypass: bool) -> RulesetInfo:
@@ -2919,6 +2938,15 @@ class FakeForge:
         except _HttpError as e:
             raise self._classify("org_settings", e) from e
 
+    def environment(self, name: str) -> EnvironmentInfo | None:
+        """Como ``GET environments/{name}``: lo lee cualquiera con lectura; ``None`` si no existe."""
+        try:
+            with self._request("environment", "GET", "L", {"name": name}):
+                env = self._s.admin.environments.get(name)
+                return _environment_info(name, env) if env is not None else None
+        except _HttpError as e:
+            raise self._classify("environment", e) from e
+
     def admin(self, token: str) -> FakeAdmin:
         """``ForgeAdmin`` sobre el mismo estado (08 §2.2; 00-marco D-62).
 
@@ -2969,6 +2997,21 @@ class FakeForge:
             if "plan_visible" in fields:
                 admin.plan_visible = bool(fields["plan_visible"])
             self._caps = None
+
+    def seed_environment(
+        self, name: str, *, policy: Literal["all", "protected", "custom"] = "custom",
+        rules: Sequence[tuple[str, str]] = (), secrets: Sequence[str] = (),
+    ) -> None:
+        """Siembra el environment ``name`` con sus reglas de despliegue y los nombres de sus secretos."""
+        with self._s.lock:
+            self._s.admin.environments[name] = {
+                "policy": policy, "rules": [list(rule) for rule in rules], "secrets": sorted(secrets),
+            }
+
+    def seed_secrets(self, scope: Literal["repo", "org"], names: Sequence[str]) -> None:
+        """Nombres de los secretos de Actions del repositorio o de la organización visibles para él."""
+        with self._s.lock:
+            self._s.admin.secrets[scope] = sorted(names)
 
     def admin_state(self) -> dict[str, Any]:
         """Copia de la configuración (solo pruebas)."""
@@ -3646,7 +3689,8 @@ class FakeAdmin:
 
     def _fail(self, method: str, e: _HttpError) -> ForgeError:
         text = e.message.lower()
-        if method in ("ruleset", "upsert_ruleset") and (e.status == 404 or "upgrade" in text or "not supported" in text):
+        unsupported = ("ruleset", "upsert_ruleset", "put_environment")
+        if method in unsupported and (e.status == 404 or "upgrade" in text or "not supported" in text):
             return ForgeUnsupported(f"{method}: HTTP {e.status}: {e.message}", http_status=e.status)
         return self._view._classify(method, e)
 
@@ -3841,6 +3885,47 @@ class FakeAdmin:
         except _HttpError as e:
             raise self._fail("branch_rules", e) from e
 
+    # -- environment de la firma del proyecto (06 §4.3b; 00-marco D-72)
+
+    def environment(self, name: str) -> EnvironmentInfo | None:
+        try:
+            with self._request("environment", "GET", "L", {"name": name}):
+                self._auth()
+                env = self._s.admin.environments.get(name)
+                return _environment_info(name, env) if env is not None else None
+        except _HttpError as e:
+            raise self._fail("environment", e) from e
+
+    def put_environment(self, name: str, *, branch: str) -> EnvironmentInfo:
+        """Una sola regla de despliegue, la rama ``branch``; sin environments (Free privado), 404."""
+        try:
+            with self._request("put_environment", "PUT", "E", {"name": name, "branch": branch}):
+                self._require_admin()
+                if self._no_rulesets():
+                    raise _HttpError(404, "Not Found")
+                env = self._s.admin.environments.setdefault(name, {"secrets": []})
+                env["policy"] = "custom"
+                env["rules"] = [["branch", branch]]
+                return _environment_info(name, env)
+        except _HttpError as e:
+            raise self._fail("put_environment", e) from e
+
+    def secret_names(self, scope: SecretScope, environment: str | None = None) -> tuple[str, ...] | None:
+        """Solo nombres; ``None`` sin administración (como un 403) o si el environment no existe."""
+        if scope == "environment" and not environment:
+            raise ForgeValidationError("secret_names: the environment is missing")
+        try:
+            with self._request("secret_names", "GET", "L", {"scope": scope, "environment": environment}):
+                self._auth()
+                if not self._is_admin():
+                    return None
+                if scope == "environment":
+                    env = self._s.admin.environments.get(environment or "")
+                    return tuple(sorted(env.get("secrets") or ())) if env is not None else None
+                return tuple(sorted(self._s.admin.secrets.get(scope) or ()))
+        except _HttpError as e:
+            raise self._fail("secret_names", e) from e
+
 
 # ---------------------------------------------------------------------------
 # Serialización del estado
@@ -3860,6 +3945,8 @@ def _admin_to_json(a: _AdminState) -> dict[str, Any]:
         "tokens": dict(sorted(a.tokens.items())),
         "protected_by_default": a.protected_by_default,
         "plan_visible": a.plan_visible,
+        "environments": copy.deepcopy(dict(sorted(a.environments.items()))),
+        "secrets": {k: sorted(v) for k, v in sorted(a.secrets.items())},
     }
 
 
@@ -3882,6 +3969,9 @@ def _admin_from_json(data: object, visibility: str) -> _AdminState:
     admin.tokens = {str(k): (None if v is None else str(v)) for k, v in (data.get("tokens") or {}).items()}
     admin.protected_by_default = bool(data.get("protected_by_default", True))
     admin.plan_visible = bool(data.get("plan_visible", True))
+    admin.environments = {str(k): copy.deepcopy(dict(v)) for k, v in (data.get("environments") or {}).items()}
+    secrets = data.get("secrets") or {}
+    admin.secrets = {"repo": sorted(secrets.get("repo") or ()), "org": sorted(secrets.get("org") or ())}
     return admin
 
 

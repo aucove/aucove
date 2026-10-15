@@ -46,7 +46,11 @@ estricto de ``config.yamlload`` y nunca se ejecuta nada. Hallazgos
     ``defaults.run.shell`` del workflow.
 - Ningún workflow usa el contexto ``secrets`` (``secrets.X``, ``secrets['X']``,
   ``toJSON(secrets)``, también en un ``if:`` sin ``${{ }}``) ni ``secrets:`` en un job
-  (REQ-CI-3).
+  (REQ-CI-3), salvo la llave del proyecto (SB10; 09-ci REQ-CI-61; 00-marco D-72): en
+  ``.github/workflows/seal.yml``, el ``env`` del paso de ``ci seal`` del job ``integration``
+  puede dar ``<PREFIJO>EVIDENCE_KEY: ${{ secrets.<PREFIJO>EVIDENCE_KEY }}``, y nada más.
+- SB10: solo ese job declara el environment ``<nombre>-evidence``; el nombre del environment
+  de un job no puede ser una expresión, que podría resolver a ese.
 
 Las expresiones se normalizan antes de buscar: ``x['y']`` equivale a ``x.y``.
 - REQ-CI-45: el ``core_pin`` del árbol (línea de REQ-ARCH-45) satisface ``core`` de la
@@ -63,6 +67,7 @@ import re
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from functools import lru_cache
 
+from ... import _meta
 from ...config.project import core_pin_line
 from ...config.yamlload import escape_pointer, line_for, load_with_lines
 from ...domain.compat import satisfies
@@ -81,6 +86,12 @@ PRT_WORKFLOWS: frozenset[str] = frozenset({VALIDATE_WORKFLOW, SEAL_WORKFLOW, EDI
 # Y el único con workflow_run (09-ci REQ-CI-60).
 WORKFLOW_RUN_WORKFLOWS: frozenset[str] = frozenset({EDITOR_REVIEW_WORKFLOW})
 PROJECT_FILE = "project.yaml"
+# SB10 (00-marco D-72): el único job con la llave del proyecto, su environment y su secreto.
+EVIDENCE_JOB = "integration"
+EVIDENCE_ENVIRONMENT = f"{_meta.NAME}-evidence"
+EVIDENCE_VAR = f"{_meta.ENV_PREFIX}EVIDENCE_KEY"
+_EVIDENCE_VALUE = re.compile(r"\$\{\{\s*secrets\s*\.\s*" + re.escape(EVIDENCE_VAR) + r"\s*\}\}")
+_CI_SEAL = re.compile(r"(?:^|\s)ci\s+seal(?:\s|$)")
 MAX_SHOWN = 120  # caracteres de un valor del PR citado en un mensaje
 
 _SHA_PINNED = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
@@ -545,6 +556,39 @@ def _check_job(
     return pr_dirs
 
 
+def _evidence_secret(path: str, pointer: str, value: str, doc: Mapping[object, object]) -> bool:
+    """SB10: ¿es la única referencia admitida a ``secrets``? ``<PREFIJO>EVIDENCE_KEY: ${{
+    secrets.<PREFIJO>EVIDENCE_KEY }}`` en el ``env`` del paso de ``ci seal`` del job ``integration``
+    de ``seal.yml`` (09-ci REQ-CI-61), con el valor entero y nada más."""
+    if path != SEAL_WORKFLOW or _EVIDENCE_VALUE.fullmatch(value.strip()) is None:
+        return False
+    m = re.fullmatch(r"/jobs/" + EVIDENCE_JOB + r"/steps/(\d+)/env/" + re.escape(EVIDENCE_VAR), pointer)
+    if m is None:
+        return False
+    jobs = doc.get("jobs")
+    job = jobs.get(EVIDENCE_JOB) if isinstance(jobs, Mapping) else None
+    steps = job.get("steps") if isinstance(job, Mapping) else None
+    if not isinstance(steps, list) or int(m[1]) >= len(steps) or not isinstance(steps[int(m[1])], Mapping):
+        return False
+    run = steps[int(m[1])].get("run")
+    return isinstance(run, str) and _CI_SEAL.search(run) is not None
+
+
+def _check_environment(chk: _Check, path: str, job_id: str, job: Mapping[object, object]) -> None:
+    """SB10: solo el job ``integration`` de ``seal.yml`` declara el environment de la llave del
+    proyecto, y ningún job nombra su environment con una expresión."""
+    env = job.get("environment")
+    name = env.get("name") if isinstance(env, Mapping) else env
+    if name is None:
+        return
+    pointer = f"/jobs/{escape_pointer(job_id)}/environment"
+    text = str(name)
+    if "${{" in text:
+        chk.add(pointer, "environment_expression", job=_shown(job_id))
+    elif text.strip().casefold() == EVIDENCE_ENVIRONMENT and not (path == SEAL_WORKFLOW and job_id == EVIDENCE_JOB):
+        chk.add(pointer, "evidence_environment", job=_shown(job_id), environment=EVIDENCE_ENVIRONMENT)
+
+
 def _check_workflow(inp: RuleInput, path: str, text: str, entries: Mapping[str, str]) -> list[Finding]:
     doc, lines, syntax, norm = load_with_lines(text, file=path, t=inp.t, check=RULE_ID)
     if syntax:
@@ -583,8 +627,8 @@ def check_document(
     prt = "pull_request_target" in events or "workflow_run" in events
     for pointer, value in _strings(doc):
         for expr in _expressions(pointer, value):
-            if _SECRETS.search(_normalize(expr)):
-                chk.add(pointer, "secrets")
+            if _SECRETS.search(_normalize(expr)) and not _evidence_secret(path, pointer, value, doc):
+                chk.add(pointer, "secrets", secret=EVIDENCE_VAR)
     jobs = doc.get("jobs")
     pr_dirs: list[str] = []
     if not isinstance(jobs, Mapping) or not jobs:
@@ -596,6 +640,7 @@ def check_document(
                 continue
             pr_dirs.extend(_check_job(chk, str(job_id), job, prt=prt, entries=entries,
                                       workflow_defaults=doc.get("defaults")))
+            _check_environment(chk, path, str(job_id), job)
     if pr_dirs:
         # env y defaults.run.shell del workflow llegan a todos los jobs (REQ-CI-29).
         texts = list(_env_texts(doc.get("env"), "/env", "env"))

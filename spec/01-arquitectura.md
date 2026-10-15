@@ -124,7 +124,7 @@ job gh-release   : needs template (o template omitido) ; notas desde CHANGELOG.m
 | `i18n` | catálogos `es`/`en` y función `t()` (§9) | stdlib (`tomllib`) | sí |
 | `forge` | `base.py` (interfaz, definida en 08-forja), `github.py` (REST), `fake.py` (en memoria, con inyección de fallas) | `domain`; `httpx2` y `truststore` solo desde `github.py` | no |
 | `render` | skills, plantilla, `CODEOWNERS`, base de `.claude/settings.json` y reglas de `settings.local.json` (contenidos definidos en 06 y 07) | `domain`, `config`, `i18n` | no |
-| `evidence` | manifiesto canónico, compromisos de archivos y actores, aperturas, registros, catálogo de TSA (`_data/tsa-catalog.json`), clientes RFC 3161 y OpenTimestamps, OCSP/CRL y verificación (11-trazabilidad §8) | `domain`, `vcs`, `i18n`; `rfc3161_client`, `opentimestamps` y `httpx2` con importación perezosa y solo con el extra `evidence` | no |
+| `evidence` | manifiesto canónico, compromisos de archivos y actores, aperturas, registros, catálogo de TSA (`_data/tsa-catalog.json`), clientes RFC 3161 y OpenTimestamps, OCSP/CRL, la firma del proyecto (SSHSIG) y verificación (11-trazabilidad §8) | `domain`, `vcs`, `i18n`; `rfc3161_client`, `opentimestamps`, `cryptography` y `httpx2` con importación perezosa y solo con el extra `evidence` | no |
 | `ops` | una implementación por operación y el registro `ops.registry` (§3.4) | `domain`, `config`, `vcs`, `localstore`, `obs`, `i18n`, `render`, `evidence`, interfaz de `forge` | solo `ops.check_path` y `ops.context` |
 | `cli` | parser generado del registro, confirmación TTY de operaciones H, salida humana; `cli.ci`, subcomandos internos `aucove ci` (contrato: 09-ci) | `ops`, `config`, `i18n`, `obs` | no |
 | `mcp` | servidor stdio; registra herramientas desde `ops.registry` | `ops`, `i18n`, `obs`, SDK `mcp` | no |
@@ -261,6 +261,7 @@ def invoke(spec: OpSpec, ctx: "OpContext", **kwargs) -> "Result":
 | Sellos RFC 3161 (extra `evidence`) | `rfc3161-client` | `>=1.0,<2` | no | arma la petición (SHA-256, nonce, `certReq`) y verifica respuesta y cadena; OCSP con `cryptography.x509.ocsp` | `openssl ts` por subprocess (Git for Windows lo trae) |
 | OpenTimestamps (extra `evidence`) | `opentimestamps` (LGPL-3.0-or-later; trae `python-bitcoinlib`) | `>=0.4.5,<0.5` | no | serialización de pruebas, calendarios y `upgrade` | cliente `ots` por subprocess |
 | Zonas horarias en Windows (extra `evidence`) | `tzdata` | `>=2025.2`, solo si `sys_platform == "win32"` | no | `zoneinfo` sin base del sistema | mostrar solo UTC |
+| Firma del proyecto (extra `evidence`) | `cryptography` (Apache-2.0 o BSD-3-Clause; ya la trae `rfc3161-client`) | `>=44` | no | Ed25519 y llaves OpenSSH para firmar y verificar SSHSIG en `ci seal` y `evidence verify` (11-trazabilidad §8.10); `evidence sign` firma con `ssh-keygen` | `ssh-keygen -Y` por subprocess |
 
 Extracto normativo de `pyproject.toml`:
 
@@ -281,7 +282,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-evidence = ["rfc3161-client>=1.0,<2", "opentimestamps>=0.4.5,<0.5", "tzdata>=2025.2; sys_platform == 'win32'"]
+evidence = ["rfc3161-client>=1.0,<2", "opentimestamps>=0.4.5,<0.5", "cryptography>=44",
+            "tzdata>=2025.2; sys_platform == 'win32'"]
 
 [project.scripts]
 aucove = "aucove.entry:main"
@@ -308,7 +310,7 @@ only-include = [
 ```
 
 - **REQ-ARCH-27.** Toda dependencia nueva de ejecución DEBE justificarse en esta tabla (revisión de la especificación) y NO DEBE importarse en la ruta caliente.
-- **REQ-ARCH-99.** El extra `evidence` NO DEBE importarse en la ruta caliente ni ser requisito de ninguna operación, salvo `ci seal`. Sin el extra, `evidence verify` verifica el manifiesto, las aperturas, los actores y git, deja en `skip` las pruebas TSA y OTS y agrega `W_CONFIG_TOOL_MISSING`; `doctor` lo informa en el check `evidence_tools`. El CI lo instala con `uv tool install "aucove[evidence]==$PIN" --constraints requirements-lock.txt` (09-ci §7.4).
+- **REQ-ARCH-99.** El extra `evidence` NO DEBE importarse en la ruta caliente ni ser requisito de ninguna operación, salvo `ci seal` y `evidence sign` (00-marco D-72). Sin el extra, `evidence verify` verifica el manifiesto, las aperturas, los actores y git, deja en `skip` las pruebas TSA y OTS y la firma, y agrega `W_CONFIG_TOOL_MISSING`; `doctor` lo informa en el check `evidence_tools`. El CI lo instala con `uv tool install "aucove[evidence]==$PIN" --constraints requirements-lock.txt` (09-ci §7.4).
 - **REQ-ARCH-28.** La validación con JSON Schema DEBE usar un `referencing.Registry` construido con los esquemas empaquetados en `aucove/_data/schemas`; NO DEBE resolver `$id` ni `$ref` por red (los `$id` usan el dominio `.invalid`).
 - **REQ-ARCH-29.** `yaml.safe_load` (o `CSafeLoader`) DEBE ser el único cargador YAML; `validate` DEBE reportar con una pista (`hint`) los valores que YAML 1.1 convierte de forma implícita (por ejemplo, `convention: 0.1` sin comillas se lee como número).
 

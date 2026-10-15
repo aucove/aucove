@@ -8,7 +8,11 @@ directorio actual, S4), ``git``, ``project_root``, ``project_yaml``, ``roles_yam
 ``convention``, ``remote``, ``deputy``, ``codeowners_sync``, ``generated_files``,
 ``mcp_config`` (``.mcp.json`` contra 10-seguridad SB04), ``cache`` y ``evidence_tools`` (si
 está instalado el extra ``evidence``, con ``find_spec`` y sin importarlo; si falta, ``warn`` y
-``W_CONFIG_TOOL_MISSING``, REQ-ARCH-99).
+``W_CONFIG_TOOL_MISSING``, REQ-ARCH-99). ``evidence_signing`` (00-marco D-72) revisa la firma
+del proyecto con la política de la base: sin firma, ``warn``; con ``ci`` o ``admin`` y sin una
+llave vigente, ``fail``; con la forja, el environment ``<nombre>-evidence`` solo puede admitir
+la rama base y, con ``ci``, tiene que existir en un repositorio que admita environments (06
+REQ-PERM-61). El token de uso diario no lee los secretos.
 
 **La forja.** Con un proyecto, la política de su base y red, ``doctor`` hace estas lecturas,
 en orden y solo con ``GET`` (08-forja §7.5):
@@ -100,6 +104,7 @@ from .board import is_network_error, load_board
 from .context import env_flag
 from .protections import (
     BASE_RULESET,
+    EVIDENCE_ENVIRONMENT,
     LABELS,
     ORG_RECOMMENDED,
     TASK_RULESET,
@@ -109,6 +114,7 @@ from .protections import (
     base_ruleset,
     covers,
     desired_settings,
+    environments_available,
     task_ruleset,
     template_actions,
 )
@@ -144,7 +150,7 @@ CHECK_ORDER: tuple[str, ...] = (
     "python", "git", "project_root", "project_yaml", "roles_yaml", "convention", "remote",
     "identity", "membership", "forge_reachable", "profile", "deputy", "codeowners_sync",
     "merge-settings", "generated_files", "claude_settings", "mcp_config", "half_states", "cache",
-    "evidence_tools",
+    "evidence_tools", "evidence_signing",
 )
 # Queda en skip en esta versión: claude_settings llega con .claude/settings.json (H4).
 SKIPPED: frozenset[str] = frozenset({"claude_settings"})
@@ -1207,6 +1213,54 @@ class _Doctor:
             t("doctor.evidence_tools.warn", missing=", ".join(missing)),
             t("doctor.evidence_tools.fix", name=_meta.NAME, pin=pin),
         )
+
+    def evidence_signing(self) -> Check:
+        """La firma del proyecto (05 §9.2; 00-marco D-72): el modo, una llave vigente y el environment.
+
+        Con la política de la base (D-08). El environment se lee con el token de uso diario
+        (Actions R); sus secretos no: si falta la llave, lo dicen ``init`` y el resumen del job.
+        """
+        from ..domain.signing import current_keys
+
+        check_id, t = "evidence_signing", self.t
+        if self.project is None:
+            return self._skip_no_project(check_id)
+        cfg = self.policy_cfg
+        if cfg is None:
+            return Check(check_id, "skip", t("doctor.evidence_signing.skip_policy", reason=self._policy_reason()))
+        signing = cfg.evidence_signing
+        guide = t("doctor.evidence_signing.fix_guide")
+        if signing.mode == "none":
+            return Check(check_id, "warn", t("doctor.evidence_signing.warn_none"), guide)
+        keys = current_keys(signing.keys, self.ctx.inv.now())
+        if not keys:
+            return Check(check_id, "fail", t("doctor.evidence_signing.fail_no_key", mode=signing.mode), guide)
+        summary = t("doctor.evidence_signing.ok", mode=signing.mode, keys=", ".join(k.id for k in keys))
+        forge, caps = self.forge, self.caps
+        if forge is None or caps is None:
+            return Check(check_id, "ok", summary + " " + t("doctor.evidence_signing.forge_unchecked"))
+        if environments_available(caps) is False:
+            if signing.mode == "ci":
+                return Check(check_id, "fail", t("doctor.evidence_signing.fail_no_environments"),
+                             t("doctor.evidence_signing.fix_no_environments"))
+            return Check(check_id, "ok", summary)
+        name, base = EVIDENCE_ENVIRONMENT, cfg.base_branch
+        fix_init = t("doctor.evidence_signing.fix_init", name=_meta.NAME)
+        found = self._read(lambda: (forge.environment(name),))
+        if found is None:  # lo que no se puede leer queda como desconocido (D-65)
+            return Check(check_id, "ok", summary + " " + t("doctor.evidence_signing.environment_unreadable",
+                                                           environment=name))
+        env = found[0]
+        if env is None:
+            if signing.mode == "ci":
+                return Check(check_id, "fail", t("doctor.evidence_signing.fail_environment_missing", environment=name),
+                             fix_init)
+            return Check(check_id, "ok", summary)
+        if not env.only_branch(base):
+            return Check(check_id, "fail", t("doctor.evidence_signing.fail_environment_rules", environment=name,
+                                              base=base), fix_init)
+        return Check(check_id, "ok", summary + " " + t("doctor.evidence_signing.environment_ok", environment=name,
+                                                       base=base))
 
     # -- corrida -------------------------------------------------------------------
 

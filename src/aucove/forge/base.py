@@ -66,6 +66,8 @@ __all__ = [
     "ActionsPolicy",
     "WorkflowPermissions",
     "RulesetInfo",
+    "EnvironmentInfo",
+    "SecretScope",
     "ForgeAdmin",
     "ForgeError",
     "NoTokenError",
@@ -518,6 +520,8 @@ class ForgeAdapter(Protocol):
     def actions_policy(self, level: AdminLevel = "repo") -> ActionsPolicy | None: ...  # None: no se puede leer
     def workflow_permissions(self, level: AdminLevel = "repo") -> WorkflowPermissions | None: ...
     def org_settings(self) -> dict[str, object] | None: ...  # None: cuenta personal o no se puede leer
+    # GET environments/{name} y sus reglas de despliegue (00-marco D-72): None si no existe
+    def environment(self, name: str) -> EnvironmentInfo | None: ...
 
 
 # ---------------------------------------------------------------------------
@@ -550,6 +554,9 @@ ORG_SETTINGS: tuple[str, ...] = (
 )
 AdminLevel = Literal["repo", "org"]
 CollaboratorPermission = Literal["pull", "triage", "push", "maintain", "admin"]
+# Secretos de Actions cuyos nombres lee init (06-permisos REQ-PERM-61): del repositorio, de la
+# organización visibles para el repositorio o de un environment.
+SecretScope = Literal["repo", "org", "environment"]
 
 
 def rules_summary(rules: Sequence[object]) -> BaseRules:
@@ -617,6 +624,24 @@ class RulesetInfo:
     payload: Mapping[str, Any]  # conditions, bypass_actors y rules, tal como los da la forja
 
 
+@dataclass(frozen=True, slots=True)
+class EnvironmentInfo:
+    """Un environment del repositorio y sus reglas de despliegue (06-permisos REQ-PERM-61; 00-marco D-72).
+
+    ``policy``: ``all`` (sin ``deployment_branch_policy``: cualquier rama), ``protected``
+    (las ramas protegidas) o ``custom`` (las reglas propias de ``rules``, pares ``(tipo,
+    nombre)`` con ``tipo`` en ``branch`` o ``tag``).
+    """
+
+    name: str
+    policy: Literal["all", "protected", "custom"]
+    rules: tuple[tuple[str, str], ...] = ()
+
+    def only_branch(self, branch: str) -> bool:
+        """La única regla es la rama ``branch`` (REQ-PERM-61)."""
+        return self.policy == "custom" and self.rules == (("branch", branch),)
+
+
 @runtime_checkable
 class ForgeAdmin(Protocol):
     """Lecturas y escrituras de la configuración del repositorio (08 §2.2; 00-marco D-62).
@@ -654,6 +679,11 @@ class ForgeAdmin(Protocol):
     def ruleset(self, name: str) -> RulesetInfo | None: ...
     def upsert_ruleset(self, name: str, payload: Mapping[str, object]) -> int: ...
     def branch_rules(self, branch: str) -> list[dict[str, object]]: ...  # reglas activas en la rama
+    # Environment de la firma del proyecto (06 §4.3b; REQ-FORGE-74): put_environment lo deja con una
+    # sola regla, la rama; secret_names da solo nombres, nunca valores (None: no se pueden leer)
+    def environment(self, name: str) -> EnvironmentInfo | None: ...
+    def put_environment(self, name: str, *, branch: str) -> EnvironmentInfo: ...
+    def secret_names(self, scope: SecretScope, environment: str | None = None) -> tuple[str, ...] | None: ...
 
 
 # ---------------------------------------------------------------------------
