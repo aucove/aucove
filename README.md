@@ -28,6 +28,7 @@ AI models and agents are changing the way research is done. In many groups, each
 When AI writes part of the text or the code, authorship has to come first. It matters who proposed an idea, who did the work, who reviewed it and when, and the group must be able to show it without relying on memory or goodwill. aucove gathers that evidence while the work happens:
 
 - each submission and each merge is sealed with a verifiable timestamp;
+- with the project signature, a key that the group publishes proves that each record comes from the project;
 - the project history is versioned, in a private repository that opens at milestones or in a public one from day one;
 - every save declares which AI tool and model were used;
 - at each milestone, the group safeguards the evidence outside GitHub, for example as an encrypted registration on OSF, and can publish the work with a DOI on Zenodo.
@@ -124,7 +125,7 @@ The [user guide](docs/en/README.md) is organized by role ([en español](docs/es/
 
 ### Status
 
-Version 0.1. `0.1.0rc2` is a preliminary release with the complete core (CLI and MCP server), the template and its CI. The skills and hooks for Claude Code and Codex, such as `/start` and `/submit`, the published template repository and the devcontainer arrive with `0.1.0`. In the meantime, you ask the agent in your own words or use the `aucove` commands. The changes in each version are in [CHANGELOG.md](CHANGELOG.md), and the v0.1 specification, which is the normative authority, is in [`spec/`](spec/).
+Version 0.1. `0.1.0rc2` is a preliminary release with the complete core (CLI and MCP server), the template, its CI and the project signature. The skills and hooks for Claude Code and Codex, such as `/start` and `/submit`, the published template repository and the devcontainer arrive with `0.1.0`. In the meantime, you ask the agent in your own words or use the `aucove` commands. The changes in each version are in [CHANGELOG.md](CHANGELOG.md), and the v0.1 specification, which is the normative authority, is in [`spec/`](spec/).
 
 ### Get involved
 
@@ -211,6 +212,7 @@ El uso de modelos y agentes de IA está cambiando la forma de hacer investigaci�
 Cuando la IA escribe parte del texto o del código, la autoría tiene que ser lo primero. Importa quién propuso una idea, quién hizo el trabajo, quién lo revisó y cuándo, y el grupo tiene que poder mostrarlo sin depender de la memoria ni de la buena voluntad. aucove reúne esa evidencia mientras se trabaja:
 
 - cada entrega y cada integración se sellan con una fecha verificable;
+- con la firma del proyecto, una llave que publica el grupo prueba que cada registro viene del proyecto;
 - la historia del proyecto queda versionada, en un repositorio privado que se abre por hitos o en uno público desde el primer día;
 - cada guardado declara qué herramienta y qué modelo de IA se usaron;
 - en cada hito, el grupo resguarda las pruebas fuera de GitHub, por ejemplo en un registro cifrado de OSF, y puede publicar el trabajo con un DOI en Zenodo.
@@ -307,7 +309,7 @@ La [guía de uso](docs/es/README.md) va por perfil ([in English](docs/en/README.
 
 ### Estado
 
-Versión 0.1. La `0.1.0rc2` es una versión preliminar con el núcleo completo (CLI y servidor MCP), la plantilla y su CI. Los skills y los hooks para Claude Code y Codex, como `/empezar` y `/entregar`, el repositorio plantilla publicado y el devcontainer llegan con la `0.1.0`. Mientras tanto, lo mismo se le pide al agente con palabras o se hace con los comandos `aucove`. Los cambios de cada versión están en [CHANGELOG.md](CHANGELOG.md), y la especificación v0.1, que es la autoridad normativa, en [`spec/`](spec/).
+Versión 0.1. La `0.1.0rc2` es una versión preliminar con el núcleo completo (CLI y servidor MCP), la plantilla, su CI y la firma del proyecto. Los skills y los hooks para Claude Code y Codex, como `/empezar` y `/entregar`, el repositorio plantilla publicado y el devcontainer llegan con la `0.1.0`. Mientras tanto, lo mismo se le pide al agente con palabras o se hace con los comandos `aucove`. Los cambios de cada versión están en [CHANGELOG.md](CHANGELOG.md), y la especificación v0.1, que es la autoridad normativa, en [`spec/`](spec/).
 
 ### Colabora
 
