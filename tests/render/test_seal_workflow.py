@@ -39,7 +39,7 @@ PR_HEAD_SHA = "${{ github.event.pull_request.head.sha }}"
 SAME_REPO = "github.event.pull_request.head.repo.full_name == github.repository"
 PINS: Mapping[str, str] = {
     "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
-    "actions/upload-artifact": "043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+    "actions/upload-artifact": "cf430e030ddbb5b0abf93d22962f4752f3646cd9",
     "astral-sh/setup-uv": "c18668ad3cf93ea998bef934396af7bb5c839dc7",
 }
 COMMANDS: Mapping[str, str] = {

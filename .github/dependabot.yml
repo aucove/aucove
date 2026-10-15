@@ -4,9 +4,11 @@
 # exentos del check de DCO, y quien los integra responde por ellos (00-marco D-07 c).
 version: 2
 updates:
-  # Acciones de .github/workflows (raíz) y de los workflows de la plantilla. Un cambio en
-  # template/base/.github/workflows hace fallar tests/render/test_template_workflows.py
-  # (EXPECTED_PINS) a propósito: hay que actualizar a la vez la copia de 09-ci.
+  # Acciones de .github/workflows (raíz) y de los workflows de la plantilla, en un solo PR por
+  # acción para los dos directorios (group-by: dependency-name): tools/verify_action_pins.py
+  # rechaza una acción fijada con dos versiones. Ese PR hace fallar
+  # tests/render/test_template_workflows.py (EXPECTED_PINS) a propósito: hay que actualizar
+  # a la vez la copia de 09-ci y los pines de las pruebas, en un commit sobre la rama del PR.
   - package-ecosystem: github-actions
     directories:
       - "/"
@@ -16,9 +18,16 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
+    groups:
+      actions:
+        group-by: dependency-name
   # Dependencias de Python de pyproject.toml y uv.lock (REQ-SEC-44). Incluye hatchling (grupo
   # dev), que ci.yml usa también como backend del build (--build-constraints con hashes).
   # No cubre la versión de uv de setup-uv ni REUSE_IMAGE de ci.yml: se suben a mano.
+  # El ecosistema uv de Dependabot no admite versioning-strategy: sube el piso de
+  # pyproject.toml a la última versión. Los pisos y techos de dependencies son el extracto
+  # normativo de 01-arquitectura §4 (tests/unit/test_meta.py), así que ese PR falla a
+  # propósito y se cierra; el lock se actualiza con uv lock --upgrade-package.
   - package-ecosystem: uv
     directory: "/"
     schedule:

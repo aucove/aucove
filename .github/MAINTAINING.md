@@ -93,7 +93,12 @@ dueña. Hace falta `gh` con sesión iniciada por una persona administradora.
 - [ ] Alertas de Dependabot y actualizaciones de seguridad activadas (Settings > Advanced
   Security).
 - [ ] `.github/dependabot.yml` se procesa sin errores para `github-actions` (`/` y
-  `/template/base/.github/workflows`) y `uv` (`/`), con `cooldown.default-days: 7`.
+  `/template/base/.github/workflows`, un PR por acción para los dos directorios) y `uv`
+  (`/`), con `cooldown.default-days: 7`.
+- Un PR de una acción falla hasta que un commit sobre su rama actualiza la copia de 09-ci y
+  los pines de `tests/render/` (`EXPECTED_PINS` y `PINS`), y `tools/verify_action_pins.py`
+  sale con 0 (punto 0). Un PR de uv que sube un piso de `pyproject.toml` se cierra: los
+  pisos son los de 01-arquitectura §4.
 - Comando: `gh api -i repos/OWNER/REPO/vulnerability-alerts` (debe dar `204`) y
   `gh api repos/OWNER/REPO/automated-security-fixes --jq .enabled` (debe dar `true`).
   Para la configuración: captura de Insights > Dependency graph > Dependabot.

@@ -22,6 +22,7 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 - New logo: an open book with the aucove graph on its pages. The central vertex, in amber, is the shared repository and sits on the spine.
 - The `requirements-lock.txt` of the next release pins `mcp` and `mcp-types` 2.3.0 (were 2.2.0) and `tzdata` 2026.5 (was 2026.4).
 - The package summary on PyPI is in English, and the PyPI page links to the repository, the user guide, the issues and the changelog.
+- The workflows of the template and of the framework use `actions/upload-artifact` 7.0.2 (was 7.0.1) and `actions/download-artifact` 8.0.2 (was 8.0.1).
 
 ### Fixed
 
