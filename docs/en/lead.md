@@ -5,7 +5,7 @@
 You set up the project once and, every week, you review what the others submit.
 
 > [!NOTE]
-> This describes the complete version 0.1. With 0.1.0rc1, what is done here with a shortcut such as `/start` you ask the agent for in your own words, or do with the `aucove` commands.
+> This describes the complete version 0.1. With 0.1.0rc2, what is done here with a shortcut such as `/start` you ask the agent for in your own words, or do with the `aucove` commands.
 
 ## Setting up the project
 
@@ -49,17 +49,17 @@ cd ising-diluido
 ```
 
 <details>
-<summary><b>With 0.1.0rc1</b>, which does not have the published template yet</summary>
+<summary><b>With 0.1.0rc2</b>, which does not have the published template yet</summary>
 
-The published template arrives with 0.1.0. With 0.1.0rc1, create an empty repo on GitHub (New repository, Private, no README) and push to it the render of this repository's template:
+The published template arrives with 0.1.0. With 0.1.0rc2, create an empty repo on GitHub (New repository, Private, no README) and push to it the render of this repository's template:
 
 ```bash
-git clone --branch v0.1.0rc1 --depth 1 https://github.com/aucove/aucove.git aucove-source
+git clone --branch v0.1.0rc2 --depth 1 https://github.com/aucove/aucove.git aucove-source
 uv run --project aucove-source python aucove-source/tools/render_template.py --lang en --out ising-diluido
 cd ising-diluido
 git init -b main
 git add -A
-git commit -s -m "aucove 0.1.0rc1 template"
+git commit -s -m "aucove 0.1.0rc2 template"
 git remote add origin https://github.com/labfe/ising-diluido.git
 git push -u origin main
 ```
@@ -133,7 +133,7 @@ In the same folder, open your agent. There is nothing else to copy or install: t
 claude
 ```
 
-When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`; with 0.1.0rc1, you ask in words: "prepare the project in task 1". It interviews you in plain language:
+When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`; with 0.1.0rc2, you ask in words: "prepare the project in task 1". It interviews you in plain language:
 
 > **Laura:** `/start`
 >

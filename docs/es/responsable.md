@@ -5,7 +5,7 @@
 Preparas el proyecto una vez y, cada semana, revisas lo que entregan los demás.
 
 > [!NOTE]
-> Describe la versión 0.1 completa. Con la 0.1.0rc1, lo que aquí se pide con un atajo como `/empezar` se le pide al agente con palabras, o se hace con los comandos `aucove`.
+> Describe la versión 0.1 completa. Con la 0.1.0rc2, lo que aquí se pide con un atajo como `/empezar` se le pide al agente con palabras, o se hace con los comandos `aucove`.
 
 ## Preparar el proyecto
 
@@ -49,17 +49,17 @@ cd ising-diluido
 ```
 
 <details>
-<summary><b>Con la 0.1.0rc1</b>, que todavía no tiene la plantilla publicada</summary>
+<summary><b>Con la 0.1.0rc2</b>, que todavía no tiene la plantilla publicada</summary>
 
-La plantilla publicada llega con la 0.1.0. Con la 0.1.0rc1, crea en GitHub un repo vacío (New repository, Private, sin README) y súbele el render de la plantilla de este repositorio:
+La plantilla publicada llega con la 0.1.0. Con la 0.1.0rc2, crea en GitHub un repo vacío (New repository, Private, sin README) y súbele el render de la plantilla de este repositorio:
 
 ```bash
-git clone --branch v0.1.0rc1 --depth 1 https://github.com/aucove/aucove.git aucove-fuente
+git clone --branch v0.1.0rc2 --depth 1 https://github.com/aucove/aucove.git aucove-fuente
 uv run --project aucove-fuente python aucove-fuente/tools/render_template.py --lang es --out ising-diluido
 cd ising-diluido
 git init -b main
 git add -A
-git commit -s -m "Plantilla de aucove 0.1.0rc1"
+git commit -s -m "Plantilla de aucove 0.1.0rc2"
 git remote add origin https://github.com/labfe/ising-diluido.git
 git push -u origin main
 ```
@@ -133,7 +133,7 @@ En la misma carpeta, abre tu agente. No hay que copiar ni instalar nada más: la
 claude
 ```
 
-Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`; con la 0.1.0rc1, se lo pides con palabras: «prepara el proyecto en la tarea 1». Te entrevista en lenguaje normal:
+Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`; con la 0.1.0rc2, se lo pides con palabras: «prepara el proyecto en la tarea 1». Te entrevista en lenguaje normal:
 
 > **Laura:** `/empezar`
 >

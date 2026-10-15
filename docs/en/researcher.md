@@ -5,7 +5,7 @@
 What you do: set up your computer once and, after that, talk with your agent.
 
 > [!NOTE]
-> This describes the complete version 0.1. Shortcuts such as `/start` or `/submit` arrive with 0.1.0 for Claude Code and Codex. With 0.1.0rc1, or with another agent, you ask for the same thing in your own words, for example "let's start with task 8" or "submit the task", or use the `aucove` commands.
+> This describes the complete version 0.1. Shortcuts such as `/start` or `/submit` arrive with 0.1.0 for Claude Code and Codex. With 0.1.0rc2, or with another agent, you ask for the same thing in your own words, for example "let's start with task 8" or "submit the task", or use the `aucove` commands.
 
 ## Before the first day
 
