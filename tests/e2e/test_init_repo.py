@@ -51,11 +51,15 @@ def heads(tmp: Path, env: dict[str, str], origin: Path) -> str:
 
 
 def in_terminal(argv: Sequence[str], *, cwd: Path, env: dict[str, str], timeout_s: float = 300) -> tuple[int, str]:
-    """Corre ``argv`` con stdin y stdout en un pseudo-TTY; devuelve la salida y lo que escribió en él."""
+    """Corre ``argv`` con stdin, stdout y stderr en un pseudo-TTY; devuelve la salida y lo que escribió en él.
+
+    stderr también va a la terminal: con ``--json``, la CLI manda stdout a stderr mientras corre la
+    operación (05 REQ-OPS-9), así que la barrera de las operaciones H mira stdin y stderr.
+    """
     import pty
 
     master, slave = pty.openpty()
-    proc = subprocess.Popen(list(argv), cwd=cwd, env=env, stdin=slave, stdout=slave, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(list(argv), cwd=cwd, env=env, stdin=slave, stdout=slave, stderr=slave)
     os.close(slave)
     chunks: list[bytes] = []
 
@@ -72,7 +76,7 @@ def in_terminal(argv: Sequence[str], *, cwd: Path, env: dict[str, str], timeout_
     reader = threading.Thread(target=pump, daemon=True)
     reader.start()
     try:
-        proc.communicate(timeout=timeout_s)
+        proc.wait(timeout=timeout_s)
     finally:
         if proc.poll() is None:
             proc.kill()
@@ -95,7 +99,9 @@ def test_dry_run_in_a_terminal_lists_the_plan_and_writes_nothing(launcher: Launc
     folder, env, origin = fresh(tmp_path)
     code, out = in_terminal([launcher.path, "init", "--repo", SLUG, "--language", "es", "--dry-run", "--json"],
                             cwd=folder, env=env)
-    envelope = json.loads(out[out.index("{"):])
+    line = next((ln for ln in out.splitlines() if ln.startswith('{"schema"')), None)  # el sobre, en una línea
+    assert line is not None, out
+    envelope = json.loads(line)
     assert code == 0 and envelope["ok"] is True, out
     plan = envelope["data"]["plan"]
     targets = {(e["kind"], e["target"]) for e in plan}
