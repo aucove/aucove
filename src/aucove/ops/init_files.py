@@ -83,6 +83,7 @@ from .. import _meta
 from ..config.datafiles import data_path, license_text
 from ..config.project import ProjectConfig, parse_project
 from ..config.roles import Roles, mode_problems, parse_roles
+from ..domain.compat import PIN_VERSION, core_range
 from ..domain.findings import Finding
 from ..domain.licenses import (
     ALL_RIGHTS_RESERVED,
@@ -123,6 +124,7 @@ __all__ = [
     "plan_files",
     "plan_generated",
     "project_name",
+    "with_base_branch",
 ]
 
 Reader = Callable[[str], bytes | None]
@@ -147,6 +149,10 @@ MAX_FINDINGS = 20  # hallazgos citados en details de E_CONFIG_INVALID
 
 _TOP_KEY = re.compile(r"(?P<key>[A-Za-z_][A-Za-z0-9_]*)[ \t]*:(?P<rest>.*)")
 _FORGE_REPO = re.compile(r"(?P<indent>[ \t]+)repo[ \t]*:(?P<rest>.*)")
+_FORGE_BASE = re.compile(r"(?P<indent>[ \t]+)base_branch[ \t]*:(?P<rest>.*)")
+# una rama que YAML lee como texto sin comillas: empieza con letra y no es un booleano ni null de YAML 1.1
+_SAFE_BRANCH = re.compile(r"[A-Za-z][A-Za-z0-9_./-]*")
+_YAML_WORDS = frozenset({"y", "yes", "n", "no", "true", "false", "on", "off", "null"})
 _PERSON = re.compile(r"(?P<head>[ \t]*-[ \t]+login:[ \t]*)(?P<login>[^\s#]+)(?P<tail>.*)")
 _OWNER = re.compile(r"(?P<head>[ \t]+owner:[ \t]*)(?P<login>[^\s#]+)(?P<tail>.*)")
 _LEAD = re.compile(r"lead:[ \t]*(?P<login>[^\s#]+)(?P<tail>.*)")
@@ -160,7 +166,6 @@ _BRANCHES = re.compile(
 )
 _SAFE_REPO = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9_.-]+")
 _SLUG_SPLIT = re.compile(r"[^a-z0-9]+")
-_VERSION = re.compile(r"(?P<major>[0-9]+)\.(?P<minor>[0-9]+)\.(?P<patch>[0-9]+)(?:(?:a|b|rc)[0-9]+)?")  # D-66
 _LATEX_SPECIAL = {
     "\\": r"\textbackslash{}",
     "{": r"\{",
@@ -463,14 +468,25 @@ def _set_forge_repo(lines: list[str], repo: str) -> None:
     lines.insert(start + 1, f"  repo: {value}")
 
 
-def core_range(version: str) -> str:
-    """``core`` de REQ-ARCH-44 para la versión instalada ``X.Y.Z`` (o una pre-release, 00-marco D-66)."""
-    found = _VERSION.fullmatch(version)
-    if found is None:
-        raise ValueError(f"versión sin la forma X.Y.Z[aN|bN|rcN]: {version!r}")
-    major, minor = int(found.group("major")), int(found.group("minor"))
-    upper = f"{major}.{minor + 1}" if major == 0 else f"{major + 1}"
-    return f">={version},<{upper}"
+def with_base_branch(data: bytes, branch: str) -> bytes:
+    """``project.yaml`` con ``forge.base_branch: <branch>``, sin perder los comentarios.
+
+    Con ``init --repo`` la base es la rama por defecto del repo vacío de la forja (00-marco D-73).
+    """
+    lines = (_text(data) or "").split("\n")
+    start = _top_index(lines, "forge")
+    if start is None:
+        raise OpError("E_CONFIG_INVALID", details={"path": PROJECT, "reason": "forge_missing"})
+    safe = _SAFE_BRANCH.fullmatch(branch) is not None and branch.lower() not in _YAML_WORDS
+    value = branch if safe else json.dumps(branch)
+    end = _block_end(lines, start)
+    for i in range(start + 1, end):
+        found = _FORGE_BASE.fullmatch(lines[i])
+        if found is not None:
+            lines[i] = f"{found.group('indent')}base_branch: {value}{_comment_of(found.group('rest'))}"
+            return _encode("\n".join(lines))
+    lines.insert(end, f"  base_branch: {value}")
+    return _encode("\n".join(lines))
 
 
 def _slug(name: str) -> str:
@@ -503,7 +519,7 @@ def _invalid(path: str, reason: str, findings: Sequence[Finding] = ()) -> OpErro
 
 def _project_text(current: str, cfg: ProjectConfig, choices: Choices) -> str:
     """``project.yaml`` con las claves que escribe ``init`` (sin tocar las demás ni los comentarios)."""
-    found = _VERSION.fullmatch(choices.core_pin)
+    found = PIN_VERSION.fullmatch(choices.core_pin)
     if found is None:  # core_pin solo admite X.Y.Z o X.Y.Z{a,b,rc}N (REQ-ARCH-45, D-66)
         raise OpError("E_CONFIG_INVALID", details={"path": PROJECT, "reason": "core_pin_version",
                                                    "version": choices.core_pin})

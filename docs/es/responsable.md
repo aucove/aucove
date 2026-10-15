@@ -39,19 +39,16 @@ shasum -a 256 acuerdo-firmado.pdf
 
 La fecha y la huella van en el renglón que trae `memory/constitution.md` en «Integridad y ética». No tienes que editarlo tú: en la entrevista del paso 6 el agente te pide las dos y llena el renglón. El primer sello del proyecto cubre ese archivo, así que queda una fecha verificable de que el acuerdo existía, sin publicarlo. Si alguien duda después, basta con calcular la huella del PDF y compararla.
 
-### 3. El repo
+### 3. El repo vacío
 
-Abre la plantilla de aucove en GitHub (`aucove/aucove-template`), pulsa «Use this template» → «Create a new repository», elige la organización, un nombre (por ejemplo `ising-diluido`) y Private. Luego clónalo en una carpeta tuya:
+En GitHub, en la organización, crea un repo **vacío**: New repository, un nombre (por ejemplo `ising-diluido`) y Private, sin README, sin `.gitignore` y sin licencia. No le agregues nada: en el paso 5, `aucove init --repo` le sube el proyecto completo desde tu computadora.
 
-```bash
-git clone https://github.com/labfe/ising-diluido.git
-cd ising-diluido
-```
+Con la 0.1.0 también podrás crear el repo desde la plantilla publicada (`aucove/aucove-template`, «Use this template»), clonarlo y correr en el paso 5 `aucove init`, sin `--repo`, dentro del clon.
 
 <details>
-<summary><b>Con la 0.1.0rc2</b>, que todavía no tiene la plantilla publicada</summary>
+<summary><b>Con la 0.1.0rc2</b>, que todavía no trae <code>init --repo</code></summary>
 
-La plantilla publicada llega con la 0.1.0. Con la 0.1.0rc2, crea en GitHub un repo vacío (New repository, Private, sin README) y súbele el render de la plantilla de este repositorio:
+Súbele al repo vacío el render de la plantilla de este repositorio:
 
 ```bash
 git clone --branch v0.1.0rc2 --depth 1 https://github.com/aucove/aucove.git aucove-fuente
@@ -63,6 +60,8 @@ git commit -s -m "Plantilla de aucove 0.1.0rc2"
 git remote add origin https://github.com/labfe/ising-diluido.git
 git push -u origin main
 ```
+
+En el paso 5, corre `aucove init`, sin `--repo`, dentro de la carpeta `ising-diluido`.
 
 </details>
 
@@ -76,30 +75,38 @@ Necesitas el token de uso diario, igual que todos ([los pasos están en Investig
 
 Como dueño de la organización, tus tokens no necesitan aprobación. Los de tu equipo sí: los apruebas en la organización, Settings → Personal access tokens → Pending requests.
 
-### 5. `aucove init`
+### 5. `aucove init --repo`
 
-Se corre una sola vez, en una terminal normal (PowerShell en Windows, Terminal en macOS), dentro de la carpeta del proyecto. No se corre dentro de tu agente, a propósito: te pide escribir confirmaciones y pegar el token de administración, y nada de eso debe pasar por la IA. Tu agente entra en el paso siguiente.
+Se corre una sola vez, en una terminal normal (PowerShell en Windows, Terminal en macOS), dentro de una carpeta vacía que será la del proyecto. No se corre dentro de tu agente, a propósito: te pide escribir confirmaciones y pegar el token de administración, y nada de eso debe pasar por la IA. Tu agente entra en el paso siguiente.
 
 ```bash
-aucove init
+mkdir ising-diluido
+cd ising-diluido
+aucove init --repo labfe/ising-diluido
 ```
+
+`init` arma en la carpeta la plantilla de la versión instalada con tus respuestas y, cuando confirmas, crea el repositorio de git y lo sube al repo vacío en un solo commit. Para subirlo, git usa tus credenciales de GitHub: si nunca has subido nada a GitHub desde esta computadora, corre antes `git ls-remote https://github.com/labfe/ising-diluido.git`, que te pide iniciar sesión, o `gh auth setup-git` si usas GitHub CLI.
+
+> [!TIP]
+> Si prefieres que tu agente te acompañe desde el principio, ábrelo en la carpeta vacía antes de este paso: puede ayudarte a instalar aucove y explicarte cada pregunta. `init` lo corres tú en una terminal aparte y, al terminar, reinicias el agente en la misma carpeta para que cargue las herramientas del proyecto y tu token.
 
 Opciones: `--language es` para no contestar el idioma, `--format none` sin LaTeX, `--disclosure open` para un proyecto abierto desde el inicio e `--individual` para un proyecto de una sola persona.
 
 Así se ve (ejemplo abreviado; lo que escribes va después de cada pregunta):
 
 ```text
-PS C:\Users\laura\investigacion\ising-diluido> aucove init
+PS C:\Users\laura\investigacion\ising-diluido> aucove init --repo labfe/ising-diluido
 Idioma del proyecto / Project language (es/en): es
 Titular del copyright (persona, grupo o institución) [Los autores de ising-diluido]: Laboratorio de Física Estadística
 Licencia de texto (manuscrito, plan.md, memoria y lo demás) [LicenseRef-AllRightsReserved]. Opciones: …: (Intro)
 Licencia de código [MIT]. Opciones: …: (Intro)
 Licencia de datos [LicenseRef-AllRightsReserved]. Opciones: …: (Intro)
 init configurará labfe/ising-diluido (perfil enforced):
+- Carpeta: C:\Users\laura\investigacion\ising-diluido está vacía; init crea ahí el proyecto y su repositorio de git, con la rama `main` y `origin` en https://github.com/labfe/ising-diluido.git.
 - Proyecto: idioma es, formato latex, apertura milestones, modo group.
 - roles.yaml: quedas (lmendez) como responsable, única persona y dueño de todas las partes; agrega a tu equipo después.
 - Licencias: texto LicenseRef-AllRightsReserved, código MIT y datos LicenseRef-AllRightsReserved; titular: Laboratorio de Física Estadística. …
-- Archivos: 6 nuevos, 31 cambiados y 2 borrados; se suben a `main` en un commit.
+- Archivos: 70 nuevos, 0 cambiados y 0 borrados; se suben a `main` en un commit.
 - GitHub: ajustes del repositorio (solo squash, con el título y el cuerpo del PR), Actions, colaboradores y etiquetas.
 - Protecciones: los rulesets de la base, de las ramas de tarea y de los workflows, y su verificación.
 - Tarea de preparación: crea y acepta «Preparar el proyecto», tuya y con todas las partes, para completar con el agente el plan, las personas y las partes.
@@ -109,9 +116,9 @@ No hay suplente en roles.yaml: tus PR no tienen quién los apruebe. Si confirmas
 Para confirmar, escribe exactamente «bypass lmendez» y pulsa Intro: bypass lmendez
 Token de administración de GitHub (permisos Administration de lectura y escritura, y Secrets y Environments de lectura; no se muestra ni se guarda): (pegas el token; no se ve)
 init en labfe/ising-diluido (perfil enforced):
-Archivos (39):
-  updated: project.yaml
-  created: LICENSE
+Archivos (70):
+  created: .gitattributes
+  created: .github/CODEOWNERS
   …
 Etiquetas creadas o actualizadas: task, state:proposed, state:expired, …
   applied: repo_settings
@@ -123,11 +130,13 @@ Pendiente:
 Antes de trabajar: cada persona activa el correo noreply de GitHub y firma el acuerdo de autoría y de apertura (00-marco D-44 y D-49).
 ```
 
-Qué dejó: GitHub configurado (protecciones, etiquetas, cuánto tiempo se guardan las pruebas y el environment `aucove-evidence` para la firma del proyecto), los archivos del proyecto en un commit y tu tarea de preparación, la #1, ya aceptada. Ahora borra el token de administración en GitHub.
+Qué dejó: la carpeta del proyecto, con su repositorio de git conectado al de GitHub, como si lo hubieras clonado; GitHub configurado (protecciones, etiquetas, cuánto tiempo se guardan las pruebas y el environment `aucove-evidence` para la firma del proyecto); los archivos del proyecto en un commit, y tu tarea de preparación, la #1, ya aceptada. Ahora borra el token de administración en GitHub.
+
+Si `init` falla antes de subir el commit, deja la carpeta vacía otra vez: corrige lo que dice el error y repítelo. Si falla después, por ejemplo al aplicar las protecciones, repite el mismo comando en la misma carpeta y retoma donde quedó. [Si algo falla](cuando-pasa.md#si-algo-falla) explica los errores más comunes.
 
 ### 6. Abre tu agente y prepara el proyecto
 
-En la misma carpeta, abre tu agente. No hay que copiar ni instalar nada más: la carpeta que clonaste ya trae lo que conecta al agente con aucove (`AGENTS.md`, `CLAUDE.md` y `.mcp.json`), y aucove ya está instalado en tu computadora.
+En la misma carpeta, abre tu agente. No hay que copiar ni instalar nada más: la carpeta que dejó `init` ya trae lo que conecta al agente con aucove (`AGENTS.md`, `CLAUDE.md` y `.mcp.json`), y aucove ya está instalado en tu computadora. Si ya tenías el agente abierto en esa carpeta, reinícialo: las herramientas del proyecto y tu token se leen al arrancar.
 
 ```bash
 claude

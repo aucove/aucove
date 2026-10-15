@@ -31,6 +31,7 @@ rulesets = "- Protecciones: los rulesets de la base, de las ramas de tarea y de 
 no_rulesets = "- Perfil advisory: la forja no permite exigir reglas; no habrá protecciones que bloqueen."
 token = "Después te pediré un token de administración de GitHub de vida corta; no se muestra ni se guarda."
 setup_task = "- Tarea de preparación: crea y acepta «{title}», tuya y con todas las partes, para completar con el agente el plan, las personas y las partes."
+fresh = "- Carpeta: {path} está vacía; init crea ahí el proyecto y su repositorio de git, con la rama `{base}` y `origin` en {url}."
 
 # Perfil advisory: las garantías que se pierden y la frase de aceptación (06-permisos §5, REQ-PERM-40).
 [init.advisory]
@@ -79,6 +80,7 @@ settings = "Ajustes del repositorio, Actions y colaboradores."
 labels = "Etiquetas del proyecto."
 rulesets = "Rulesets de la base, de las ramas de tarea y de los workflows."
 setup_task = "Crear y aceptar la tarea «{title}»."
+repository = "Crear el repositorio de git en {path}, con la rama `{base}` y `origin` en {url}."
 
 [init.regenerate]
 summary = "init --regenerate escribirá en tu árbol de trabajo de {repo}: {paths}."

@@ -23,12 +23,12 @@ message = "The installed core version does not satisfy `project.yaml: core`."
 hint = "Install the version pinned in `project.yaml: core_pin` with `uv tool install \"aucove==<core_pin>\" --constraints requirements-lock.txt`, with the `requirements-lock.txt` of that version's Release."
 
 [error.E_CONFIG_GIT_UNAVAILABLE]
-message = "Git cannot be used: it is missing, its version is too old, or the root is not a repository."
-hint = "Install git or open the cloned project."
+message = "Git cannot be used: it is missing, its version is too old, the root is not a repository, or it has no identity for the commit."
+hint = "Install git or open the cloned project; if your identity is missing, set `user.name` and `user.email` with `git config --global`."
 
 [error.E_CONFIG_REMOTE_MISMATCH]
-message = "The `origin` remote is missing or does not match the forge in `project.yaml`."
-hint = "Compare `git remote -v` with `project.yaml`."
+message = "The `origin` remote is missing or does not match the forge in `project.yaml`, or the `init --repo` repository is not empty or is not the one in `origin`."
+hint = "Compare `git remote -v` with `project.yaml`; with `init --repo`, create the repository empty, without a README."
 
 [error.E_CONFIG_BASE_NOT_DEFAULT]
 message = "The `forge.base_branch` branch in `project.yaml` is not the repository's default branch."
@@ -51,8 +51,8 @@ message = "The project key cannot be used."
 hint = "Check `details.reason`; the admin guide explains how to create, publish, rotate and store the key."
 
 [error.E_AUTH_NOT_AUTHENTICATED]
-message = "There is no forge credential."
-hint = "Sign in to the forge."
+message = "There is no forge credential, or git has none to read the `init --repo` repository."
+hint = "Sign in to the forge; with `init --repo`, git also needs your credentials: `gh auth setup-git`, or a `git ls-remote` of the repository in your terminal."
 
 [error.E_AUTH_TOKEN_INVALID]
 message = "The forge rejected the credential (401)."
@@ -92,7 +92,7 @@ hint = "Check `aucove doctor` (capability profile)."
 
 [error.E_FORGE_PUSH_REJECTED]
 message = "The forge rejected the push because of a protection, a proxy or a hook; it is not a non-fast-forward."
-hint = "Check `details.reason`; if it is `workflow_permission` (common in cloud sessions), try again with a token that includes the Workflows permission."
+hint = "Check `details.reason`: with `permission`, git does not have your GitHub credentials (`gh auth setup-git` sets them up); with `workflow_permission` (common in cloud sessions), try again with a token that includes the Workflows permission."
 
 [error.E_NET_OFFLINE]
 message = "There is no connection to the forge (DNS, connection refused or connection timeout), or `AUCOVE_OFFLINE=1` is set."
@@ -219,8 +219,8 @@ message = "The current branch is not `task/<n>`."
 hint = "Switch to your task with `aucove switch <n>`."
 
 [error.E_STATE_DIRTY_WORKTREE]
-message = "There are unsaved changes that prevent the operation."
-hint = "Save with `aucove save` and try again."
+message = "There are unsaved changes that prevent the operation, or the `init --repo` folder is not empty."
+hint = "Save with `aucove save` and try again; with `init --repo`, use an empty folder."
 
 [error.E_STATE_MERGE_CONFLICT]
 message = "There were conflicts while merging."

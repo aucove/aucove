@@ -181,6 +181,20 @@ Un secreto del repo o de la organización lo puede leer un workflow de cualquier
 </details>
 
 <details>
+<summary><code>init --repo</code> dice que la carpeta o el repo no están vacíos</summary>
+
+`init --repo` solo crea el proyecto en una carpeta vacía y para un repo de GitHub vacío, para no pisar nada. Si la carpeta tiene archivos, usa otra o vacíala; los archivos del sistema (`.DS_Store`, `Thumbs.db` y `desktop.ini`) no cuentan. Si el repo ya tiene commits, por ejemplo porque lo creaste con un README, bórralo y créalo de nuevo sin nada. Si ya tiene el proyecto, clónalo y corre `aucove init`, sin `--repo`, dentro del clon.
+
+</details>
+
+<details>
+<summary><code>init --repo</code> dice que git no tiene tus credenciales, o GitHub rechaza el push</summary>
+
+`init` sube el proyecto con las credenciales de GitHub que git ya tiene guardadas, sin pedírtelas. Si el error dice `git_credentials`, git no tiene las tuyas: corre una vez en tu terminal `git ls-remote https://github.com/<organización>/<repo>.git`, que te pide iniciar sesión, o `gh auth setup-git` si usas GitHub CLI, y repite `init`. Si GitHub rechaza el push con `permission` o con `workflow_permission`, esas credenciales no pueden subir al repo o crear workflows: inicia sesión con una cuenta o un token que sí puedan. En los dos casos `init` deja la carpeta vacía, así que basta con repetirlo.
+
+</details>
+
+<details>
 <summary>Perdiste la llave del proyecto, o te la robaron</summary>
 
 Ponle fecha de fin a la llave y crea otra: [Cambiar la llave, o anular una que te robaron](firma-del-proyecto.md#cambiar-la-llave-o-anular-una-que-te-robaron). Lo firmado y sellado antes de esa fecha sigue valiendo.

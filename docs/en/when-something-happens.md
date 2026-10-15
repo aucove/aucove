@@ -181,6 +181,20 @@ A workflow on any branch can read a secret of the repo or of the organization, s
 </details>
 
 <details>
+<summary><code>init --repo</code> says that the folder or the repo is not empty</summary>
+
+`init --repo` only creates the project in an empty folder and for an empty GitHub repo, so that it overwrites nothing. If the folder has files, use another one or empty it; system files (`.DS_Store`, `Thumbs.db` and `desktop.ini`) do not count. If the repo already has commits, for example because you created it with a README, delete it and create it again with nothing in it. If it already has the project, clone it and run `aucove init`, without `--repo`, inside the clone.
+
+</details>
+
+<details>
+<summary><code>init --repo</code> says that git does not have your credentials, or GitHub rejects the push</summary>
+
+`init` pushes the project with the GitHub credentials that git has already stored, without asking for them. If the error says `git_credentials`, git does not have yours: run `git ls-remote https://github.com/<organization>/<repo>.git` once in your terminal, which asks you to sign in, or `gh auth setup-git` if you use GitHub CLI, and run `init` again. If GitHub rejects the push with `permission` or `workflow_permission`, those credentials cannot push to the repo or create workflows: sign in with an account or a token that can. In both cases `init` leaves the folder empty, so it is enough to run it again.
+
+</details>
+
+<details>
 <summary>You lost the project key, or it was stolen</summary>
 
 Give the key an end date and create another: [Changing the key, or revoking a stolen one](project-signature.md#changing-the-key-or-revoking-a-stolen-one). What was signed and sealed before that date stays valid.

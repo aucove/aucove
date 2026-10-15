@@ -115,6 +115,8 @@ _TASK_SCHEMA: Mapping[str, object] = {"minimum": 1}
 _SECTION_ID: Mapping[str, object] = {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"}
 _PLAN_ID: Mapping[str, object] = {"type": "string", "pattern": "^(RQ|HYP|IN|OUT|METH)-[1-9][0-9]*$"}
 _LOGIN_PATTERN = "^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$"
+# forge.repo de project.schema.json, sin "." ni ".." como nombre (init --repo; 00-marco D-73)
+_REPO_PATTERN = "^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*/(?!\\.\\.?$)[A-Za-z0-9._-]{1,100}$"
 _DECISION_ID: Mapping[str, object] = {
     "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}-[1-9][0-9]*-[a-z0-9]+(-[a-z0-9]+)*$"}
 # Formas de 05 §9.17 (record_overlap_assessment) y §9.18 (note de submit_task).
@@ -181,6 +183,12 @@ def _repo_unless_check(kwargs: Mapping[str, object]) -> tuple[str, ...]:
     return () if kwargs.get("check") is True else ("repo",)
 
 
+def _init_locks(kwargs: Mapping[str, object]) -> tuple[str, ...]:
+    """``init`` toma ``repo`` (REQ-OPS-28); con ``--repo`` todavía puede no haber proyecto donde
+    guardar el candado, así que lo toma la operación si la carpeta ya es uno (00-marco D-73)."""
+    return () if kwargs.get("repo") is not None else ("repo",)
+
+
 REGISTRY: tuple[OpSpec, ...] = (
     OpSpec(
         id="doctor",
@@ -210,10 +218,12 @@ REGISTRY: tuple[OpSpec, ...] = (
             Param("disclosure", "string", choices=("private", "milestones", "open")),
             Param("individual", "boolean", default=False),
             Param("regenerate", "boolean", default=False),
+            # 00-marco D-73: el repo vacío de la forja para crear el proyecto en una carpeta vacía
+            Param("repo", "string", schema={"maxLength": 140, "pattern": _REPO_PATTERN}),
         ),
         data_def="#/$defs/data_init",
         budget_chars=6000,
-        locks=("repo",),
+        locks=_init_locks,
     ),
     OpSpec(
         id="sync-roles",

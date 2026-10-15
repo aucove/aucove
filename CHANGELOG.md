@@ -4,6 +4,18 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
+## [Unreleased]
+
+### Added
+
+- `init --repo <owner>/<repo>` creates the project in an empty folder, for an empty GitHub repository, without cloning the framework. It writes the published template of the installed version with the answers to the usual questions, creates the git repository with `origin`, and pushes it in the `init` commit after the confirmation. Before writing anything it checks that the folder is empty, that the repository has no branches and that git has the identity for the commit; if writing, committing or pushing fails, it removes what it created and leaves the folder empty again. In a folder that is already the project with that `origin`, it works like `init`, so running it again completes a run that failed after the push. With `--dry-run`, it lists the plan and writes nothing.
+- The README explains two ways to start a project, from the terminal or with the agent in a single folder; the lead guide uses `init --repo`, and the framework's `AGENTS.md` tells agents what to do when the person wants to use aucove rather than develop it.
+
+### Changed
+
+- The complete render of the template, with `CODEOWNERS`, `task.yml` and `.mcp.json`, lives in the core, and `tools/render_template.py` uses it, so the template repository and `init --repo` give the same files. The wheel carries `tools/template_vars.toml`.
+- The messages of `E_STATE_DIRTY_WORKTREE`, `E_CONFIG_REMOTE_MISMATCH`, `E_CONFIG_GIT_UNAVAILABLE` and `E_AUTH_NOT_AUTHENTICATED` cover the cases of `init --repo`, and the hint of `E_FORGE_PUSH_REJECTED` says what to do when git has no credentials to push (`permission`).
+
 ## [0.1.0rc2] - 2026-10-15
 
 Second preliminary release of `0.1.0`. It adds the project signature, so that anyone can check that a record was issued by the project and not only when it existed, and it brings what publishing `0.1.0rc1` showed: a fix in the GitHub adapter, the PyPI page, the installation commands that `doctor` suggests, and a new logo.

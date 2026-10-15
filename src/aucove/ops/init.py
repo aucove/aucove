@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """``aucove init`` (05 §9.3; 06-permisos §4 y §5; 01 §10.6 y §10.7; 00-marco D-57 y D-62).
 
-Solo humana y sin MCP (D-09). Dos caminos:
+Solo humana y sin MCP (D-09). Tres caminos:
 
 ``init --regenerate`` (01 REQ-ARCH-87)
     Exige que la versión instalada sea ``core_pin`` (``E_CONFIG_CORE_MISMATCH``), no llama a la
@@ -40,16 +40,34 @@ Solo humana y sin MCP (D-09). Dos caminos:
        ``lead`` con sus partes y le quita ``state:proposed``, que la deja aceptada. La busca
        antes por su marcador ``op`` (``id=init-setup``), así que una segunda ejecución no escribe.
 
+``init --repo <owner>/<repo>`` (00-marco D-73)
+    En la carpeta de la invocación. Si ya es la raíz de un proyecto con ese ``origin``, sigue como
+    ``init`` (con el candado ``repo``, que ``registry`` no pudo tomar sin proyecto). Si no, antes de
+    escribir nada exige que la carpeta esté vacía (salvo ``SYSTEM_FILES``), que el repo de la forja
+    no tenga ramas (``git ls-remote``) y que git tenga la identidad del commit. El árbol de partida
+    es la plantilla publicada de la versión instalada (``render.project``), con
+    ``forge.base_branch`` igual a la rama por defecto del repo, y el resto es lo de ``init``: el
+    plan, las preguntas, las confirmaciones y los pasos de la forja. El paso ``files`` escribe todo
+    el árbol, ``git init`` y ``origin``; ``push`` hace el commit y el primer push, que crea la base,
+    y deja ``origin/HEAD`` y la rama de seguimiento como un clon. Si algo de esos dos pasos falla,
+    ``_rollback`` borra lo que se creó y la carpeta queda vacía otra vez.
+
 ``data_init`` lleva cada archivo, etiqueta y protección con su acción, y ``pending_steps``,
 lo que falta hacer a mano, en el idioma del proyecto.
 """
 
 from __future__ import annotations
 
+import contextlib
+import os
+import shutil
+import stat
+import sys
 import time
-from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass, field
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from .. import _meta
@@ -64,11 +82,22 @@ from ..domain.trailers import commit_message, trailer_block
 from ..forge.base import Capabilities, ForgeAdmin, ForgeError, ForgeUnsupported, ForgeValidationError
 from ..forge.cache import CAPABILITIES_FILE
 from ..i18n import LANGS, Translator, translator
+from ..render.project import PUBLISHED_LANG, published_variables, render_project
+from ..vcs.git import Git, GitError, GitUnavailable
 from ..vcs.tree import worktree
-from .context import ForgeTarget, env_flag, testing
+from .context import ForgeTarget, env_flag, local_locks, resolve_project, testing, valid_repo
 from .doctor import github_repo
-from .gitwork import fetch_base, guard_remote, push_ref
-from .init_files import Change, Choices, FilePlan, plan_files, plan_generated, project_name
+from .gitwork import fetch_base, guard_remote, push_ref, remote_heads
+from .init_files import (
+    PROJECT,
+    Change,
+    Choices,
+    FilePlan,
+    plan_files,
+    plan_generated,
+    project_name,
+    with_base_branch,
+)
 from .protections import (
     BASE_RULESET,
     EVIDENCE_ENVIRONMENT,
@@ -98,11 +127,8 @@ from .sync_roles import check_targets, delete_file, write_file
 from .workspace import dirty
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from ..config.roles import Roles
-    from ..forge.base import ForgeAdapter, Issue
-    from ..vcs.git import Git
+    from ..forge.base import ForgeAdapter, Identity, Issue
     from .context import OpContext
 
 __all__ = ["LABELS", "OP", "REGENERATE_STEPS", "STEPS", "WRITE_GAP_S", "render_text", "run"]
@@ -118,6 +144,11 @@ PROPOSED = "state:proposed"
 _STAFF_ROLES = frozenset({"admin", "maintain", "write"})
 T = TypeVar("T")
 
+
+# init --repo (00-marco D-73): los archivos del sistema que no cuentan en una carpeta vacía, porque el
+# .gitignore de la plantilla los ignora, y cuántas entradas de la carpeta se citan en details
+SYSTEM_FILES = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
+FOLDER_SHOWN = 5
 
 ASK_TRIES = 3  # respuestas inválidas seguidas antes de E_VALIDATION_INPUT
 MAX_LICENSE_TEXT = 1024 * 1024  # texto de una licencia que da la persona (00-marco D-64)
@@ -174,22 +205,29 @@ def _check(name: str, value: object, allowed: Sequence[str]) -> None:
 
 
 def run(ctx: OpContext, *, language: object = None, format: object = None,  # noqa: A002 (flag --format, 05 §9.3)
-        disclosure: object = None, individual: object = False, regenerate: object = False) -> Result:
-    """``init`` (05 §9.3) o ``init --regenerate`` (01 REQ-ARCH-87)."""
+        disclosure: object = None, individual: object = False, regenerate: object = False,
+        repo: object = None) -> Result:
+    """``init`` (05 §9.3), ``init --repo`` (00-marco D-73) o ``init --regenerate`` (01 REQ-ARCH-87)."""
     _check("language", language, LANGS)
     _check("format", format, ("latex", "none"))
     _check("disclosure", disclosure, ("private", "milestones", "open"))
     for name, value in (("individual", individual), ("regenerate", regenerate)):
         if not isinstance(value, bool):
             raise OpError("E_VALIDATION_INPUT", details={"errors": [{"param": name, "reason": "type"}]})
+    if repo is not None and not valid_repo(repo):
+        raise OpError("E_VALIDATION_INPUT", details={"errors": [{"param": "repo", "reason": "pattern"}]})
     if regenerate:
         given = [n for n, v in (("language", language), ("format", format), ("disclosure", disclosure)) if v is not None]
         if individual:
             given.append("individual")
+        if repo is not None:
+            given.append("repo")
         if given:
             raise OpError("E_VALIDATION_INPUT",
                           details={"errors": [{"param": "regenerate", "reason": "exclusive", "with": given}]})
         return _regenerate(ctx)
+    if repo is not None:
+        return _start(ctx, str(repo), language, format, disclosure, bool(individual))  # type: ignore[arg-type]
     return _init(ctx, language, format, disclosure, bool(individual))  # type: ignore[arg-type]
 
 
@@ -387,13 +425,17 @@ def license_choices(ctx: OpContext, current: Any, repo: str, visibility: str, la
     return lic, texts, asked
 
 
-def _init(ctx: OpContext, language: str | None, fmt: str | None, disclosure: str | None, individual: bool) -> Result:
+def _init(ctx: OpContext, language: str | None, fmt: str | None, disclosure: str | None, individual: bool,
+          *, expected: str | None = None) -> Result:
+    """``init`` en el proyecto; con ``expected`` (``init --repo``), su ``origin`` tiene que ser ese repo."""
     project = ctx.project()
     assert project is not None
     root = project.root
     git = ctx.git()
     guard_remote(ctx, git)
     repo = _origin_repo(ctx, git)
+    if expected is not None and repo.casefold() != expected.casefold():
+        raise OpError("E_CONFIG_REMOTE_MISMATCH", details={"remote": "origin", "reason": "repo_mismatch"})
     tree = worktree(root, git=git)
     read, _exists = tree_reader(tree)
     current = _tree_project(read)
@@ -405,14 +447,125 @@ def _init(ctx: OpContext, language: str | None, fmt: str | None, disclosure: str
     caps = forge.capabilities(refresh=True)  # 08 REQ-FORGE-18
     if caps.default_branch != base:  # 06 REQ-PERM-24
         raise OpError("E_CONFIG_BASE_NOT_DEFAULT", details={"default_branch": caps.default_branch})
+    _require_admin(ident, caps)
+    entries = tree.entries()
+    start = _Start(root, git, repo, base, read, tuple(entries), entries)
+    return _configure(ctx, start, current, forge, ident, caps, language, fmt, disclosure, individual)
+
+
+@dataclass(frozen=True)
+class _Fresh:
+    """``init --repo`` en una carpeta vacía (00-marco D-73): la carpeta y la URL de ``origin``."""
+
+    folder: Path
+    url: str
+
+
+@dataclass(frozen=True)
+class _Start:
+    """De dónde parte ``init``: el árbol de trabajo del proyecto o, con ``fresh``, la plantilla en memoria."""
+
+    root: Path
+    git: Git
+    repo: str
+    base: str
+    read: Callable[[str], bytes | None]
+    paths: Collection[str]
+    entries: Mapping[str, Any]  # las del árbol de trabajo, para check_targets
+    fresh: _Fresh | None = None
+
+
+def _require_admin(ident: Identity, caps: Capabilities) -> None:
     if caps.viewer_permission != "admin":
         raise OpError("E_PERM_ROLE_REQUIRED", details={"login": ident.login, "required_role": ["lead"],
                                                        "permission": caps.viewer_permission})
+
+
+def _start(ctx: OpContext, repo: str, language: str | None, fmt: str | None, disclosure: str | None,
+           individual: bool) -> Result:
+    """``init --repo``: el proyecto que ya es la carpeta (con ese ``origin``) o la carpeta vacía."""
+    folder = Path(os.path.abspath(ctx.start_dir()))
+    project = resolve_project(str(folder))
+    if project is not None and project.root == folder:
+        with local_locks(ctx, ("repo",), OP):  # REQ-OPS-28: el candado que registry no tomó sin proyecto
+            return _init(ctx, language, fmt, disclosure, individual, expected=repo)
+    try:
+        names = sorted(os.listdir(folder))
+    except OSError as exc:  # no existe o no es una carpeta
+        raise OpError("E_VALIDATION_INPUT",
+                      details={"errors": [{"param": "root", "reason": "not_a_directory"}]}) from exc
+    found = [name for name in names if name not in SYSTEM_FILES]
+    if found:
+        raise OpError("E_STATE_DIRTY_WORKTREE", details={"reason": "folder_not_empty", "entries": found[:FOLDER_SHOWN]})
+    return _fresh(ctx, folder, repo, language, fmt, disclosure, individual)
+
+
+def _fresh(ctx: OpContext, folder: Path, repo: str, language: str | None, fmt: str | None,
+           disclosure: str | None, individual: bool) -> Result:
+    """``init --repo`` en una carpeta vacía: las lecturas, sin escribir nada, y la plantilla en memoria."""
+    ctx.use_project(None)  # la carpeta puede estar dentro de otro proyecto: no se lee ni se escribe en él
+    url = f"https://github.com/{repo}.git"
+    if _fake_forge(ctx):
+        forge = ctx.forge()
+        if f"{forge.repo.owner}/{forge.repo.name}".casefold() != repo.casefold():
+            raise OpError("E_CONFIG_REMOTE_MISMATCH", details={"remote": "origin", "reason": "repo_mismatch"})
+    else:
+        ctx.use_forge_target(ForgeTarget("github", repo))
+        forge = ctx.forge()
+    ident = forge.identity(refresh=True)
+    caps = forge.capabilities(refresh=True)  # 08 REQ-FORGE-18
+    _require_admin(ident, caps)
+    try:
+        git = Git(folder, env=ctx.inv.env)
+    except GitUnavailable as exc:
+        raise OpError("E_CONFIG_GIT_UNAVAILABLE") from exc
+    guard_remote(ctx, git, url)
+    heads = remote_heads(git, url)
+    if heads == "offline":
+        raise OpError("E_NET_OFFLINE")
+    if heads == "denied":
+        raise OpError("E_AUTH_NOT_AUTHENTICATED", details={"reason": "git_credentials"})
+    if heads == "present":
+        raise OpError("E_CONFIG_REMOTE_MISMATCH", details={"remote": "origin", "reason": "not_empty"})
+    if not _has_identity(git):
+        raise OpError("E_CONFIG_GIT_UNAVAILABLE", details={"reason": "identity_missing"})
+    try:
+        variables = published_variables(_meta.__version__)
+    except ValueError as exc:  # la versión instalada no tiene la forma de core_pin (00-marco D-66)
+        raise OpError("E_CONFIG_INVALID", details={"path": PROJECT, "reason": "core_pin_version",
+                                                   "version": _meta.__version__}) from exc
+    files = render_project(PUBLISHED_LANG, variables)  # la plantilla publicada de esta versión
+    current = _tree_project(files.get)
+    base = caps.default_branch
+    if current.base_branch != base:  # la base es la rama por defecto del repo vacío (05 §9.3)
+        files[PROJECT] = with_base_branch(files[PROJECT], base)
+        current = _tree_project(files.get)
+    start = _Start(folder, git, repo, base, files.get, tuple(files), files, _Fresh(folder, url))
+    return _configure(ctx, start, current, forge, ident, caps, language, fmt, disclosure, individual)
+
+
+def _has_identity(git: Git) -> bool:
+    """git tiene con qué firmar el commit de ``init``: ``git var`` da el autor y el committer."""
+    for var in ("GIT_AUTHOR_IDENT", "GIT_COMMITTER_IDENT"):
+        try:
+            proc = git.run("var", var, check=False, read=True)
+        except (GitError, GitUnavailable):
+            return False
+        if proc.returncode != 0:
+            return False
+    return True
+
+
+def _configure(ctx: OpContext, start: _Start, current: Any, forge: ForgeAdapter, ident: Identity,
+               caps: Capabilities, language: str | None, fmt: str | None, disclosure: str | None,
+               individual: bool) -> Result:
+    """Lo que comparten ``init`` e ``init --repo``: el plan, las confirmaciones y los pasos (05 §9.3)."""
+    root, git, repo, base, read, fresh = start.root, start.git, start.repo, start.base, start.read, start.fresh
     enforced = caps.profile == "enforced"
     accepting = not enforced and current.advisory_acceptance is None
     chosen_language = language or current.language
     lang = translator(chosen_language)  # type: ignore[arg-type]
-    licenses, license_texts, asked = license_choices(ctx, current, repo, caps.visibility, lang, tree.entries().keys())
+    licenses, license_texts, asked = license_choices(ctx, current, repo, caps.visibility, lang, start.paths)
     choices = Choices(
         language=chosen_language,  # type: ignore[arg-type]
         format=fmt or current.format,
@@ -428,14 +581,17 @@ def _init(ctx: OpContext, language: str | None, fmt: str | None, disclosure: str
         license_texts=license_texts,
         year=ctx.inv.now().year,
     )
-    plan = plan_files(read, tree.entries().keys(), choices, t=lang)
+    plan = plan_files(read, start.paths, choices, t=lang)
     roles = plan.roles
-    protected = caps.base_rules is not None and caps.base_rules.source != "none"
+    # con --repo la base todavía no existe: el primer push la crea, y no hay política de la base (D-08)
+    protected = fresh is None and caps.base_rules is not None and caps.base_rules.source != "none"
     if not same_login(roles.lead, ident.login):
         raise OpError("E_PERM_ROLE_REQUIRED", details={"login": ident.login, "required_role": ["lead"]})
     if protected and not same_login(ctx.base().roles.lead, ident.login):  # D-08: la política de la base
         raise OpError("E_PERM_ROLE_REQUIRED", details={"login": ident.login, "required_role": ["lead"]})
     setup = _setup_plan(forge, ident.login, read, plan)
+    if fresh is not None:  # la carpeta está vacía: todo el árbol que deja init es nuevo
+        plan = replace(plan, changes=_created(read, start.paths, plan.changes))
     st = _Run(ctx, lang, repo)
     group = plan.project.mode != "individual"
     wants_bypass = enforced and group and roles.deputy is None
@@ -445,13 +601,14 @@ def _init(ctx: OpContext, language: str | None, fmt: str | None, disclosure: str
         st.warn("W_FORGE_CAPABILITY_UNKNOWN")
     if group and roles.deputy is None:
         st.warn("W_PERM_DEPUTY_MISSING")
-    if plan.changes:
+    if plan.changes and fresh is None:
         _check_worktree(git, base, push=not protected)
-        check_targets(root, [c.path for c in plan.changes if c.action != "deleted"], tree.entries())
+        check_targets(root, [c.path for c in plan.changes if c.action != "deleted"], start.entries)
     steps = Steps(ctx, OP, STEPS, deadline_s=None)  # 05 REQ-OPS-22: init no tiene plazo
     if steps.dry_run:
-        return _dry(steps, st, plan, caps, protected, setup)
-    ctx.confirm_human(OP, repo, _summary(st, plan, caps, protected, choices, new_licenses=asked, setup=setup))
+        return _dry(steps, st, plan, caps, protected, setup, fresh)
+    ctx.confirm_human(OP, repo, _summary(st, plan, caps, protected, choices, new_licenses=asked, setup=setup,
+                                        fresh=fresh))
     if not enforced:  # 06 REQ-PERM-40: sin la frase, nada se escribe
         if not ctx.type_phrase(lang("init.advisory.table"), lang("init.advisory.phrase")):
             raise OpError("E_FORGE_CAPABILITY_MISSING", details={"profile": "advisory", "reason": "not_accepted"})
@@ -466,7 +623,8 @@ def _init(ctx: OpContext, language: str | None, fmt: str | None, disclosure: str
     if not same_login(admin.identity().login, ident.login):
         raise OpError("E_AUTH_INSUFFICIENT_SCOPE", details={"reason": "admin_token_account"})
     write = _Writer()
-    uses = template_actions(_workflows(read, tree.entries().keys(), plan.changes))
+    # con --repo, plan.changes ya es todo el árbol: los workflows de la plantilla que init borra no cuentan
+    uses = template_actions(_workflows(read, () if fresh is not None else start.paths, plan.changes))
     steps.run("repo_settings", lambda: _repo_settings(st, admin, caps, write))
     steps.run("actions", lambda: (_actions(st, admin, caps, uses, write),
                                    _evidence_environment(st, admin, caps, base, plan.project.evidence_signing.mode,
@@ -474,7 +632,11 @@ def _init(ctx: OpContext, language: str | None, fmt: str | None, disclosure: str
     steps.run("collaborators", lambda: _collaborators(st, admin, roles, ident.login, write))
     steps.run("labels", lambda: _labels(st, forge, write))
     pushed = False
-    if plan.changes:
+    if fresh is not None:
+        new = fresh
+        steps.run("files", lambda: _create_repo(new, git, plan.changes, base))
+        pushed = steps.run("push", lambda: _first_push(ctx, new, git, base, plan.changes, lang))
+    elif plan.changes:
         steps.run("files", lambda: _apply_files(root, plan.changes))
         if protected:
             steps.skip("push", "base_protected")
@@ -526,6 +688,80 @@ def _check_worktree(git: Git, base: str, *, push: bool) -> None:
         raise OpError("E_STATE_DIRTY_WORKTREE", details={"reason": "base_out_of_date"})
 
 
+def _created(read: Callable[[str], bytes | None], paths: Iterable[str], changes: Sequence[Change]) -> tuple[Change, ...]:
+    """El árbol que deja ``init`` sobre la plantilla, todo como archivos nuevos (``init --repo``)."""
+    final: dict[str, bytes] = {}
+    for rel in paths:
+        data = read(rel)
+        if data is not None:
+            final[rel] = data
+    for change in changes:
+        if change.content is None:
+            final.pop(change.path, None)
+        else:
+            final[change.path] = change.content
+    return tuple(Change(rel, "created", final[rel]) for rel in sorted(final))
+
+
+def _create_repo(fresh: _Fresh, git: Git, changes: Sequence[Change], base: str) -> None:
+    """``init --repo``: todo el árbol, el repositorio de git en la rama base y ``origin``.
+
+    Si algo falla, ``_rollback`` deja la carpeta vacía, como estaba.
+    """
+    try:
+        _apply_files(fresh.folder, changes)
+        git.run("init", "--quiet", read=False)
+        git.run("symbolic-ref", "HEAD", f"refs/heads/{base}", read=False)  # sin init -b: git < 2.28
+        git.run("remote", "add", "origin", fresh.url, read=False)
+    except BaseException:
+        _rollback(fresh.folder, changes)
+        raise
+
+
+def _first_push(ctx: OpContext, fresh: _Fresh, git: Git, base: str, changes: Sequence[Change],
+                lang: Translator) -> bool:
+    """El commit de ``init`` y el primer push, que crea la base; después, ``origin`` como en un clon.
+
+    Si el commit falla o la forja no acepta el push, ``_rollback`` deja la carpeta vacía y repetir
+    ``init --repo`` vuelve a empezar (00-marco D-73).
+    """
+    try:
+        _commit_push(git, base, changes, lang)
+    except BaseException:
+        _rollback(fresh.folder, changes)
+        raise
+    tracking = f"refs/remotes/origin/{base}"
+    git.run("update-ref", tracking, "HEAD", read=False)
+    git.run("symbolic-ref", "refs/remotes/origin/HEAD", tracking, read=False)  # la base de read_base
+    git.run("branch", f"--set-upstream-to=origin/{base}", base, read=False)
+    ctx.use_project(resolve_project(str(fresh.folder)))  # el registro de eventos ya va al proyecto nuevo
+    return True
+
+
+def _rollback(folder: Path, changes: Sequence[Change]) -> None:
+    """Deja la carpeta como estaba: sin los archivos de ``changes``, sus carpetas ni ``.git``."""
+    for change in changes:
+        with contextlib.suppress(OpError, OSError):
+            delete_file(folder, change.path)
+    _remove_dir(folder / ".git")
+
+
+def _remove_dir(path: Path) -> None:
+    """Borra ``path`` con su contenido, también los archivos de solo lectura (objetos de git en Windows)."""
+    if os.path.islink(path) or not path.is_dir():
+        return
+
+    def unlock(func: Callable[..., object], name: str, _exc: object) -> None:
+        os.chmod(name, stat.S_IWRITE)
+        func(name)
+
+    with contextlib.suppress(OSError):
+        if sys.version_info >= (3, 12):
+            shutil.rmtree(path, onexc=unlock)
+        else:
+            shutil.rmtree(path, onerror=unlock)
+
+
 def _iso(moment: datetime) -> str:
     return moment.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -548,12 +784,14 @@ def _workflows(read: Callable[[str], bytes | None], entries: Iterable[str], chan
 
 
 def _summary(st: _Run, plan: FilePlan, caps: Capabilities, protected: bool, choices: Choices, *,
-             new_licenses: bool = False, setup: _Setup | None = None) -> str:
+             new_licenses: bool = False, setup: _Setup | None = None, fresh: _Fresh | None = None) -> str:
     """El resumen de la fase 2: qué hará ``init`` y sobre qué (05 §10). Con una licencia abierta
     para ``text`` recién elegida, el aviso de 11-trazabilidad REQ-TRACE-63."""
     t = st.lang
     count = {a: sum(1 for c in plan.changes if c.action == a) for a in ("created", "updated", "deleted")}
     lines = [t("init.summary.head", repo=st.repo, profile=caps.profile)]
+    if fresh is not None:  # 00-marco D-73
+        lines.append(t("init.summary.fresh", path=str(fresh.folder), base=caps.default_branch, url=fresh.url))
     lines.append(t("init.summary.config", language=choices.language, format=choices.format,
                    disclosure=choices.disclosure, mode=plan.project.mode))
     if plan.roles_completed:
@@ -578,11 +816,15 @@ def _summary(st: _Run, plan: FilePlan, caps: Capabilities, protected: bool, choi
     return "\n".join(lines)
 
 
-def _dry(steps: Steps, st: _Run, plan: FilePlan, caps: Capabilities, protected: bool, setup: _Setup) -> Result:
+def _dry(steps: Steps, st: _Run, plan: FilePlan, caps: Capabilities, protected: bool, setup: _Setup,
+         fresh: _Fresh | None = None) -> Result:
     """``--dry-run`` (REQ-OPS-30): lo que haría, sin el token ni escrituras."""
     t = st.lang
     for change in plan.changes:
         steps.effect("file_write", change.path, t(f"init.effect.{change.action}", path=change.path))
+    if fresh is not None:  # 00-marco D-73: git init y origin
+        steps.effect("local_write", ".git", t("init.effect.repository", path=str(fresh.folder),
+                                              base=caps.default_branch, url=fresh.url))
     if plan.changes and not protected:
         steps.effect("git_commit", caps.default_branch, t("init.effect.commit", base=caps.default_branch))
         steps.effect("git_push", caps.default_branch, t("init.effect.push", base=caps.default_branch))

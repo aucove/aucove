@@ -96,6 +96,7 @@ def test_pyproject_dependencies_match_spec() -> None:
         "skills": f"{_meta.NAME}/_data/skills",
         "template": f"{_meta.NAME}/_data/template",
         "schemas": f"{_meta.NAME}/_data/schemas",
+        "tools/template_vars.toml": f"{_meta.NAME}/_data/template_vars.toml",  # init --repo (D-73)
     }
 
 

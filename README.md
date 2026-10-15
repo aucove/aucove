@@ -113,6 +113,19 @@ To verify evidence seals on your computer (`aucove evidence verify`), install it
 
 ### Getting started
 
+To start a project, the lead creates an empty repository on GitHub (without a README) and, in an empty folder on their computer, runs once:
+
+```bash
+aucove init --repo <organization>/<repo>
+```
+
+`init` writes the template there, asks for the language and the licenses, has you confirm and paste a one-day administration token, and pushes the project to GitHub with its protections. Then you open your agent in that folder. There are two ways to do it:
+
+- **From the terminal:** run `init` in PowerShell or Terminal, then open your agent in the folder.
+- **With the agent from the start, in a single folder:** open the agent in the empty folder and let it guide you, but run `init` yourself in a separate terminal, because it asks for confirmations and the token, which must not go through the AI. When it finishes, restart the agent in the same folder so it loads the project's tools and your token.
+
+With `0.1.0rc2`, which does not have `init --repo` yet, the [lead guide](docs/en/lead.md#3-the-empty-repo) explains how to push the template to the empty repo.
+
 The [user guide](docs/en/README.md) is organized by role ([en español](docs/es/README.md)):
 
 - **Researcher:** [setting up your computer and token, and a day of work with the agent](docs/en/researcher.md).
@@ -296,6 +309,19 @@ Después, reinicia la terminal y tu agente. `aucove doctor` comprueba la instala
 Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc2"`. Si aucove ya estaba instalado, el mismo comando le agrega el extra. El CI sella cada entrega sin él.
 
 ### Primeros pasos
+
+Para empezar un proyecto, el responsable crea en GitHub un repo vacío (sin README) y, en una carpeta vacía de su computadora, corre una sola vez:
+
+```bash
+aucove init --repo <organización>/<repo>
+```
+
+`init` arma ahí la plantilla, pregunta el idioma y las licencias, pide confirmar y pegar un token de administración de un día, y sube el proyecto a GitHub con sus protecciones. Después abres el agente en esa carpeta. Hay dos caminos:
+
+- **Por terminal:** corres `init` en PowerShell o en Terminal y luego abres el agente en la carpeta.
+- **Con el agente desde el principio, en una sola carpeta:** abres el agente en la carpeta vacía y te acompaña, pero `init` lo corres tú en una terminal aparte, porque pide confirmaciones y el token, que no deben pasar por la IA. Al terminar, reinicias el agente en la misma carpeta para que cargue las herramientas del proyecto y tu token.
+
+Con la `0.1.0rc2`, que todavía no trae `init --repo`, la [guía del responsable](docs/es/responsable.md#3-el-repo-vacío) explica cómo subir la plantilla al repo vacío.
 
 La [guía de uso](docs/es/README.md) va por perfil ([in English](docs/en/README.md)):
 

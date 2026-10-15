@@ -249,3 +249,17 @@ def check(installed: str, convention: str, core: str, pin: str | None) -> Compat
     if pin is not None and not same_version(installed, pin):
         return Compat(level="warning", code=None)  # dentro del rango: solo aviso
     return Compat(level="ok", code=None)
+
+
+# core_pin (01 REQ-ARCH-45; 00-marco D-66): X.Y.Z con un sufijo opcional aN, bN o rcN.
+PIN_VERSION = re.compile(r"(?P<major>[0-9]+)\.(?P<minor>[0-9]+)\.(?P<patch>[0-9]+)(?:(?:a|b|rc)[0-9]+)?")
+
+
+def core_range(version: str) -> str:
+    """``core`` de REQ-ARCH-44 para la versión instalada ``X.Y.Z`` (o una pre-release, 00-marco D-66)."""
+    found = PIN_VERSION.fullmatch(version)
+    if found is None:
+        raise ValueError(f"versión sin la forma X.Y.Z[aN|bN|rcN]: {version!r}")
+    major, minor = int(found.group("major")), int(found.group("minor"))
+    upper = f"{major}.{minor + 1}" if major == 0 else f"{major + 1}"
+    return f">={version},<{upper}"

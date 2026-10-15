@@ -48,7 +48,7 @@ aucove/                      # repositorio del framework (Apache-2.0, D-07)
 
 - **REQ-ARCH-1.** `skills/` DEBE ser el único lugar del repositorio del framework donde se escribe el contenido de un skill; ningún `SKILL.md` DEBE versionarse en otra ruta del framework.
 - **REQ-ARCH-2.** `template/` DEBE ser la única fuente del repositorio plantilla publicado; el repositorio plantilla NO DEBE editarse a mano (§2.3).
-- **REQ-ARCH-3.** `skills/`, `template/` y `schemas/` DEBEN empaquetarse dentro de la rueda en `aucove/_data/{skills,template,schemas}`, para que `init` y `validate` funcionen sin red.
+- **REQ-ARCH-3.** `skills/`, `template/` y `schemas/` DEBEN empaquetarse dentro de la rueda en `aucove/_data/{skills,template,schemas}`, y `tools/template_vars.toml` en `aucove/_data/template_vars.toml`, para que `init` (también `init --repo`, 00-marco D-73) y `validate` funcionen sin red.
 - **REQ-ARCH-4.** `deploy/` NO DEBE contener código ejecutable en v0.1; solo un `README.md` que declare el directorio reservado.
 - **REQ-ARCH-5.** `tests/` DEBE seguir la división del árbol (`unit`, `render`, `hooks`, `perf`, `contract`, `race`, `mcp`, `skills`, `e2e`, `model`, `fixtures`); los casos del coordinador DEBEN estar en `evals/coordinator/cases/` y el informe de aceptación de cada versión en `docs/acceptance/v<X.Y.Z>.md` (REQ-MVP-15). Los casos y los criterios de aceptación los define 12-mvp. Marcadores de pytest: `live` (forja real, 08-forja) y `model`.
 - **REQ-ARCH-6.** El CI del propio framework (`.github/workflows/ci.yml`) DEBE ejecutar, en Linux, macOS y Windows con Python 3.11 y con la versión más reciente soportada: pruebas unitarias, contratos de importación (§3.5), render en modo `--check` (§10), comprobaciones de i18n (§9.4) y la prueba de latencia de §7.3.
@@ -298,6 +298,7 @@ packages = ["src/aucove"]
 "skills" = "aucove/_data/skills"
 "template" = "aucove/_data/template"
 "schemas" = "aucove/_data/schemas"
+"tools/template_vars.toml" = "aucove/_data/template_vars.toml"
 
 # El sdist lleva el código, sus pruebas y las fuentes que van en la rueda, sin la
 # especificación (CC-BY-4.0) ni los archivos de gobierno del repositorio (01 §5.1).
@@ -429,7 +430,7 @@ La semántica de referencia de `domain/compat.py` es la de `packaging` en la ver
 |---|---|---|
 | `doctor` | nunca aborta: reporta el chequeo fallido con el comando exacto de §5.1 para `core_pin`, `uv tool install "aucove==<core_pin>" --constraints requirements-lock.txt`, con el `requirements-lock.txt` de esa Release (10-seguridad REQ-SEC-45) | lo reporta |
 | Solo lectura (`status`, `context`, `check-path` por CLI, `review list`, `review show`, `metrics`) | corre y agrega una advertencia (formato: 05-operaciones) | advertencia |
-| `init` sobre un repo recién creado desde la plantilla | solo exige que la convención esté soportada; reescribe `core` y `core_pin` (REQ-ARCH-44) | se ejecuta |
+| `init` sobre un repo recién creado desde la plantilla, o con `--repo` en una carpeta vacía (00-marco D-73) | solo exige que la convención esté soportada; reescribe `core` y `core_pin` (REQ-ARCH-44) | se ejecuta |
 | `validate` | falla con el código de §6.3 (en CI la versión es siempre `core_pin`) | advertencia |
 | Operaciones con efectos (`task propose`, `task accept`, `task cancel`, `claim`, `release`, `save`, `update`, `switch`, `record-assessment`, `submit`, `expire-claims`, `decision propose`, `direction propose`, `review approve`, `review request-changes`), `sync-roles`, `init --regenerate` | NO DEBEN ejecutarse: error `E_CONFIG_CORE_MISMATCH` o `E_CONFIG_CONVENTION_UNSUPPORTED`, `retryable: false`, con el comando de instalación en `hint` | se ejecutan (`init --regenerate` exige además versión == `core_pin`, §10.7) |
 | `aucove hook <evento>` | **cerrada**: todo hook que puede bloquear DEBE bloquear la acción sobre rutas del proyecto con un mensaje localizado que incluye el comando de instalación; los hooks que no bloquean (inicio de sesión) DEBEN emitir el aviso como contexto. La forma concreta la define 07-hooks | sin efecto en decisiones; `session-start` incluye una línea de aviso |
@@ -717,6 +718,7 @@ def render_skills(lang: str, project_vars: dict[str, str]) -> dict[str, bytes]:
 - **REQ-ARCH-101.** Un archivo de `template/formats/<format>/l10n/<lang>/` reemplaza, en el render de ese formato, al de la misma ruta de `template/l10n/<lang>/`. Solo reemplaza: la ruta DEBE existir en `template/l10n/<lang>/` y entrar en ese render, y `es` y `en` DEBEN traer las mismas variantes; si no, el render falla. Así la `constitution.md` del render `none` cumple 02-convencion REQ-CONV-91.
 - **REQ-ARCH-83.** `template/l10n/es/` y `template/l10n/en/` DEBEN contener el mismo conjunto de rutas, y ese conjunto NO DEBE intersectar el de `template/base/`.
 - **REQ-ARCH-84.** Los archivos binarios (según detección de UTF-8) DEBEN copiarse sin sustitución.
+- **REQ-ARCH-102.** La plantilla completa, con los generados de su `roles.yaml` (`CODEOWNERS` y `task.yml`, 00-marco D-35 j) y `.mcp.json`, DEBE armarla una sola función del núcleo, `render_project`, con los valores de `tools/template_vars.toml`. La usan `tools/render_template.py`, y con él el job `template` de `release.yml` (§2.3) y la autoprueba (00-marco D-37), e `init --repo` (00-marco D-73), que arma la plantilla publicada de la versión instalada: `en`, `latex`, y `core_pin` y `core` de esa versión (REQ-ARCH-44). Así el repositorio plantilla y `init --repo` dan los mismos archivos.
 
 ### 10.6 `init` según el idioma
 

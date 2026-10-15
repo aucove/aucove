@@ -100,3 +100,22 @@ def test_missing_rules() -> None:
     assert "required_approving_review_count" in init_op.missing_rules(solo, checks=checks, individual=False)
     no_editor = init_op.base_ruleset("main", checks=checks[:2], individual=False, bypass_id=None)["rules"]
     assert init_op.missing_rules(no_editor, checks=checks, individual=False) == [f"check:{_meta.NAME}/editor-review"]
+
+
+@pytest.mark.parametrize(("branch", "line"), [
+    ("trunk", "  base_branch: trunk"),
+    ("release/2026", "  base_branch: release/2026"),
+    ("1.0", '  base_branch: "1.0"'),  # sin comillas, YAML lo leería como número
+    ("on", '  base_branch: "on"'),  # y este, como booleano (YAML 1.1)
+])
+def test_with_base_branch_keeps_a_branch_as_text(branch: str, line: str) -> None:
+    """``init --repo``: la base es la rama por defecto del repo vacío (00-marco D-73)."""
+    from aucove.config.project import parse_project
+    from aucove.ops.init_files import with_base_branch
+
+    template = load_tool("render_template").render_files("en", fmt="latex")["project.yaml"]
+    out = with_base_branch(template, branch)
+    assert line in out.decode("utf-8").split("\n")
+    cfg, findings = parse_project(out, file="project.yaml")
+    assert cfg is not None and cfg.base_branch == branch, findings
+    assert out.count(b"\n#") == template.count(b"\n#")  # los comentarios quedan

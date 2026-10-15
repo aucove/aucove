@@ -66,6 +66,7 @@ packages = ["src/aucove"]
 "skills" = "aucove/_data/skills"
 "template" = "aucove/_data/template"
 "schemas" = "aucove/_data/schemas"
+"tools/template_vars.toml" = "aucove/_data/template_vars.toml"
 
 # El sdist lleva el código, sus pruebas y las fuentes que van en la rueda, sin la
 # especificación (CC-BY-4.0) ni los archivos de gobierno del repositorio (01 §5.1).

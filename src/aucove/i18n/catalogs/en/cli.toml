@@ -43,6 +43,7 @@ format = "Format: latex (compiled manuscript) or none (each part in Markdown)."
 disclosure = "Disclosure policy: private, milestones or open."
 individual = "Single-person project (mode: individual): PRs are merged without approval."
 regenerate = "Only regenerate the generated files in the working tree, without calling the forge."
+repo = "Create the project in this empty folder for the empty GitHub repository `<owner>/<repo>`: the template, git and `origin`."
 
 [cli.ask.init]
 language = "Idioma del proyecto / Project language (es/en): "

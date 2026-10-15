@@ -2,6 +2,10 @@
 
 Instrucciones para agentes de IA que trabajan en el repositorio del framework *aucove*. Las personas encuentran las mismas reglas, con más detalle, en [CONTRIBUTING.md](CONTRIBUTING.md). An English summary is at the end.
 
+## Si la persona quiere usar aucove
+
+Este repositorio es para desarrollar aucove. Si la persona quiere usarlo en un proyecto suyo, díselo y no sigan aquí: las reglas de abajo son para desarrollar el framework, y este clon no tiene las herramientas de un proyecto. Que instale aucove (README, «Instalación»), cree en GitHub un repo vacío y, en una carpeta vacía, corra `aucove init --repo <org>/<repo>` en una terminal, fuera del agente; después, que abra su agente en esa carpeta. Lo explica la [guía del responsable](docs/es/responsable.md).
+
 ## Commits
 
 - **No agregues `Signed-off-by`.** Solo lo agrega la persona, con `git commit -s`, después de revisar y probar el cambio (11-trazabilidad REQ-TRACE-66 y REQ-TRACE-67).
@@ -32,6 +36,7 @@ Instrucciones para agentes de IA que trabajan en el repositorio del framework *a
 
 ## English summary
 
+- If the person wants to use aucove in a project of their own, tell them and stop here: these rules are for developing the framework. They install aucove, create an empty GitHub repository, run `aucove init --repo <org>/<repo>` in an empty folder from a terminal outside the agent, and then open their agent in that folder ([lead guide](docs/en/lead.md)).
 - Never add `Signed-off-by`; only the person adds it with `git commit -s` after reviewing and testing the change.
 - Add `Assisted-by: <tool>:<model>` (for example, `Assisted-by: claude-code:claude-opus-5-5`) to every commit you write or help with, in the last paragraph and before `Signed-off-by`.
 - Never add `Co-authored-by` for an AI tool or model.

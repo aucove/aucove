@@ -31,6 +31,7 @@ rulesets = "- Protections: the rulesets of the base, the task branches and the w
 no_rulesets = "- Advisory profile: the forge cannot enforce rules; there will be no blocking protections."
 token = "Next I will ask for a short-lived GitHub administration token; it is neither shown nor stored."
 setup_task = "- Setup task: creates and accepts “{title}”, yours and with every part, to complete the plan, the people and the parts with the agent."
+fresh = "- Folder: {path} is empty; init creates the project and its git repository there, with the `{base}` branch and `origin` at {url}."
 
 # Advisory profile: the lost guarantees and the acceptance phrase (06-permisos §5, REQ-PERM-40).
 [init.advisory]
@@ -79,6 +80,7 @@ settings = "Repository settings, Actions and collaborators."
 labels = "Project labels."
 rulesets = "Rulesets of the base, the task branches and the workflows."
 setup_task = "Create and accept the task “{title}”."
+repository = "Create the git repository in {path}, with the `{base}` branch and `origin` at {url}."
 
 [init.regenerate]
 summary = "init --regenerate will write in your working tree of {repo}: {paths}."

@@ -14,7 +14,8 @@ REQ-OPS-6; 11-trazabilidad §7.2.
   f-strings no se pueden ver así: para ``finding.<código>.*`` las cubre el registro de
   marcadores (``finding_params``) de todas las reglas y de ``config``.
 - ``finding_params`` no tiene conflictos y no quedan textos ``finding.*`` huérfanos.
-- La rueda lleva ``aucove/_data/{schemas,template,skills}``, ``gitleaks.toml``,
+- La rueda lleva ``aucove/_data/{schemas,template,skills}``, ``template_vars.toml`` (00-marco D-73),
+  ``gitleaks.toml``,
   ``required-paths.json``, ``tsa-catalog.json``, el kit del árbitro de ``evidence/``
   (REQ-ARCH-3) y los textos y la lista de licencias de ``init`` (11 §7.3; 00-marco D-64).
 - ``template/base/LICENSES/`` es idéntico a ``LICENSES/`` de la raíz (11 §7.2).
@@ -407,6 +408,8 @@ def test_wheel_contains_the_packaged_data(wheel: zipfile.ZipFile) -> None:
         member = f"{data}/{name}"
         assert member in names, member
         assert wheel.read(member) == (SRC / "_data" / name).read_bytes()
+    # init --repo arma la plantilla publicada con los valores de tools/template_vars.toml (D-73)
+    assert wheel.read(f"{data}/template_vars.toml") == (REPO_ROOT / "tools" / "template_vars.toml").read_bytes()
 
 
 def test_wheel_contains_the_catalogs_and_the_entry_point(wheel: zipfile.ZipFile) -> None:

@@ -43,6 +43,7 @@ format = "Formato: latex (manuscrito compilado) o none (cada parte en Markdown).
 disclosure = "Política de apertura: private, milestones u open."
 individual = "Proyecto de una sola persona (mode: individual): los PR se integran sin aprobación."
 regenerate = "Solo vuelve a generar en el árbol de trabajo los archivos generados, sin llamar a la forja."
+repo = "Crea el proyecto en esta carpeta vacía para el repo vacío `<owner>/<repo>` de GitHub: la plantilla, git y `origin`."
 
 [cli.ask.init]
 language = "Idioma del proyecto / Project language (es/en): "

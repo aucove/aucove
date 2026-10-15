@@ -23,12 +23,12 @@ message = "La versión instalada del núcleo no satisface `project.yaml: core`."
 hint = "Instala la versión fijada en `project.yaml: core_pin` con `uv tool install \"aucove==<core_pin>\" --constraints requirements-lock.txt`, con el `requirements-lock.txt` de la Release de esa versión."
 
 [error.E_CONFIG_GIT_UNAVAILABLE]
-message = "No se puede usar git: falta, su versión es insuficiente o la raíz no es un repositorio."
-hint = "Instala git o abre el proyecto clonado."
+message = "No se puede usar git: falta, su versión es insuficiente, la raíz no es un repositorio o no tiene tu identidad para el commit."
+hint = "Instala git o abre el proyecto clonado; si falta tu identidad, configura `user.name` y `user.email` con `git config --global`."
 
 [error.E_CONFIG_REMOTE_MISMATCH]
-message = "El remoto `origin` falta o no coincide con la forja de `project.yaml`."
-hint = "Revisa `git remote -v` contra `project.yaml`."
+message = "El remoto `origin` falta o no coincide con la forja de `project.yaml`, o el repo de `init --repo` no está vacío o no es el de `origin`."
+hint = "Revisa `git remote -v` contra `project.yaml`; con `init --repo`, crea el repo vacío, sin README."
 
 [error.E_CONFIG_BASE_NOT_DEFAULT]
 message = "La rama `forge.base_branch` de `project.yaml` no es la rama por defecto del repositorio."
@@ -51,8 +51,8 @@ message = "La llave del proyecto no se puede usar."
 hint = "Revisa `details.reason`; la guía del admin explica cómo crear, publicar, rotar y guardar la llave."
 
 [error.E_AUTH_NOT_AUTHENTICATED]
-message = "No hay credencial de la forja."
-hint = "Inicia sesión en la forja."
+message = "No hay credencial de la forja, o git no tiene la suya para leer el repo de `init --repo`."
+hint = "Inicia sesión en la forja; con `init --repo`, git también necesita tus credenciales: `gh auth setup-git` o un `git ls-remote` del repo en tu terminal."
 
 [error.E_AUTH_TOKEN_INVALID]
 message = "La forja rechazó la credencial (401)."
@@ -92,7 +92,7 @@ hint = "Revisa `aucove doctor` (perfil de capacidades)."
 
 [error.E_FORGE_PUSH_REJECTED]
 message = "La forja rechazó el push por una protección, un proxy o un hook; no es un avance no rápido."
-hint = "Revisa `details.reason`; si es `workflow_permission` (frecuente en sesiones en la nube), repite con un token que incluya el permiso Workflows."
+hint = "Revisa `details.reason`: con `permission`, git no tiene tus credenciales de GitHub (`gh auth setup-git` las configura); con `workflow_permission` (frecuente en sesiones en la nube), repite con un token que incluya el permiso Workflows."
 
 [error.E_NET_OFFLINE]
 message = "No hay conexión con la forja (DNS, conexión rechazada o timeout de conexión), o está activo `AUCOVE_OFFLINE=1`."
@@ -219,8 +219,8 @@ message = "La rama actual no es `task/<n>`."
 hint = "Cambia a tu tarea con `aucove switch <n>`."
 
 [error.E_STATE_DIRTY_WORKTREE]
-message = "Hay cambios sin guardar que impiden la operación."
-hint = "Guarda con `aucove save` y repite."
+message = "Hay cambios sin guardar que impiden la operación, o la carpeta de `init --repo` no está vacía."
+hint = "Guarda con `aucove save` y repite; con `init --repo`, usa una carpeta vacía."
 
 [error.E_STATE_MERGE_CONFLICT]
 message = "Hubo conflictos al integrar."

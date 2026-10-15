@@ -16,13 +16,11 @@ Uso::
 - ``--format`` elige la variante (REQ-ARCH-100, D-43): ``latex``, por defecto, es la
   plantilla publicada; ``none`` es la de un proyecto sin manuscrito, la que ``init
   --format none`` usará en H3.
-- Renderiza ``base/`` + ``l10n/<lang>/`` con ``aucove.render.template`` (con las
+- El render es el del núcleo, ``aucove.render.project.render_project`` (01 REQ-ARCH-102), el
+  mismo que usa ``init --repo`` (00-marco D-73): ``base/`` + ``l10n/<lang>/`` (con las
   variantes de ``formats/<formato>/l10n/<lang>/``, como la constitución del render
-  ``none``) y agrega ``.github/CODEOWNERS`` y ``.github/ISSUE_TEMPLATE/task.yml`` desde el
-  ``roles.yaml`` renderizado (D-35 j), y ``.mcp.json`` (``render.mcp``, desde H3). El sha de la cabecera de CODEOWNERS se
-  calcula con ``domain.text.sha12_canonical`` sobre los bytes de ``roles.yaml``
-  que se escriben (D-35 m). ``roles.yaml`` se lee con ``yaml.safe_load``: es la
-  plantilla propia y de confianza.
+  ``none``), ``.github/CODEOWNERS`` y ``.github/ISSUE_TEMPLATE/task.yml`` desde el
+  ``roles.yaml`` renderizado (D-35 j), y ``.mcp.json`` (``render.mcp``, desde H3).
 - Sin ``--check``, escribe en ``--out``, que debe no existir o estar vacío.
   Con ``--check``, no escribe: compara el render con ``--out`` (sin su ``.git``),
   con los archivos de texto de ``--out`` pasados de CRLF a LF (REQ-ARCH-11), y
@@ -40,19 +38,15 @@ import tomllib
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-import yaml
-
-from aucove.domain.text import sha12_canonical
+from aucove.domain.compat import core_range
 from aucove.i18n import LANGS, Lang
-from aucove.ops.init_files import core_range
-from aucove.render.generated import generated_files
-from aucove.render.mcp import MCP_JSON_PATH, mcp_json
-from aucove.render.template import FORMATS, RenderError, is_text, render_template
+from aucove.render.project import ROLES_PATH, generated_from_roles, render_project
+from aucove.render.template import FORMATS, RenderError, is_text
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_TEMPLATE_DIR = REPO_ROOT / "template"
 DEFAULT_VARS = REPO_ROOT / "tools" / "template_vars.toml"
-ROLES_PATH = "roles.yaml"
+__all__ = ["ROLES_PATH", "compare", "generated_from_roles", "load_vars", "main", "render_files", "render_to"]
 
 
 def load_vars(path: Path) -> dict[str, str]:
@@ -69,54 +63,6 @@ def load_vars(path: Path) -> dict[str, str]:
     return out
 
 
-def _login_map(people: object) -> dict[str, str]:
-    """Login en minúsculas -> grafía de ``people[].login`` (03 §4)."""
-    out: dict[str, str] = {}
-    if isinstance(people, list):
-        for person in people:
-            if isinstance(person, dict) and isinstance(person.get("login"), str):
-                out.setdefault(person["login"].lower(), person["login"])
-    return out
-
-
-def generated_from_roles(roles_bytes: bytes, lang: Lang) -> dict[str, bytes]:
-    """CODEOWNERS y task.yml del ``roles.yaml`` renderizado (bytes finales)."""
-    try:
-        data = yaml.safe_load(roles_bytes.decode("utf-8"))
-    except (UnicodeDecodeError, yaml.YAMLError) as exc:
-        raise RenderError(f"{ROLES_PATH} renderizado no es YAML válido: {exc}") from exc
-    if not isinstance(data, dict):
-        raise RenderError(f"{ROLES_PATH} renderizado no es un mapa")
-    shown = _login_map(data.get("people"))
-
-    def spelled(login: object, what: str) -> str:
-        if not isinstance(login, str):
-            raise RenderError(f"{ROLES_PATH}: {what} no es un login")
-        return shown.get(login.lower(), login)
-
-    lead = spelled(data.get("lead"), "lead")
-    deputy_raw = data.get("deputy")
-    deputy = None if deputy_raw is None else spelled(deputy_raw, "deputy")
-    sections_raw = data.get("sections") or []
-    if not isinstance(sections_raw, list):
-        raise RenderError(f"{ROLES_PATH}: sections no es una lista")
-    sections: list[tuple[str, str, str]] = []
-    for entry in sections_raw:
-        if not isinstance(entry, dict):
-            raise RenderError(f"{ROLES_PATH}: sección mal formada {entry!r}")
-        section_id, title = entry.get("id"), entry.get("title")
-        if not isinstance(section_id, str) or not isinstance(title, str):
-            raise RenderError(f"{ROLES_PATH}: sección mal formada {entry!r}")
-        sections.append((section_id, title, spelled(entry.get("owner"), f"owner de {section_id}")))
-    return generated_files(
-        lead=lead,
-        deputy=deputy,
-        sections=sections,
-        source_sha12=sha12_canonical(roles_bytes),
-        lang=lang,
-    )
-
-
 def render_files(
     lang: Lang,
     *,
@@ -125,17 +71,9 @@ def render_files(
     fmt: str = "latex",
 ) -> dict[str, bytes]:
     """Ruta -> bytes del render completo (plantilla + generados) de ``format: fmt``, sin escribir nada."""
-    if lang not in LANGS:
-        raise RenderError(f"idioma no admitido: {lang!r}")
     src = DEFAULT_TEMPLATE_DIR if template_dir is None else Path(template_dir)
-    values = dict(load_vars(DEFAULT_VARS) if variables is None else variables)
-    values["language"] = lang  # la plantilla publicada va en en; --lang la reemplaza
-    files = render_template(src, lang, values, fmt=fmt)
-    roles = files.get(ROLES_PATH)
-    if roles is None:
-        raise RenderError(f"la plantilla no trae {ROLES_PATH}")
-    extra = {**generated_from_roles(roles, lang), MCP_JSON_PATH: mcp_json()}
-    return render_template(src, lang, values, extra=extra, fmt=fmt)
+    values = load_vars(DEFAULT_VARS) if variables is None else variables
+    return render_project(lang, values, template_dir=src, fmt=fmt)
 
 
 def render_to(

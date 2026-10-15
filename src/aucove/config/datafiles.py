@@ -6,7 +6,9 @@ En la rueda, ``schemas/``, ``template/`` y ``skills/`` viven en
 ``<paquete>/_data/<kind>`` por ``force-include``. En la instalación editable
 esos datos no quedan junto al código (hatch los copia fuera del paquete fuente),
 así que se buscan en la raíz del repositorio, si su ``pyproject.toml`` declara
-``name == _meta.NAME``. ``gitleaks.toml`` y ``required-paths.json`` son archivos
+``name == _meta.NAME``; lo mismo vale para ``template_vars.toml``, los valores de la plantilla
+publicada, que en el repositorio es ``tools/template_vars.toml`` (REQ-ARCH-3 y REQ-ARCH-102; 00-marco
+D-73). ``gitleaks.toml`` y ``required-paths.json`` son archivos
 reales de ``src/<paquete>/_data/`` y están en los dos casos, igual que los textos de
 licencia de ``init`` (``LICENSES/``, 11-trazabilidad §7.3; 00-marco D-64) y la lista de licencias
 de SPDX (``spdx-licenses.json``, CC0; REQ-TRACE-62).
@@ -64,6 +66,35 @@ def _data_file(name: str) -> Path:
     if not path.is_file():
         raise FileNotFoundError(f"falta el archivo de datos {name!r}")
     return path
+
+
+TEMPLATE_VARS = "template_vars.toml"
+
+
+@functools.cache
+def template_vars() -> Mapping[str, str]:
+    """Valores de los ``{{var:...}}`` de la plantilla publicada (``tools/template_vars.toml``).
+
+    En la rueda es ``_data/template_vars.toml`` (``force-include``, REQ-ARCH-3); en la instalación
+    editable, el de ``tools/`` del repositorio. ``FileNotFoundError`` si no está; ``ValueError`` si no
+    es TOML o algún valor no es texto.
+    """
+    path = _DATA_DIR / TEMPLATE_VARS
+    root = _repo_root()
+    if not path.is_file() and root is not None:
+        path = root / "tools" / TEMPLATE_VARS
+    if not path.is_file():
+        raise FileNotFoundError(f"no se encuentran los datos empaquetados {TEMPLATE_VARS!r}")
+    try:
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, tomllib.TOMLDecodeError) as exc:
+        raise ValueError(f"{TEMPLATE_VARS}: {exc}") from exc
+    values: dict[str, str] = {}
+    for key, value in data.items():
+        if not isinstance(value, str):
+            raise ValueError(f"{TEMPLATE_VARS}: el valor de {key!r} no es texto")
+        values[key] = value
+    return MappingProxyType(values)
 
 
 def gitleaks_config() -> Path:

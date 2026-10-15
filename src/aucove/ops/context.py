@@ -168,12 +168,16 @@ def testing(env: Mapping[str, str]) -> bool:
 _REPO = re.compile(r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*/[A-Za-z0-9._-]{1,100}")
 
 
+def valid_repo(value: object) -> bool:
+    """``True`` si ``value`` tiene la forma de ``forge.repo`` (``owner/name``; 03-esquemas)."""
+    return (isinstance(value, str) and len(value) <= 140 and _REPO.fullmatch(value) is not None
+            and value.rsplit("/", 1)[1] not in (".", ".."))
+
+
 def github_repository(env: Mapping[str, str]) -> str | None:
     """``GITHUB_REPOSITORY`` si tiene la forma de ``forge.repo``; si no, ``None``."""
     value = env.get("GITHUB_REPOSITORY") or ""
-    if len(value) > 140 or not _REPO.fullmatch(value) or value.rsplit("/", 1)[1] in (".", ".."):
-        return None
-    return value
+    return value if valid_repo(value) else None
 
 
 @dataclass(frozen=True)
@@ -261,7 +265,8 @@ class OpContext:
 
     # -- proyecto y lenguaje -------------------------------------------------
 
-    def _start_dir(self) -> str:
+    def start_dir(self) -> str:
+        """La carpeta de la invocación: ``--root``/``project_root`` o el directorio actual (REQ-OPS-4)."""
         root = self.inv.root
         if not root:
             return self.inv.cwd
@@ -270,11 +275,24 @@ class OpContext:
     def project(self, *, required: bool = True) -> Project | None:
         """Proyecto de ``--root``/``project_root`` o del directorio actual (REQ-OPS-4)."""
         if not self._project_done:
-            self._project = resolve_project(self._start_dir())
+            self._project = resolve_project(self.start_dir())
             self._project_done = True
         if self._project is None and required:
             raise OpError("E_CONFIG_NOT_A_PROJECT")
         return self._project
+
+    def use_project(self, project: Project | None) -> None:
+        """Fija el proyecto de esta invocación; la usa ``init --repo`` (05 §9.3; 00-marco D-73).
+
+        Con ``None``, ninguna carpeta de arriba cuenta como proyecto: la carpeta vacía puede estar
+        dentro de otro, y nada de esta invocación debe leer ni escribir en él (su git, su caché, su
+        registro de eventos ni su política). Cuando ``init`` crea el repositorio, fija el nuevo.
+        """
+        self._project = project
+        self._project_done = True
+        self._git = None
+        self._store = None
+        self._base = None
 
     def _base_language(self) -> str | None:
         if self.project(required=False) is None:

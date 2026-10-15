@@ -66,6 +66,7 @@ __all__ = [
     "merge",
     "push_ref",
     "push_task",
+    "remote_heads",
     "unmerged_paths",
     "worktree_id",
     "write_dropped",
@@ -103,12 +104,21 @@ def _is_local_url(url: str | None) -> bool:
     return "://" not in url and (os.path.isabs(url) or url.startswith((".", "/")))
 
 
-def guard_remote(ctx: OpContext, git: Git) -> None:
-    """REQ-FORGE-62: con la forja falsa, ``E_CONFIG_INVALID`` si ``origin`` no es local."""
+def guard_remote(ctx: OpContext, git: Git, url: str | None = None) -> None:
+    """REQ-FORGE-62: con la forja falsa, ``E_CONFIG_INVALID`` si ``origin`` no es local.
+
+    Con ``url`` (``init --repo``, que todavía no tiene ``origin``), se mira esa URL tal como la
+    usará git, con sus ``url.<base>.insteadOf`` (``git ls-remote --get-url``).
+    """
     env = ctx.inv.env
     if not (testing(env) and env_flag(env, "FORGE_ADAPTER") == "fake"):
         return
-    if not _is_local_url(git.remote_url("origin")):
+    if url is None:
+        target = git.remote_url("origin")
+    else:
+        proc = git.run("ls-remote", "--get-url", url, check=False)
+        target = _text(proc.stdout).strip() if proc.returncode == 0 else None
+    if not _is_local_url(target):
         raise OpError("E_CONFIG_INVALID", details={"field": "remote.origin.url", "reason": "fake_forge_remote"})
 
 
@@ -155,6 +165,27 @@ def fetch_base(git: Git, base: str) -> BaseFetch:
     if after != before:
         git.run("update-ref", tracking, after, read=False)
     return BaseFetch(False, before, after)
+
+
+RemoteHeads = Literal["empty", "present", "offline", "denied"]
+
+
+def remote_heads(git: Git, url: str) -> RemoteHeads:
+    """Si el repo de ``url`` tiene ramas (``git ls-remote --heads``); no hace falta un repositorio local.
+
+    Lo pregunta ``init --repo`` antes de escribir nada (00-marco D-73): ``offline`` es la red, y
+    ``denied``, que git no pudo leerlo, casi siempre por credenciales (la forja ya lo leyó).
+    """
+    if git.offline:
+        return "offline"
+    try:
+        proc = git.run("ls-remote", "--heads", url, check=False, timeout_s=FETCH_TIMEOUT_S, extra_env=_C)
+    except (GitError, GitUnavailable):
+        return "offline"
+    if proc.returncode == 0:
+        return "present" if _text(proc.stdout).strip() else "empty"
+    low = _text(proc.stderr).lower()
+    return "offline" if any(h in low for h in _NETWORK) else "denied"
 
 
 TaskFetch = Literal["ok", "missing", "offline"]

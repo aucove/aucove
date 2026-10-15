@@ -43,7 +43,7 @@ La v0.1 especifica lo necesario para construir y pilotear el **MVP en modo míni
 
 ## 3. Notas de diseño
 
-Cada nota resume una decisión de diseño: qué se decidió y por qué. Su identificador (D-01 a D-69 y DC-01 a DC-25) es estable: los capítulos, el código y las pruebas lo citan. Son tan normativas como los capítulos; si una nota y un capítulo difieren, el capítulo se corrige. Una nota reemplazada queda en una línea que remite a la que la reemplaza.
+Cada nota resume una decisión de diseño: qué se decidió y por qué. Su identificador (D-01 a D-73 y DC-01 a DC-25) es estable: los capítulos, el código y las pruebas lo citan. Son tan normativas como los capítulos; si una nota y un capítulo difieren, el capítulo se corrige. Una nota reemplazada queda en una línea que remite a la que la reemplaza.
 
 ### 3.1 Núcleo y distribución
 
@@ -197,6 +197,8 @@ Cada nota resume una decisión de diseño: qué se decidió y por qué. Su ident
 
 **D-38. Matriz del CI del framework.** Mientras el framework vivió en el alpha privado, los PR corrieron Ubuntu con Python 3.11 y 3.14 y Windows con 3.11, y macOS y la compilación TeX solo a mano (`workflow_dispatch`), porque en un repo privado los minutos de macOS y de Windows cuentan varias veces contra la cuota incluida (09-ci §9). (p) El repo público corre la matriz completa de REQ-ARCH-6, REQ-MVP-21 y T1 y T4 de 12-mvp §3.1.
 
+**D-73. `init` desde una carpeta vacía.** Preparar un proyecto no debe exigir clonar el repositorio del framework ni abrir el agente en dos carpetas. Con `aucove init --repo <owner>/<repo>` en una carpeta vacía, y el repo creado vacío en la forja (sin README), `init` hace lo mismo que crear el repo desde la plantilla y correr `init` en su clon (05-operaciones §9.3): arma en memoria la plantilla publicada de la versión instalada (01-arquitectura REQ-ARCH-102) y le aplica el mismo plan de archivos. Tras la confirmación, escribe el resultado, crea el repositorio de git en la rama base con `origin` en `https://github.com/<owner>/<repo>.git` y lo sube en el commit de `init`. (1) **Nunca sobrescribe:** antes de escribir nada comprueba que la carpeta está vacía, que el repo de la forja no tiene ramas y que git tiene la identidad del commit. Si falla al escribir, al hacer el commit o al subirlo, borra lo que creó, y la carpeta vuelve a quedar vacía. (2) **Idempotencia (A13):** con `--repo` en una carpeta que ya es el proyecto con ese `origin`, `init` sigue el camino de siempre; así, una corrida que falló después de subir los archivos se completa al repetirla. (3) **Sigue siendo solo humana (D-09):** la plantilla se genera solo dentro de `init`, así que los agentes no ganan ninguna capacidad. (4) **Un solo render:** `tools/render_template.py`, y con él el job `template` de `release.yml`, usa el mismo código del núcleo que `init --repo`, así que dan los mismos archivos; la rueda lleva también `tools/template_vars.toml` (REQ-ARCH-3). (5) El repositorio plantilla publicado sigue como alternativa desde la web. No agrega operaciones ni códigos de error: `init` suma el parámetro `--repo`, y sus negativas usan códigos que ya existían, con un `details.reason` nuevo. Entró en H3 con el cambio de alcance de 12-mvp REQ-MVP-11 (Issue 11 del repositorio del framework), porque desbloquea las pruebas con personas de A12, A1 (c) y A2 (b) (REQ-MVP-13). Por DC-24, la especificación sigue en 0.1.
+
 **DC-04. Nombres de códigos de error.** Prevalece el catálogo de 05-operaciones §12.1 (por ejemplo, `E_PERM_LEAD_ONLY_PATH`, `E_PERM_SECTION_NOT_OWNED`, `E_PERM_GENERATED_PATH`, `E_CONFIG_POLICY_UNAVAILABLE` y `E_STATE_NOT_ON_TASK_BRANCH`).
 
 **DC-05. Códigos de error y de hallazgo.** Los códigos de error de operación (catálogo cerrado de 05 §12.1) son distintos de los códigos de hallazgo (`findings[].code`, catálogo abierto por capítulo; §5.11).
@@ -263,7 +265,7 @@ Cada nota resume una decisión de diseño: qué se decidió y por qué. Su ident
 
 | Término (es) | Identificador | Definición |
 |---|---|---|
-| Proyecto (de investigación) | `project` | Repositorio creado desde la plantilla que reúne los resultados de las partes y, con `format: latex`, un manuscrito. |
+| Proyecto (de investigación) | `project` | Repositorio creado desde la plantilla (en la web o con `init --repo`, D-73) que reúne los resultados de las partes y, con `format: latex`, un manuscrito. |
 | Responsable | `lead` | Persona que dirige el proyecto, aprueba e integra, y es dueña de los archivos de clase `lead`. Hay exactamente una. |
 | Suplente | `deputy` | Persona opcional que puede aprobar los PR del responsable y reemplazarlo en revisiones. |
 | Editor del artículo | `editor` | Con `format: latex`, persona que cuida que el artículo se lea como un solo texto: es dueña de los archivos de clase `editor`, escribe la guía del artículo y los enlaces entre partes, pide cambios a los dueños y aprueba los PR que tocan el LaTeX. Si no se declara, lo es el responsable (D-56). |
@@ -398,7 +400,7 @@ H = operación solo humana (D-09): no se expone por MCP y en la CLI exige TTY y 
 | CLI | Herramienta MCP | Actor | H | v0.1 |
 |---|---|---|---|---|
 | `aucove doctor` | `check_environment` | cualquiera | | sí |
-| `aucove init` (incluye `init --regenerate`) | — | `lead` | H | sí |
+| `aucove init` (incluye `init --regenerate` e `init --repo`) | — | `lead` | H | sí |
 | `aucove sync-roles` | — | `lead` / `deputy` | | sí |
 | `aucove validate` | `validate_project` | cualquiera / CI | | sí |
 | `aucove status` | `get_status` | cualquiera | | sí |
