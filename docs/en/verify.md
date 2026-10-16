@@ -20,7 +20,7 @@ The signature proves that the record was issued by whoever holds the project key
 
 ## With aucove
 
-It is the fastest way. Install it with the `evidence` extra ([Installation](../../README.md#installation)) and download the list of keys, `keys.yaml`, from the group's public repo or from its Zenodo record. Then:
+It is the fastest way. Install it with the `evidence` extra ([Install aucove](../../README.md#4-install-aucove)) and download the list of keys, `keys.yaml`, from the group's public repo or from its Zenodo record. Then:
 
 ```bash
 aucove evidence verify integration-3f2a…/ --keys keys.yaml

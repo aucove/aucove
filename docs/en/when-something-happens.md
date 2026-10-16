@@ -137,9 +137,23 @@ An arbitrator checks, without installing the project, that a file is exactly the
 <details>
 <summary><code>aucove doctor</code> says there is no token, or that GitHub rejected it</summary>
 
-The token is missing, expired or was deleted. Create a new one with the steps in [Your GitHub token](researcher.md#your-github-token), put it in `GH_TOKEN` and reopen the terminal and your agent.
+The token is missing, expired or was deleted. Create a new one and store it in `GH_TOKEN`, with [steps 5 and 6 of the initial setup](../../README.md#5-create-your-github-token), and reopen the terminal and your agent.
 
 </details>
+
+<details>
+<summary>Your terminal sees the token, but your agent does not</summary>
+
+In a new terminal, the check in [step 6](../../README.md#6-store-the-token-in-gh_token) says "GH_TOKEN ready", but `aucove doctor`, run by your agent, says there is no token. Your agent's app was opened before you stored the token, or it stayed open in the background:
+
+1. Quit the app completely: Claude Desktop from its icon in the system tray (on macOS, Claude → Quit Claude); VS Code by closing all its windows.
+2. Open it again and start a new session in the project folder.
+3. Ask the agent to run `aucove doctor`.
+
+On macOS, Claude Desktop opened from the Dock does not take your variables from `~/.zshrc`, even after a restart: store the token in its local environment editor, as [step 6](../../README.md#6-store-the-token-in-gh_token) says. Open VS Code with `code .` from Terminal.
+
+</details>
+
 
 <details>
 <summary>The token is new, but GitHub says you do not have permission</summary>
@@ -216,7 +230,7 @@ A workflow on any branch can read a secret of the repo or of the organization, s
 <details>
 <summary><code>init --repo</code> says that git does not have your identity</summary>
 
-git needs your name and email for the `init` commit, and it does not have them for your account: perhaps you set them only inside another repo. Set them with your `noreply` address ([step 2 of Researcher](researcher.md#2-install-git-your-agent-and-aucove)) and run `init` again: the folder is still empty.
+git needs your name and email for the `init` commit, and it does not have them for your account: perhaps you set them only inside another repo. Set them with your `noreply` address ([step 3 of the initial setup](../../README.md#3-git-and-your-identity)) and run `init` again: the folder is still empty.
 
 </details>
 

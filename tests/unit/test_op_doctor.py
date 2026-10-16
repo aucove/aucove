@@ -109,8 +109,11 @@ def expected_files(roles_text: str, lang: str = "es") -> dict[str, bytes]:
     )
 
 
-def new_repo(tmp: Path, *, roles: str = "basic", extra: Mapping[str, str | bytes] | None = None, github: bool = True) -> GitRepo:
+def new_repo(tmp: Path, *, roles: str = "basic", extra: Mapping[str, str | bytes] | None = None, github: bool = True,
+             date: str | None = None) -> GitRepo:
     env = isolated_git_env(tmp / "git-env")
+    if date is not None:  # la fecha del commit raíz, el que creó el proyecto
+        env.update({"GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date})
     path, origin = tmp / "repo", tmp / "origin.git"
     path.mkdir(parents=True)
     repo = GitRepo(path, origin, env)
@@ -1018,6 +1021,15 @@ def test_without_a_recent_expire_claims_run_it_warns(tmp_path: Path, repo: GitRe
     forge.clock.advance(timedelta(days=3, hours=1))
     stale = checks_of(run_op(repo.path, env_for(tmp_path, repo.env), forge=forge))["half_states"]
     assert stale["status"] == "warn" and stale["message"] == t("doctor.half_states.warn_expire_stale", base="main", days=3)
+
+
+def test_a_new_project_without_an_expire_claims_run_is_ok(tmp_path: Path) -> None:
+    """09-ci REQ-CI-31: en los primeros 2 días del proyecto, expire-claims todavía no tuvo ocasión de correr."""
+    t = translator("es")
+    young = new_repo(tmp_path / "nuevo", date="2026-10-08T12:00:00+00:00")  # un día antes del reloj del falso
+    check = checks_of(run_op(young.path, env_for(tmp_path, young.env), forge=fake_forge(applied=False)))["half_states"]
+    assert check["status"] == "ok", check
+    assert str(check["message"]).endswith(t("doctor.half_states.ok_expire_new", base="main"))
 
 
 def test_a_recent_expire_claims_run_and_no_half_states_is_ok(tmp_path: Path, repo: GitRepo) -> None:

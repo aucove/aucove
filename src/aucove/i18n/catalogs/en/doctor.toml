@@ -164,6 +164,7 @@ skip_unreadable = "This token cannot see the merge settings: write access to the
 ok = "Your tasks have no half-finished states."
 ok_expire = "`expire-claims` ran successfully on `{base}` in the last 2 days."
 warn = "Half-finished states (task, anomaly → operation that closes it): {items}."
+ok_expire_new = "`expire-claims` has not run on `{base}` yet: that is normal in the first two days of the project, because it runs once a day."
 warn_expire_never = "`expire-claims` has no successful run on `{base}`: claims do not expire."
 warn_expire_stale = "The last successful run of `expire-claims` on `{base}` was {days} days ago: claims do not expire (on public repositories, GitHub disables scheduled workflows after 60 days without activity)."
 fix = "Repeat the given operation on that task (`{name} claim <n>`, `{name} release <n>` or `{name} submit` from its branch); what `expire-claims` gives is repaired by that workflow on its next run."

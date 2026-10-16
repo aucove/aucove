@@ -137,9 +137,23 @@ Un árbitro comprueba, sin instalar el proyecto, que un archivo es exactamente e
 <details>
 <summary><code>aucove doctor</code> dice que no hay token, o que GitHub lo rechazó</summary>
 
-Falta el token, venció o se borró. Crea uno nuevo con los pasos de [Tu token de GitHub](investigador.md#tu-token-de-github), déjalo en `GH_TOKEN` y vuelve a abrir la terminal y tu agente.
+Falta el token, venció o se borró. Crea uno nuevo y guárdalo en `GH_TOKEN`, con los [pasos 5 y 6 de la configuración inicial](../../README.md#5-crea-tu-token-de-github), y vuelve a abrir la terminal y tu agente.
 
 </details>
+
+<details>
+<summary>Tu terminal ve el token, pero tu agente no</summary>
+
+En una terminal nueva, la comprobación del [paso 6](../../README.md#6-guarda-el-token-en-gh_token) dice «GH_TOKEN lista», pero `aucove doctor`, corrido por tu agente, dice que no hay token. La app de tu agente se abrió antes de que guardaras el token, o siguió abierta en segundo plano:
+
+1. Cierra la app del todo: a Claude Desktop, desde su ícono en la bandeja del sistema (en macOS, Claude → Quit Claude); a VS Code, cerrando todas sus ventanas.
+2. Ábrela otra vez y abre una sesión nueva en la carpeta del proyecto.
+3. Pídele al agente que corra `aucove doctor`.
+
+En macOS, Claude Desktop abierto desde el Dock no toma tus variables de `~/.zshrc`, aunque la reinicies: guarda el token en su editor de entorno local, como dice el [paso 6](../../README.md#6-guarda-el-token-en-gh_token). A VS Code, ábrelo con `code .` desde Terminal.
+
+</details>
+
 
 <details>
 <summary>El token es nuevo, pero GitHub responde que no tienes permiso</summary>
@@ -216,7 +230,7 @@ Un secreto del repo o de la organización lo puede leer un workflow de cualquier
 <details>
 <summary><code>init --repo</code> dice que git no tiene tu identidad</summary>
 
-git necesita tu nombre y tu correo para el commit de `init`, y no los tiene para tu cuenta: quizá solo los configuraste dentro de otro repo. Configúralos con tu dirección `noreply` ([paso 2 de Investigador](investigador.md#2-instala-git-tu-agente-y-aucove)) y repite `init`: la carpeta sigue vacía.
+git necesita tu nombre y tu correo para el commit de `init`, y no los tiene para tu cuenta: quizá solo los configuraste dentro de otro repo. Configúralos con tu dirección `noreply` ([paso 3 de la configuración inicial](../../README.md#3-git-y-tu-identidad)) y repite `init`: la carpeta sigue vacía.
 
 </details>
 

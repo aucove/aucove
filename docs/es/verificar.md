@@ -20,7 +20,7 @@ La firma prueba que el registro lo emitió quien tiene la llave del proyecto. No
 
 ## Con aucove
 
-Es lo más rápido. Instálalo con el extra `evidence` ([Instalación](../../README.md#instalación)) y baja del repo público del grupo, o de su registro en Zenodo, la lista de llaves `keys.yaml`. Después:
+Es lo más rápido. Instálalo con el extra `evidence` ([Instala aucove](../../README.md#4-instala-aucove)) y baja del repo público del grupo, o de su registro en Zenodo, la lista de llaves `keys.yaml`. Después:
 
 ```bash
 aucove evidence verify integration-3f2a…/ --keys keys.yaml

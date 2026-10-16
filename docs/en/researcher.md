@@ -11,41 +11,20 @@ What you do: set up your computer once and, after that, talk with your agent.
 
 You do this once. There are two ways to work:
 
-- **On your computer.** This is the usual way. You install git, your agent and aucove, create your GitHub token, clone the project repo and open the agent in that folder. Whatever the agent runs, such as your analysis scripts, runs on your computer and with your data. These are the five steps below.
-- **From the browser.** You go to claude.ai/code and pick the project repo. The session installs aucove by itself, so you install nothing and create no token. Whatever the agent runs, runs on a cloud machine that only sees the repo. You need a Claude plan that includes Claude Code on the web (Pro, Max or Team; on Enterprise, a seat with Claude Code), and the lead must have installed the Claude app on the repo.
+- **On your computer.** This is the usual way. Follow the README's [initial setup](../../README.md#initial-setup) as a researcher: you accept the invitation, install git and aucove, create your token, clone the project and open your agent in that folder. Whatever the agent runs, such as your analysis scripts, runs on your computer and with your data. If you would rather have your agent with you, use [Setting up aucove with your agent](setup-with-your-agent.md).
+- **From the browser.** You go to claude.ai/code and pick the project repo. The session installs aucove by itself, so you install nothing and create no token: steps 1 and 2 of the initial setup are enough. Whatever the agent runs, runs on a cloud machine that only sees the repo. You need a Claude plan that includes Claude Code on the web (Pro, Max or Team; on Enterprise, a seat with Claude Code), and the lead must have installed the Claude app on the repo.
 
 The difference is in [How it works › Where the code runs](how-it-works.md#where-the-code-runs).
 
-### 1. Accept the invitation and protect your email
+### Your first session
 
-GitHub emails you the invitation to the group's organization: accept it. Then, on GitHub, go to Settings → Emails and check "Keep my email addresses private". That page shows your `noreply` address, of the form `<number>+<your-username>@users.noreply.github.com`: write it down for step 2. That way your personal email does not end up in the project history.
-
-### 2. Install git, your agent and aucove
-
-git and your AI agent (for example Claude Code, Codex, Gemini CLI or GitHub Copilot) install like any other program. Then tell git who you are, with your name and the `noreply` address from step 1, which git puts in every commit:
+Open your agent in the project folder:
 
 ```bash
-git config --global user.name "Your Name"
-git config --global user.email "<number>+<your-username>@users.noreply.github.com"
+claude
 ```
 
-aucove installs in two steps, first uv and then aucove, with commands that pin the exact version and its dependencies: they are in the [installation section of the README](../../README.md#installation). **Run them in a terminal opened from the Start menu, not from your agent's app:** on Windows, whatever is installed from Claude Desktop stays in a separate copy that only that app sees. Then close and reopen the terminal and your agent (quit Claude Desktop from its icon in the system tray) and ask the agent to run `aucove --version`: it must show the README's version.
-
-### 3. Create your GitHub token
-
-It is the key aucove uses to work on GitHub on your behalf. The steps are in [Your GitHub token](#your-github-token), below.
-
-### 4. Clone the project repo and check
-
-Choose a folder of yours, clone the group's repo there (not the aucove repo) and ask aucove to check that everything is ready.
-
-```bash
-git clone https://github.com/labfe/ising-diluido.git
-cd ising-diluido
-aucove doctor
-```
-
-This is what it looks like (abridged):
+Or your agent's command, such as `codex`, `copilot` or `gemini`; or open the folder in your editor, or pick it in the Code tab of Claude Desktop. Ask it to run `aucove doctor`. When everything is ready, it looks like this (abridged):
 
 ```text
 PS C:\Users\dramirez\research\ising-diluido> aucove doctor
@@ -54,39 +33,7 @@ Core 0.1.0 · C:\Users\dramirez\research\ising-diluido · profile enforced
 …
 ```
 
-If something is missing, each line says what and how to fix it, for example "[failed] identity: There is no forge token…" with the link to create it.
-
-### 5. Open your agent in that folder
-
-```bash
-claude
-```
-
-Or your agent's command, such as `codex`, `copilot` or `gemini`; or open the folder in your editor, or pick it in the Code tab of Claude Desktop. The first time you type `/start`, the agent gives you a short welcome: your parts, your tasks and how the work goes.
-
-## Your GitHub token
-
-You do this once, and again when it expires. It is a key you give aucove so it can act on GitHub on your behalf: create your task branch, save your work and open your submission. Everyone who works from their computer creates one; whoever works on the web does not need it. It is limited to the project repo and to just the permissions it needs.
-
-1. Open the GitHub form with the permissions already checked (`aucove doctor` also gives you this link). Replace `<org>` and `<repo>` with those of your project:
-
-   ```text
-   https://github.com/settings/personal-access-tokens/new?name=aucove-<repo>&description=aucove+(<repo>)&target_name=<org>&expires_in=30&contents=write&issues=write&pull_requests=write&actions=read&statuses=read
-   ```
-
-   By hand: on GitHub, Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token.
-2. Under **Resource owner**, choose the project's organization. Under **Expiration**, 30 days (90 at most).
-3. Under **Repository access**, choose "Only select repositories" and check only the project repo. The link cannot choose it for you.
-4. Check the repository permissions: **Contents**, **Issues** and **Pull requests** on "Read and write"; **Actions** and **Commit statuses** on "Read". **Metadata** stays on "Read" only. Do not add any other.
-5. Press **Generate token** and copy the token, which starts with `github_pat_`. Keep it in your password manager: GitHub will not show it again.
-6. If the organization requires approving tokens (the usual case), yours stays pending until the lead approves it.
-7. Put it where aucove looks for it, in one of these two ways:
-   - **The `GH_TOKEN` environment variable.** On Windows, search for "environment variables" in the Start menu, open "Edit environment variables for your account" and create a new one named `GH_TOKEN` with the token as its value. On macOS or Linux, add `export GH_TOKEN="github_pat_…"` at the end of `~/.zshrc` (or `~/.bashrc`) with a text editor. Close and reopen the terminal and your agent.
-   - **With GitHub CLI**, which keeps it in the system keychain: run `gh auth login`, choose GitHub.com and HTTPS, then "Paste an authentication token", and paste the token.
-8. Check with `aucove doctor` in the project folder: it should say "fine-grained token" and "this repository only".
-
-> [!WARNING]
-> Never paste the token into the chat with your agent or into a project file. If it leaks, delete it on GitHub (Settings → Developer settings → Fine-grained tokens) and create another. When it expires, `aucove doctor` warns you and you repeat these steps. Your agent runs with your permissions and could in principle read it: that is why the token is limited to a single repo and has no administration permissions.
+If something is missing, each line says what and how to fix it, for example "[failed] identity: There is no forge token…" with the link to create it. Then, the first time you type `/start`, the agent gives you a short welcome: your parts, your tasks and how the work goes.
 
 ## A day of work in physics
 

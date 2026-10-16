@@ -9,13 +9,9 @@ You set up the project once and, every week, you review what the others submit.
 
 ## Setting up the project
 
-You do this once, in eight steps and in this order. The first five happen on GitHub and in the terminal; from the sixth on, you work with your agent.
+You do this once. First, as the lead, the README's [initial setup](../../README.md#initial-setup): your account, the organization, the empty repo, git, aucove, your tokens and the project, which you create with `aucove init --repo`. If you would rather have your agent with you, use [Setting up aucove with your agent](setup-with-your-agent.md). Then come these five steps, in order.
 
-### 1. The space on GitHub
-
-Create an organization for the group (on GitHub: your photo → Your organizations → New organization) and invite each person as a member (People → Invite member). For GitHub to enforce the rules on a private repo you need GitHub Team, which is free for teachers and researchers through GitHub Education. A public repo works with GitHub Free.
-
-### 2. The authorship agreement
+### 1. The authorship agreement
 
 It is an ordinary document, a PDF or a Word file, that the group drafts and signs before starting. It is not an aucove file and it does not live in the repository, because it carries signatures and personal data: it is kept wherever the group keeps its documents, for example the institution's shared folder. It sets:
 
@@ -37,48 +33,13 @@ Get-FileHash .\signed-agreement.pdf -Algorithm SHA256
 shasum -a 256 signed-agreement.pdf
 ```
 
-The date and the fingerprint go into the line that `memory/constitution.md` has under "Integrity and ethics". You do not have to edit it yourself: in the interview of step 6 the agent asks you for both and fills in the line. The project's first seal covers that file, so there is a verifiable date showing the agreement existed, without publishing it. If anyone has doubts later, it is enough to compute the PDF's fingerprint and compare.
+The date and the fingerprint go into the line that `memory/constitution.md` has under "Integrity and ethics". You do not have to edit it yourself: in the interview of step 3 the agent asks you for both and fills in the line. The project's first seal covers that file, so there is a verifiable date showing the agreement existed, without publishing it. If anyone has doubts later, it is enough to compute the PDF's fingerprint and compare.
 
-### 3. The empty repo
+### 2. What `aucove init --repo` does
 
-On GitHub, in the organization, create an **empty** repo: New repository, a name (for example `ising-diluido`) and Private, with no README, no `.gitignore` and no license. Do not add anything to it: in step 5, `aucove init --repo` pushes the whole project to it from your computer.
+`init` runs only once, in [step 7 of the initial setup](../../README.md#7-the-project-on-your-computer), inside an empty folder that becomes the project folder. It runs in a regular terminal (PowerShell on Windows, Terminal on macOS) or in the Terminal panel of Claude Desktop, and not through your agent, on purpose: it asks you to type confirmations and paste the administration token, and none of that should go through the AI.
 
-With 0.1.0 you will also be able to create the repo from the published template (`aucove/aucove-template`, "Use this template"), clone it and run `aucove init`, without `--repo`, inside the clone in step 5.
-
-### 4. Your computer and your two tokens
-
-First get your computer ready like anyone on the team, with [steps 1 and 2 of Researcher](researcher.md#before-the-first-day): the `noreply` email, git with your name and that email, your agent and aucove. `init` makes the first commit with that identity and, if git does not have it, stops without writing anything.
-
-You need the everyday token, like everyone else ([the steps are in Researcher](researcher.md#your-github-token)). For `init` you also need an administration token, used only that day:
-
-- the same form, with the **Administration** permission on "Read and write", and **Secrets** and **Environments** on "Read-only", in addition to the others, and an expiration of 1 day;
-- do not keep it in `GH_TOKEN`: you paste it when `init` asks for it, and it is neither shown nor stored;
-- when `init` is done, delete it on GitHub.
-
-As the organization owner, your tokens need no approval. Your team's do: you approve them in the organization, Settings → Personal access tokens → Pending requests.
-
-### 5. `aucove init --repo`
-
-It runs only once, in a regular terminal (PowerShell on Windows, Terminal on macOS), inside an empty folder that becomes the project folder. It does not run inside your agent, on purpose: it asks you to type confirmations and paste the administration token, and none of that should go through the AI. Your agent comes in at the next step.
-
-```bash
-mkdir ising-diluido
-cd ising-diluido
-aucove init --repo labfe/ising-diluido
-```
-
-`init` writes the template of the installed version in the folder, with your answers, and when you confirm, it creates the git repository and pushes it to the empty repo in a single commit. To push, git uses your GitHub credentials: if you have never pushed anything to GitHub from this computer, first run `git ls-remote https://github.com/labfe/ising-diluido.git`, which asks you to sign in, or `gh auth setup-git` if you use GitHub CLI.
-
-Before running it, check it without writing anything:
-
-```bash
-aucove init --repo labfe/ising-diluido --dry-run
-```
-
-It checks your token, that the repo is empty and that git has your identity and can read the repo, and shows what it would do.
-
-> [!TIP]
-> If you would rather have your agent with you from the start, open it in the empty folder before this step: it can check with you that everything is ready and explain each question. Do not install aucove from the app or ask the agent to write anything in the folder, because it does not have the project's rules yet. You run `init` yourself, in a separate terminal or in the Terminal panel of Claude Desktop, and, when it finishes, you restart the agent in the same folder so it loads the project's tools and your token.
+`init` writes the template of the installed version in the folder, with your answers, and when you confirm, it creates the git repository and pushes it to the empty repo in a single commit. To push, git uses your GitHub credentials: if you have never pushed anything to GitHub from this computer, first run `git ls-remote https://github.com/labfe/ising-diluido.git`, which asks you to sign in, or `gh auth setup-git` if you use GitHub CLI. Before that, `aucove init --repo labfe/ising-diluido --dry-run` checks everything without writing anything.
 
 Options: `--language en` to skip the language question, `--format none` for no LaTeX, `--disclosure open` for a project open from the start, and `--individual` for a one-person project.
 
@@ -122,9 +83,11 @@ What it left behind: the project folder, with its git repository connected to th
 
 If `init` fails before pushing the commit, it leaves the folder empty again: fix what the error says and run it again. If it fails later, for example while applying the protections, run the same command again in the same folder and it picks up where it stopped. [If something fails](when-something-happens.md#if-something-fails) covers the most common errors.
 
-### 6. Open your agent and prepare the project
+With 0.1.0 you will also be able to create the repo from the published template (`aucove/aucove-template`, "Use this template"), clone it and run `aucove init`, without `--repo`, inside the clone.
 
-In the same folder, open your agent. There is nothing else to copy or install: the folder that `init` left already carries what connects the agent to aucove (`AGENTS.md`, `CLAUDE.md` and `.mcp.json`), and aucove is already installed on your computer. If your agent was already open in that folder, restart it: the project's tools and your token are read at startup.
+### 3. Open your agent and prepare the project
+
+In the same folder, open your agent. There is nothing else to copy or install: the folder that `init` left already carries what connects the agent to aucove (`AGENTS.md`, `CLAUDE.md` and `.mcp.json`), and aucove is already installed on your computer. If your agent was already open in that folder, open another session in it: the project's tools and your token are read when each session starts. You only need to restart the app if you created or changed `GH_TOKEN` after opening it.
 
 ```bash
 claude
@@ -168,7 +131,7 @@ When it starts, the agent receives the "Setup pending" notice and offers to prep
 
 Laura did not need to know keys such as `account_type` or `data_policy`: the agent translated her answers. After the submission, she reviews the changes on GitHub and merges them with "Squash and merge"; while there is no deputy, GitHub lets her merge her own submission through the bypass she confirmed in `init`.
 
-### 7. The first tasks
+### 4. The first tasks
 
 > **Laura:** Propose the first tasks from the plan.
 >
@@ -194,9 +157,9 @@ You are about to accept task #2 “Method: Wolff and disorder averages”: the `
 To confirm, type exactly "accept 2" and press Enter: accept 2
 ```
 
-### 8. Tell your team
+### 5. Tell your team
 
-Check that each person accepted the invitation to the organization and send them the [researcher guide](researcher.md): install, create their token, clone and open their agent. Approve their tokens when they show up in Pending requests. If someone will work from the browser, install the Claude app for GitHub on the repo.
+Check that each person accepted the invitation to the organization and send them the [initial setup](../../README.md#initial-setup), their steps as a researcher, or [Setting up aucove with your agent](setup-with-your-agent.md), if they would rather do it with their agent: your agent can draft the message. Approve their tokens when they show up in the organization: **Settings** → **Personal access tokens** → **Pending requests**. If someone will work from the browser, install the Claude app for GitHub on the repo.
 
 When you are done, set up the [project signature](project-signature.md), which takes about 15 minutes: with it, whoever reviews the work from outside can check that your project issued each record, not only when it existed.
 
@@ -204,7 +167,7 @@ When you are done, set up the [project signature](project-signature.md), which t
 
 - **Review submissions.** In your agent, `/reviews` summarizes each submission for you: what changed, the session note, the checks and the clash warnings. Then, on GitHub, open the submission under Pull requests, look at the "Files changed" tab and the link to the PDF that CI left, press "Review changes" → "Approve" and, finally, "Squash and merge". If something is not right, choose "Request changes" with a comment and the person fixes it in the same submission. The expected turnaround is 72 hours.
 - **Nobody approves their own work.** Your submissions are approved by the deputy.
-- **Accept tasks.** Anyone can propose tasks. You or the deputy accept them as in step 7.
+- **Accept tasks.** Anyone can propose tasks. You or the deputy accept them as in step 4.
 - **Decisions and direction.** `/decision` records a group decision; a decision is never deleted, it is replaced by another one. `/direction` proposes a change to the plan; if you accept it, you edit `plan.md` in a task of yours.
 - **If the project uses LaTeX.** Someone makes sure the paper reads as a single text: the editor, who is you unless the group names someone else. Their approval is needed on submissions that touch LaTeX, and `/edit-article` helps them find repetitions, gaps and inconsistent notation.
 

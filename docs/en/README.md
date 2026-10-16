@@ -8,7 +8,8 @@ What each person in a research team that works with AI on a shared repository do
 | Page | For whom | What you will find |
 |---|---|---|
 | [How it works](how-it-works.md) | Everyone | Tasks, submissions and approvals; how the pieces fit together; where the code runs |
-| [Researcher](researcher.md) | Whoever works on their parts | Setting up your computer and your token; a day of work with the agent |
+| [Setting up with your agent](setup-with-your-agent.md) | Everyone, if they want their agent with them | The messages you paste at each step of the initial setup |
+| [Researcher](researcher.md) | Whoever works on their parts | Before the first day; a day of work with the agent |
 | [Lead](lead.md) | Whoever coordinates the project | Setting up the project once; reviewing submissions every week; the board |
 | [Publish and safeguard](publish-and-safeguard.md) | The lead, when a stage closes | Keeping the evidence outside GitHub and publishing with a DOI |
 | [The project signature](project-signature.md) | Whoever administers the repo, once | Creating the project key, keeping it and publishing it; changing it |
@@ -16,6 +17,6 @@ What each person in a research team that works with AI on a shared repository do
 | [When something happens](when-something-happens.md) | Everyone, when needed | Clashes, expired tasks, data, tokens and failures |
 | [Four teams](examples.md) | Everyone | How each of four example teams set up its project |
 
-Installation is in the [README](../../README.md#installation). The [v0.1 specification](../../spec/), in Spanish, is the normative authority: if this guide and the specification disagree, the specification wins.
+The initial setup, from your GitHub account to opening your agent in the project, is in the [README](../../README.md#initial-setup). The [v0.1 specification](../../spec/), in Spanish, is the normative authority: if this guide and the specification disagree, the specification wins.
 
 Versión en español: [docs/es](../es/README.md).

@@ -4,7 +4,7 @@ Instrucciones para agentes de IA que trabajan en el repositorio del framework *a
 
 ## Si la persona quiere usar aucove
 
-Este repositorio es para desarrollar aucove. Si la persona quiere usarlo en un proyecto suyo, díselo y no sigan aquí: las reglas de abajo son para desarrollar el framework, y este clon no tiene las herramientas de un proyecto. Que instale aucove desde una terminal abierta desde el menú Inicio, no desde la app del agente (README, «Instalación»), cree en GitHub un repo vacío y, en una carpeta vacía, corra `aucove init --repo <org>/<repo>` en una terminal, fuera del agente; después, que abra su agente en esa carpeta. Lo explica la [guía del responsable](docs/es/responsable.md).
+Este repositorio es para desarrollar aucove. Si la persona quiere usarlo en un proyecto suyo, díselo: las reglas de abajo son para desarrollar el framework, y este clon no tiene las herramientas de un proyecto. Puedes acompañarla con la configuración inicial del README, sin escribir nada en este repositorio, como dice [Configurar aucove con tu agente](docs/es/configurar-con-agente.md): pregúntale si es responsable o investigador y en qué paso va, y antes de cada paso, si ya lo hizo. No instales nada, no cambies la configuración de git ni corras `aucove init`: eso lo hace ella en una terminal abierta desde el menú Inicio, no desde la app del agente, y con la carpeta del proyecto fuera de este clon. Nunca le pidas su token.
 
 ## Commits
 
@@ -36,7 +36,7 @@ Este repositorio es para desarrollar aucove. Si la persona quiere usarlo en un p
 
 ## English summary
 
-- If the person wants to use aucove in a project of their own, tell them and stop here: these rules are for developing the framework. They install aucove from a terminal opened from the Start menu, not from the agent's app, create an empty GitHub repository, run `aucove init --repo <org>/<repo>` in an empty folder from a terminal outside the agent, and then open their agent in that folder ([lead guide](docs/en/lead.md)).
+- If the person wants to use aucove in a project of their own, tell them: these rules are for developing the framework. You can walk them through the README's "Initial setup" without writing anything in this repository, as [Setting up aucove with your agent](docs/en/setup-with-your-agent.md) describes: ask whether they are the lead or a researcher and which step they are on, and before each step whether they already did it. Do not install anything, change the git configuration or run `aucove init`: they do that in a terminal opened from the Start menu, not from the agent's app, with the project folder outside this clone. Never ask for their token.
 - Never add `Signed-off-by`; only the person adds it with `git commit -s` after reviewing and testing the change.
 - Add `Assisted-by: <tool>:<model>` (for example, `Assisted-by: claude-code:claude-opus-5-5`) to every commit you write or help with, in the last paragraph and before `Signed-off-by`.
 - Never add `Co-authored-by` for an AI tool or model.

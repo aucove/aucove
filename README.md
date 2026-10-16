@@ -67,11 +67,64 @@ Your agent opens in the project folder, a clone of the group's repository, and c
 - **Data stays where it belongs.** Raw data never enters the repository, and the lead sets what the AI may see depending on how sensitive the data is.
 - **LaTeX is optional.** With LaTeX, CI builds the PDF of every submission; without it, the project works in Markdown.
 
-### Installation
+### Initial setup
 
-Install it once per computer, in two steps: first [uv](https://docs.astral.sh/uv/), the tool that installs it, and then aucove itself, in its exact version and with the dependencies pinned in the `requirements-lock.txt` of its Release (01-arquitectura §5.1).
+Each person does this once, in this order: first GitHub, then your computer and finally your agent. Each step says who does it:
 
-**1. uv.** Skip this step if `uv --version` already works in your terminal.
+| Step | Lead: creates the project and administers the organization | Researcher: joins a project |
+|---|---|---|
+| [1. Your account and private email](#1-your-github-account-and-private-email) | Yes | Yes |
+| [2. The organization and the repo](#2-the-organization-and-the-empty-repo) | Creates them | Accepts the invitation |
+| [3. git and your identity](#3-git-and-your-identity) | Yes | Yes |
+| [4. aucove](#4-install-aucove) | Yes | Yes |
+| [5. Your GitHub token](#5-create-your-github-token) | Yes | Yes |
+| [6. The token in `GH_TOKEN`](#6-store-the-token-in-gh_token) | Yes | Yes |
+| [7. The project on your computer](#7-the-project-on-your-computer) | Creates it with `aucove init --repo` | Clones it |
+| [8. Your agent](#8-open-your-agent-in-the-project) | Yes | Yes |
+
+The deputy and the article editor set up as researchers. If you will only work from the browser (claude.ai/code), steps 1 and 2 are enough ([Researcher](docs/en/researcher.md#before-the-first-day)). If you would rather have your agent with you at every step, use [Setting up aucove with your agent](docs/en/setup-with-your-agent.md), which has the messages you paste to it.
+
+#### 1. Your GitHub account and private email
+
+If you do not have an account, create one at [github.com/signup](https://github.com/signup). Then:
+
+1. On GitHub, click your photo, at the top right, and go to **Settings** → **Emails**.
+2. Check **Keep my email addresses private**.
+3. Copy the address shown on that page, of the form `<number>+<your-username>@users.noreply.github.com`. You use it in step 3, so that your personal email does not end up in the project history.
+
+#### 2. The organization and the empty repo
+
+**Researcher:** accept the invitation to the organization that GitHub emails you and go on to step 3.
+
+**Lead:** you create the group's space and the project repo, in this order.
+
+1. **The organization.** Click your photo → **Your organizations** → **New organization**, choose the plan, give it a name, for example `labfe`, and complete the form.
+2. **Your team.** In the organization, go to **People** → **Invite member** and type each person's GitHub username. You can do it now or when you finish.
+3. **The empty repo.** In the organization, go to **Repositories** → **New repository**. Type the name, for example `ising-diluido`, and choose **Private**. Do not add a README, a `.gitignore` or a license, and click **Create repository**. It must stay empty: in step 7, `aucove init --repo` pushes the whole project to it.
+
+> [!NOTE]
+> On a private repo, GitHub only enforces the project's rules with the Team plan, which is free for teachers and researchers through [GitHub Education](https://education.github.com/): you request it from its dashboard ("Upgrade your academic organizations"), not from the billing page. With the Free plan, a private repo works, but GitHub blocks nothing: anyone can merge without approval and red checks only warn. A public repo gets the full rules with the Free plan.
+
+#### 3. git and your identity
+
+1. Install git. On Windows, with the installer from [git-scm.com](https://git-scm.com/downloads) and its default options, which include the credential manager that remembers your GitHub sign-in. On macOS, with `xcode-select --install`; on Linux, with your system's package manager.
+2. Open a new terminal (PowerShell on Windows, Terminal on macOS) and tell git who you are, with your name and the `noreply` address from step 1:
+
+   ```bash
+   git config --global user.name "Your Name"
+   git config --global user.email "<number>+<your-username>@users.noreply.github.com"
+   ```
+
+   git puts that name and email in every commit. To check, `git config --global user.email` must show the `noreply` address.
+
+#### 4. Install aucove
+
+> [!IMPORTANT]
+> Install and update aucove only from a terminal opened from the Start menu (or Terminal on macOS), never from inside your agent's app. On Windows, whatever is installed from inside Claude Desktop, by the agent or from its Terminal panel, stays in a private copy that only that app sees and that hides the one you install outside.
+
+Install it once per computer, in two parts: first [uv](https://docs.astral.sh/uv/), the tool that installs it, and then aucove itself, in its exact version and with the dependencies pinned in the `requirements-lock.txt` of its Release (01-arquitectura §5.1).
+
+**1. uv.** Skip this part if `uv --version` already works in your terminal.
 
 On Windows, in PowerShell 5.1 or 7:
 
@@ -107,29 +160,127 @@ UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc3" --constraints "$LOCK"
 uv tool update-shell
 ```
 
-Then restart the terminal and your agent; quit Claude Desktop from its icon in the system tray, not just its window. `aucove doctor` checks the installation, the GitHub token and the project, and says what to fix.
-
-> [!IMPORTANT]
-> Install and update aucove only from a terminal opened from the Start menu (or Terminal on macOS), never from inside your agent's app. On Windows, whatever is installed from inside Claude Desktop, by the agent or from its Terminal panel, stays in a private copy that only that app sees and that hides the one you install outside. Then ask your agent to run `aucove --version`: it must show the same version as your terminal. If it does not, see [If something fails](docs/en/when-something-happens.md#if-something-fails).
+Close the terminal, open a new one and check with `aucove --version`: it must show the version in these commands. If your agent was already open, close it and open it again; quit Claude Desktop from its icon in the system tray, not just its window. If your agent sees a different version than your terminal, see [If something fails](docs/en/when-something-happens.md#if-something-fails).
 
 To verify evidence seals on your computer (`aucove evidence verify`), install it with the `evidence` extra: in the `uv tool install` command, write `"aucove[evidence]==0.1.0rc3"`. If aucove is already installed, the same command adds the extra. CI seals every submission without it.
 
-### Getting started
+#### 5. Create your GitHub token
 
-To start a project, the lead creates an empty repository on GitHub (without a README) and, in an empty folder on their computer, runs once:
+It is the key aucove uses to work on GitHub on your behalf: it creates your task branch, saves your work and opens your submission. It only works on the project repo, with just the permissions it needs, and it expires in 30 days.
 
-```bash
-aucove init --repo <organization>/<repo>
+1. Open this link, which fills in the GitHub form with those permissions. First replace `<org>` and `<repo>` with those of your project, for example `labfe` and `ising-diluido`:
+
+   ```text
+   https://github.com/settings/personal-access-tokens/new?name=aucove-<repo>&description=aucove+(<repo>)&target_name=<org>&expires_in=30&contents=write&issues=write&pull_requests=write&actions=read&statuses=read
+   ```
+
+2. Check that **Resource owner** is the project's organization.
+3. Under **Repository access**, choose **Only select repositories** and check the project repo. It is the only thing the link cannot choose for you.
+4. The permissions must be **Contents**, **Issues** and **Pull requests** on "Read and write", and **Actions**, **Commit statuses** and **Metadata** on "Read-only". Do not add any other.
+5. Click **Generate token** and copy the token, which starts with `github_pat_`. Keep it in your password manager: GitHub will not show it again.
+
+If you are a researcher and the organization requires approving tokens, the usual case, yours stays pending until the lead approves it. The organization owner's tokens need no approval.
+
+> [!WARNING]
+> Never paste the token into the chat with your agent or into a project file. If it leaks, delete it on GitHub (your photo → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**) and create another. Your agent runs with your permissions and could in principle read it: that is why the token is limited to a single repo and has no administration permissions. If you do not want it on your computer, work from the browser (claude.ai/code), where you do not need it.
+
+#### 6. Store the token in `GH_TOKEN`
+
+aucove looks for your token in the `GH_TOKEN` environment variable. Store it with your system's command, in a terminal opened from the Start menu (or Terminal on macOS). The command asks you to paste the token, which is not shown as you paste it and does not stay in the history.
+
+On Windows, in PowerShell:
+
+```powershell
+$t = Read-Host "Paste your token and press Enter" -AsSecureString
+[Environment]::SetEnvironmentVariable("GH_TOKEN", [Net.NetworkCredential]::new("", $t).Password, "User")
 ```
 
-Before that, `aucove init --repo <organization>/<repo> --dry-run` checks your token, that the repo is empty and git, without writing anything. `init` writes the template there, asks for the language and the licenses, has you confirm and paste a one-day administration token, and pushes the project to GitHub with its protections. Then you open your agent in that folder. There are two ways to do it:
+On macOS, in Terminal:
 
-- **From the terminal:** run `init` in PowerShell or Terminal, then open your agent in the folder.
-- **With the agent from the start, in a single folder:** open the agent in the empty folder and let it guide you, but do not ask it to write anything in the folder before `init`, because it does not have the project's rules yet. Run `init` yourself, in a separate terminal or in the Terminal panel of Claude Desktop, because it asks for confirmations and the token, which must not go through the AI. When it finishes, restart the agent in the same folder so it loads the project's tools and your token.
+```bash
+read -rs "t?Paste your token and press Enter: " && echo "export GH_TOKEN=$t" >> ~/.zshrc; unset t; echo
+```
+
+On Linux, in bash:
+
+```bash
+read -rsp "Paste your token and press Enter: " t && echo "export GH_TOKEN=$t" >> ~/.bashrc; unset t; echo
+```
+
+If on Windows you would rather use windows: search for "environment variables" in the Start menu, open "Edit environment variables for your account" and, under "User variables", click **New…**, with the name `GH_TOKEN` and the token as its value.
+
+Then:
+
+1. **Close everything and open it again:** the terminals, your editor and your agent's app. Only what you open after storing the token sees it. Quit Claude Desktop from its icon in the system tray (on macOS, Claude → Quit Claude), not just its window.
+2. **Check** in a new terminal, without showing the token. In PowerShell:
+
+   ```powershell
+   if ($env:GH_TOKEN) { "GH_TOKEN ready" } else { "GH_TOKEN missing" }
+   ```
+
+   On macOS or Linux:
+
+   ```bash
+   [ -n "$GH_TOKEN" ] && echo "GH_TOKEN ready" || echo "GH_TOKEN missing"
+   ```
+
+On macOS, Claude Desktop opened from the Dock takes the PATH from `~/.zshrc`, but not `GH_TOKEN`. If you use it, also store the token in the app: in the box where you type, open the environment menu, hover over **Local**, click the gear icon and add `GH_TOKEN` with the token as its value; the app stores it encrypted on your computer. Agents you open from Terminal, such as `claude`, and VS Code opened with `code .` from Terminal do see it.
+
+When the token expires, `aucove doctor` warns you and gives you the link of step 5 already filled in: create another one and repeat this step, and the new one replaces the old one.
+
+#### 7. The project on your computer
+
+**Researcher:** wait until the lead tells you the project is ready. Then, in a terminal, clone it into a folder of yours and check it:
+
+```bash
+git clone https://github.com/<organization>/<repo>.git
+cd <repo>
+aucove doctor
+```
+
+The first time, git asks you to sign in to GitHub in the browser. `aucove doctor` checks the installation, your token and the project, and each line says what is missing and how to fix it. If GitHub rejects your token, the lead may not have approved it yet.
+
+**Lead:** you create the project with `aucove init --repo`, in a terminal opened from the Start menu or in the Terminal panel of Claude Desktop, never through the agent: it asks you for typed confirmations and an administration token, and none of that should go through the AI.
+
+1. **Create the administration token**, which is used only today. Open this link, with `<org>` and `<repo>` replaced as in step 5:
+
+   ```text
+   https://github.com/settings/personal-access-tokens/new?name=aucove-<repo>-init&description=aucove+init+(<repo>)&target_name=<org>&expires_in=1&contents=write&issues=write&pull_requests=write&actions=read&statuses=read&administration=write&secrets=read&environments=read
+   ```
+
+   As in step 5, choose **Only select repositories** and check the repo. Check that, besides the permissions of step 5, **Administration** is on "Read and write" and **Secrets** and **Environments** on "Read-only", and that it expires in 1 day. Click **Generate token** and copy it, but do not store it in `GH_TOKEN`: you paste it when `init` asks for it.
+2. **Create an empty folder and check everything**, without writing anything yet:
+
+   ```bash
+   mkdir ising-diluido
+   cd ising-diluido
+   aucove init --repo labfe/ising-diluido --dry-run
+   ```
+
+   It checks your everyday token, that the repo is empty and that git has your identity and can read the repo. If git asks you to sign in to GitHub, do it. If something is missing, the message says what to fix.
+3. **Create the project:**
+
+   ```bash
+   aucove init --repo labfe/ising-diluido
+   ```
+
+   It asks for the language and the licenses (Enter accepts what is in brackets), asks you to confirm by typing what it shows and to paste the administration token, and pushes the project to GitHub with its protections. The [lead guide](docs/en/lead.md#2-what-aucove-init---repo-does) shows each question and what to do if it fails.
+4. **Delete the administration token:** on GitHub, your photo → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**; open it and click **Delete**.
+
+#### 8. Open your agent in the project
+
+Open your agent in the project folder: with `claude` (or `codex`, `gemini`, `copilot`) in a terminal inside the folder, or by picking it in the Code tab of Claude Desktop or in your editor. The folder already carries what connects the agent to aucove: there is nothing else to install.
+
+Ask it to run `aucove doctor`. It must say `[ok] identity`, with your username and a fine-grained token from `GH_TOKEN`. If it says there is no token, even though your terminal sees it (step 6), the app was opened before you stored it: quit it completely and open it again. On macOS, Claude Desktop also needs the token in its environment editor (step 6). In a freshly created project other warnings show up too, such as the missing deputy; the lead guide takes care of them.
+
+What comes next: the lead prepares the project with their agent in task #1 ([lead guide](docs/en/lead.md#3-open-your-agent-and-prepare-the-project)) and tells the team; the researcher starts working ([researcher guide](docs/en/researcher.md)).
+
+### The user guide
 
 The [user guide](docs/en/README.md) is organized by role ([en español](docs/es/README.md)):
 
-- **Researcher:** [setting up your computer and token, and a day of work with the agent](docs/en/researcher.md).
+- **With your agent from the start:** [the messages to set up aucove with it](docs/en/setup-with-your-agent.md).
+- **Researcher:** [a day of work with the agent](docs/en/researcher.md).
 - **Lead:** [setting up the project once and reviewing submissions every week](docs/en/lead.md).
 - **When a stage closes:** [safeguarding the evidence and publishing](docs/en/publish-and-safeguard.md).
 - **Whoever administers the repo:** [the project signature, set up once](docs/en/project-signature.md).
@@ -265,11 +416,64 @@ Tu agente se abre en la carpeta del proyecto, que es un clon del repo del grupo,
 - **Los datos en su lugar.** Los datos crudos nunca entran al repo, y el responsable fija qué puede ver la IA según qué tan sensibles son.
 - **LaTeX opcional.** Con LaTeX, el CI compila el PDF de cada entrega; sin LaTeX, el proyecto trabaja en Markdown.
 
-### Instalación
+### Configuración inicial
 
-aucove se instala una vez por computadora, en dos pasos: primero [uv](https://docs.astral.sh/uv/), la herramienta que lo instala, y después aucove, en su versión exacta y con las dependencias fijadas en el `requirements-lock.txt` de su Release (01-arquitectura §5.1).
+Se hace una vez por persona, en este orden: primero GitHub, después tu computadora y al final tu agente. Cada paso dice quién lo hace:
 
-**1. uv.** Sáltate este paso si `uv --version` ya funciona en tu terminal.
+| Paso | Responsable: crea el proyecto y administra la organización | Investigador: se une a un proyecto |
+|---|---|---|
+| [1. Tu cuenta y tu correo privado](#1-tu-cuenta-de-github-y-tu-correo-privado) | Sí | Sí |
+| [2. La organización y el repo](#2-la-organización-y-el-repo-vacío) | Los crea | Acepta la invitación |
+| [3. git y tu identidad](#3-git-y-tu-identidad) | Sí | Sí |
+| [4. aucove](#4-instala-aucove) | Sí | Sí |
+| [5. Tu token de GitHub](#5-crea-tu-token-de-github) | Sí | Sí |
+| [6. El token en `GH_TOKEN`](#6-guarda-el-token-en-gh_token) | Sí | Sí |
+| [7. El proyecto en tu computadora](#7-el-proyecto-en-tu-computadora) | Lo crea con `aucove init --repo` | Lo clona |
+| [8. Tu agente](#8-abre-tu-agente-en-el-proyecto) | Sí | Sí |
+
+El suplente y el editor del artículo se configuran como investigadores. Si solo vas a trabajar desde el navegador (claude.ai/code), te bastan los pasos 1 y 2 ([Investigador](docs/es/investigador.md#antes-del-primer-día)). Si prefieres que tu agente te acompañe en cada paso, usa [Configurar aucove con tu agente](docs/es/configurar-con-agente.md), que trae los mensajes que le pegas.
+
+#### 1. Tu cuenta de GitHub y tu correo privado
+
+Si no tienes cuenta, créala en [github.com/signup](https://github.com/signup). Después:
+
+1. En GitHub, pulsa tu foto, arriba a la derecha, y entra a **Settings** → **Emails**.
+2. Marca **Keep my email addresses private**.
+3. Copia la dirección que aparece en esa página, de la forma `<número>+<tu-usuario>@users.noreply.github.com`. La usas en el paso 3, para que tu correo personal no quede en la historia del proyecto.
+
+#### 2. La organización y el repo vacío
+
+**Investigador:** acepta la invitación a la organización que GitHub te manda por correo y sigue en el paso 3.
+
+**Responsable:** creas el espacio del grupo y el repo del proyecto, en este orden.
+
+1. **La organización.** Pulsa tu foto → **Your organizations** → **New organization**, elige el plan, ponle un nombre, por ejemplo `labfe`, y completa el formulario.
+2. **Tu equipo.** En la organización, entra a **People** → **Invite member** y escribe el usuario de GitHub de cada persona. Puedes hacerlo ahora o al terminar.
+3. **El repo vacío.** En la organización, entra a **Repositories** → **New repository**. Escribe el nombre, por ejemplo `ising-diluido`, y elige **Private**. No agregues README, `.gitignore` ni licencia, y pulsa **Create repository**. Tiene que quedar vacío: en el paso 7, `aucove init --repo` le sube el proyecto completo.
+
+> [!NOTE]
+> En un repo privado, GitHub solo hace cumplir las reglas del proyecto con el plan Team, que es gratis para docentes e investigadores con [GitHub Education](https://education.github.com/): se pide desde su panel («Upgrade your academic organizations»), no desde la página de facturación. Con el plan Free, el repo privado funciona, pero GitHub no bloquea nada: se puede integrar sin aprobación y los checks en rojo solo avisan. Un repo público tiene las reglas completas con el plan Free.
+
+#### 3. git y tu identidad
+
+1. Instala git. En Windows, con el instalador de [git-scm.com](https://git-scm.com/downloads) y sus opciones por defecto, que incluyen el administrador de credenciales que recuerda tu sesión de GitHub. En macOS, con `xcode-select --install`; en Linux, con el gestor de paquetes de tu sistema.
+2. Abre una terminal nueva (PowerShell en Windows, Terminal en macOS) y dile a git quién eres, con tu nombre y la dirección `noreply` del paso 1:
+
+   ```bash
+   git config --global user.name "Tu Nombre"
+   git config --global user.email "<número>+<tu-usuario>@users.noreply.github.com"
+   ```
+
+   git pone ese nombre y ese correo en cada commit. Para comprobarlo, `git config --global user.email` debe mostrar la dirección `noreply`.
+
+#### 4. Instala aucove
+
+> [!IMPORTANT]
+> Instala y actualiza aucove solo desde una terminal abierta desde el menú Inicio (o Terminal en macOS), nunca desde la app de tu agente. En Windows, lo que se instala desde Claude Desktop, sea el agente o su panel Terminal, queda en una copia privada que solo ve esa app y que tapa a la que instalas afuera.
+
+Se instala una vez por computadora, en dos partes: primero [uv](https://docs.astral.sh/uv/), la herramienta que lo instala, y después aucove, en su versión exacta y con las dependencias fijadas en el `requirements-lock.txt` de su Release (01-arquitectura §5.1).
+
+**1. uv.** Sáltate esta parte si `uv --version` ya funciona en tu terminal.
 
 En Windows, en PowerShell 5.1 o 7:
 
@@ -305,29 +509,127 @@ UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc3" --constraints "$LOCK"
 uv tool update-shell
 ```
 
-Después, reinicia la terminal y tu agente; a Claude Desktop, ciérralo desde su ícono en la bandeja del sistema, no solo su ventana. `aucove doctor` comprueba la instalación, el token de GitHub y el proyecto, y dice qué arreglar.
-
-> [!IMPORTANT]
-> Instala y actualiza aucove solo desde una terminal abierta desde el menú Inicio (o Terminal en macOS), nunca desde la app de tu agente. En Windows, lo que se instala desde Claude Desktop, sea el agente o su panel Terminal, queda en una copia privada que solo ve esa app y que tapa a la que instalas afuera. Después pídele a tu agente que corra `aucove --version`: debe decir la misma versión que tu terminal. Si no, mira [Si algo falla](docs/es/cuando-pasa.md#si-algo-falla).
+Cierra la terminal, abre una nueva y comprueba con `aucove --version`: debe decir la versión de estos comandos. Si tu agente ya estaba abierto, ciérralo y ábrelo otra vez; a Claude Desktop, ciérralo desde su ícono en la bandeja del sistema, no solo su ventana. Si tu agente ve otra versión que tu terminal, mira [Si algo falla](docs/es/cuando-pasa.md#si-algo-falla).
 
 Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc3"`. Si aucove ya estaba instalado, el mismo comando le agrega el extra. El CI sella cada entrega sin él.
 
-### Primeros pasos
+#### 5. Crea tu token de GitHub
 
-Para empezar un proyecto, el responsable crea en GitHub un repo vacío (sin README) y, en una carpeta vacía de su computadora, corre una sola vez:
+Es la llave con la que aucove trabaja en GitHub en tu nombre: crea la rama de tu tarea, guarda tu trabajo y abre tu entrega. Sirve solo para el repo del proyecto, con los permisos justos, y vence en 30 días.
 
-```bash
-aucove init --repo <organización>/<repo>
+1. Abre este enlace, que llena el formulario de GitHub con esos permisos. Antes, cambia `<org>` y `<repo>` por los de tu proyecto, por ejemplo `labfe` e `ising-diluido`:
+
+   ```text
+   https://github.com/settings/personal-access-tokens/new?name=aucove-<repo>&description=aucove+(<repo>)&target_name=<org>&expires_in=30&contents=write&issues=write&pull_requests=write&actions=read&statuses=read
+   ```
+
+2. Revisa que **Resource owner** sea la organización del proyecto.
+3. En **Repository access**, elige **Only select repositories** y marca el repo del proyecto. Es lo único que el enlace no puede elegir por ti.
+4. En los permisos deben quedar **Contents**, **Issues** y **Pull requests** en «Read and write», y **Actions**, **Commit statuses** y **Metadata** en «Read-only». No agregues otros.
+5. Pulsa **Generate token** y copia el token, que empieza con `github_pat_`. Guárdalo en tu gestor de contraseñas: GitHub no vuelve a mostrarlo.
+
+Si eres investigador y la organización pide aprobar los tokens, que es lo normal, el tuyo queda pendiente hasta que el responsable lo apruebe. Los del dueño de la organización no necesitan aprobación.
+
+> [!WARNING]
+> Nunca pegues el token en el chat con tu agente ni en un archivo del proyecto. Si se te escapa, bórralo en GitHub (tu foto → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**) y crea otro. Tu agente corre con tus permisos y en principio podría leerlo: por eso el token se limita a un solo repo y no tiene permisos de administración. Si no quieres tenerlo en tu computadora, trabaja desde el navegador (claude.ai/code), donde no hace falta.
+
+#### 6. Guarda el token en `GH_TOKEN`
+
+aucove busca tu token en la variable de entorno `GH_TOKEN`. Guárdalo con el comando de tu sistema, en una terminal abierta desde el menú Inicio (o Terminal en macOS). El comando te pide pegar el token, que no se ve al pegarlo ni queda en el historial.
+
+En Windows, en PowerShell:
+
+```powershell
+$t = Read-Host "Pega tu token y pulsa Intro" -AsSecureString
+[Environment]::SetEnvironmentVariable("GH_TOKEN", [Net.NetworkCredential]::new("", $t).Password, "User")
 ```
 
-Antes, `aucove init --repo <organización>/<repo> --dry-run` comprueba tu token, que el repo esté vacío y git, sin escribir nada. `init` arma ahí la plantilla, pregunta el idioma y las licencias, pide confirmar y pegar un token de administración de un día, y sube el proyecto a GitHub con sus protecciones. Después abres el agente en esa carpeta. Hay dos caminos:
+En macOS, en Terminal:
 
-- **Por terminal:** corres `init` en PowerShell o en Terminal y luego abres el agente en la carpeta.
-- **Con el agente desde el principio, en una sola carpeta:** abres el agente en la carpeta vacía y te acompaña, pero no le pidas que escriba nada en la carpeta antes de `init`, porque todavía no tiene las reglas del proyecto. `init` lo corres tú, en una terminal aparte o en el panel Terminal de Claude Desktop, porque pide confirmaciones y el token, que no deben pasar por la IA. Al terminar, reinicias el agente en la misma carpeta para que cargue las herramientas del proyecto y tu token.
+```bash
+read -rs "t?Pega tu token y pulsa Intro: " && echo "export GH_TOKEN=$t" >> ~/.zshrc; unset t; echo
+```
+
+En Linux, en bash:
+
+```bash
+read -rsp "Pega tu token y pulsa Intro: " t && echo "export GH_TOKEN=$t" >> ~/.bashrc; unset t; echo
+```
+
+Si en Windows prefieres hacerlo con ventanas: busca «variables de entorno» en el menú Inicio, abre «Editar las variables de entorno de esta cuenta» y, en «Variables de usuario», pulsa **Nueva…**, con el nombre `GH_TOKEN` y el token como valor.
+
+Después:
+
+1. **Cierra todo y vuelve a abrirlo:** las terminales, tu editor y la app de tu agente. Solo lo que abres después de guardar el token lo ve. A Claude Desktop ciérralo desde su ícono en la bandeja del sistema (en macOS, Claude → Quit Claude), no solo su ventana.
+2. **Comprueba** en una terminal nueva, sin mostrar el token. En PowerShell:
+
+   ```powershell
+   if ($env:GH_TOKEN) { "GH_TOKEN lista" } else { "Falta GH_TOKEN" }
+   ```
+
+   En macOS o Linux:
+
+   ```bash
+   [ -n "$GH_TOKEN" ] && echo "GH_TOKEN lista" || echo "Falta GH_TOKEN"
+   ```
+
+En macOS, Claude Desktop abierto desde el Dock toma de `~/.zshrc` el PATH, pero no `GH_TOKEN`. Si lo usas, guarda el token también en la app: en el cuadro donde escribes, abre el menú del entorno, pasa el cursor por **Local**, pulsa el engranaje y agrega `GH_TOKEN` con el token como valor; la app lo guarda cifrado en tu computadora. Los agentes que abres desde Terminal, como `claude`, y VS Code abierto con `code .` desde Terminal sí lo ven.
+
+Cuando el token venza, `aucove doctor` te avisa y te da el enlace del paso 5 ya armado: crea otro y repite este paso, y el nuevo reemplaza al anterior.
+
+#### 7. El proyecto en tu computadora
+
+**Investigador:** espera a que el responsable te avise que el proyecto está listo. Después, en una terminal, clónalo en una carpeta tuya y compruébalo:
+
+```bash
+git clone https://github.com/<organización>/<repo>.git
+cd <repo>
+aucove doctor
+```
+
+La primera vez, git te pide iniciar sesión en GitHub en el navegador. `aucove doctor` revisa la instalación, tu token y el proyecto, y cada línea dice qué falta y cómo arreglarlo. Si GitHub rechaza tu token, quizá el responsable todavía no lo aprueba.
+
+**Responsable:** creas el proyecto con `aucove init --repo`, en una terminal abierta desde el menú Inicio o en el panel Terminal de Claude Desktop, nunca a través del agente: te pide confirmaciones escritas y un token de administración, y nada de eso debe pasar por la IA.
+
+1. **Crea el token de administración**, que solo se usa hoy. Abre este enlace, con `<org>` y `<repo>` cambiados como en el paso 5:
+
+   ```text
+   https://github.com/settings/personal-access-tokens/new?name=aucove-<repo>-init&description=aucove+init+(<repo>)&target_name=<org>&expires_in=1&contents=write&issues=write&pull_requests=write&actions=read&statuses=read&administration=write&secrets=read&environments=read
+   ```
+
+   Como en el paso 5, elige **Only select repositories** y marca el repo. Revisa que, además de los permisos del paso 5, estén **Administration** en «Read and write» y **Secrets** y **Environments** en «Read-only», y que venza en 1 día. Pulsa **Generate token** y cópialo, pero no lo guardes en `GH_TOKEN`: lo pegas cuando `init` lo pide.
+2. **Crea una carpeta vacía y comprueba todo**, sin escribir nada todavía:
+
+   ```bash
+   mkdir ising-diluido
+   cd ising-diluido
+   aucove init --repo labfe/ising-diluido --dry-run
+   ```
+
+   Revisa tu token de uso diario, que el repo esté vacío y que git tenga tu identidad y pueda leer el repo. Si git te pide iniciar sesión en GitHub, hazlo. Si algo falta, el mensaje dice qué arreglar.
+3. **Crea el proyecto:**
+
+   ```bash
+   aucove init --repo labfe/ising-diluido
+   ```
+
+   Pregunta el idioma y las licencias (Intro acepta lo que está entre corchetes), te pide confirmar escribiendo lo que indica y pegar el token de administración, y sube el proyecto a GitHub con sus protecciones. La [guía del responsable](docs/es/responsable.md#2-lo-que-hace-aucove-init---repo) muestra cada pregunta y qué hacer si falla.
+4. **Borra el token de administración:** en GitHub, tu foto → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**; ábrelo y pulsa **Delete**.
+
+#### 8. Abre tu agente en el proyecto
+
+Abre tu agente en la carpeta del proyecto: con `claude` (o `codex`, `gemini`, `copilot`) en una terminal dentro de la carpeta, o eligiéndola en la pestaña Code de Claude Desktop o en tu editor. La carpeta ya trae lo que conecta al agente con aucove: no hay que instalar nada más.
+
+Pídele que corra `aucove doctor`. Debe decir `[ok] identity`, con tu usuario y un token fine-grained de `GH_TOKEN`. Si dice que no hay token, aunque tu terminal sí lo ve (paso 6), la app se abrió antes de que lo guardaras: ciérrala del todo y ábrela otra vez. En macOS, Claude Desktop necesita además el token en su editor de entorno (paso 6). En un proyecto recién creado también salen otros avisos, como que falta el suplente; los resuelve la guía del responsable.
+
+Lo que sigue: el responsable prepara el proyecto con su agente en la tarea #1 ([guía del responsable](docs/es/responsable.md#3-abre-tu-agente-y-prepara-el-proyecto)) y avisa a su equipo; el investigador empieza a trabajar ([guía del investigador](docs/es/investigador.md)).
+
+### La guía de uso
 
 La [guía de uso](docs/es/README.md) va por perfil ([in English](docs/en/README.md)):
 
-- **Investigador:** [preparar tu computadora y tu token, y un día de trabajo con el agente](docs/es/investigador.md).
+- **Con tu agente desde el principio:** [los mensajes para configurar aucove con él](docs/es/configurar-con-agente.md).
+- **Investigador:** [un día de trabajo con el agente](docs/es/investigador.md).
 - **Responsable:** [preparar el proyecto una vez y revisar las entregas cada semana](docs/es/responsable.md).
 - **Al cerrar una etapa:** [resguardar las pruebas y publicar](docs/es/publicar-y-resguardar.md).
 - **Quien administra el repo:** [la firma del proyecto, una sola vez](docs/es/firma-del-proyecto.md).

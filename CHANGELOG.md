@@ -8,12 +8,15 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ### Added
 
+- A guide to set up aucove with an agent (`docs/es/configurar-con-agente.md`, `docs/en/setup-with-your-agent.md`): the messages to paste at each stage, by role, and what the agent checks and never does, such as installing, running `init` or asking for the token.
 - `doctor` warns when a packaged Windows app, such as Claude Desktop, keeps its own copy of aucove in its private storage, which that app uses instead of the one installed from a terminal, and says how to remove it.
 
 ### Changed
 
 - The readable output of `init` counts the new files instead of listing every one, describes what it did on GitHub in words, and its texts no longer cite the specification. When the organization's Actions policy cannot be read, the pending steps say where to check it on the web.
+- In the first two days of a project, `doctor` no longer warns that `expire-claims` has never run, since the workflow runs once a day.
 - Outside a project, `doctor` points to `init --repo <owner>/<repo> --dry-run`, which checks the token, the empty repository and git without writing anything.
+- The README's "Installation" and "Getting started" become a single "Initial setup" in eight steps that say who does each one, the lead or a researcher: the GitHub account and the `noreply` email, the organization and the empty repo, git and its identity, aucove, the everyday token, storing it in `GH_TOKEN` on each system without showing it and checking it, the project (`init --repo`, with the one-day administration token and its own prefilled link, or `git clone`) and the agent. The researcher and lead guides link to it instead of repeating it, and "If something fails" covers a token that the terminal sees but the agent does not.
 - The README and the guides: install and update aucove only from a terminal outside the agent's app, check `aucove --version` from the agent, quit Claude Desktop from its tray icon, check `init` first with `--dry-run`, and a new case in "If something fails" for a second copy of aucove.
 
 ### Fixed

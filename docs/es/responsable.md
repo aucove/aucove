@@ -9,13 +9,9 @@ Preparas el proyecto una vez y, cada semana, revisas lo que entregan los demás.
 
 ## Preparar el proyecto
 
-Se hace una vez, en ocho pasos y en este orden. Los cinco primeros se hacen en GitHub y en la terminal; desde el sexto trabajas con tu agente.
+Se hace una vez. Primero, como responsable, la [configuración inicial](../../README.md#configuración-inicial) del README: tu cuenta, la organización, el repo vacío, git, aucove, tus tokens y el proyecto, que creas con `aucove init --repo`. Si prefieres que tu agente te acompañe, usa [Configurar aucove con tu agente](configurar-con-agente.md). Después siguen estos cinco pasos, en orden.
 
-### 1. El espacio en GitHub
-
-Crea una organización para el grupo (en GitHub: tu foto → Your organizations → New organization) e invita a cada persona como miembro (People → Invite member). Para que GitHub haga cumplir las reglas en un repo privado hace falta GitHub Team, que es gratis para docentes e investigadores con GitHub Education. Un repo público funciona con GitHub Free.
-
-### 2. El acuerdo de autoría
+### 1. El acuerdo de autoría
 
 Es un documento común y corriente, un PDF o un Word, que el grupo redacta y firma antes de empezar. No es un archivo de aucove ni vive en el repositorio, porque lleva firmas y datos personales: se guarda donde el grupo guarda sus documentos, por ejemplo la carpeta compartida de la institución. Fija:
 
@@ -37,48 +33,13 @@ Get-FileHash .\acuerdo-firmado.pdf -Algorithm SHA256
 shasum -a 256 acuerdo-firmado.pdf
 ```
 
-La fecha y la huella van en el renglón que trae `memory/constitution.md` en «Integridad y ética». No tienes que editarlo tú: en la entrevista del paso 6 el agente te pide las dos y llena el renglón. El primer sello del proyecto cubre ese archivo, así que queda una fecha verificable de que el acuerdo existía, sin publicarlo. Si alguien duda después, basta con calcular la huella del PDF y compararla.
+La fecha y la huella van en el renglón que trae `memory/constitution.md` en «Integridad y ética». No tienes que editarlo tú: en la entrevista del paso 3 el agente te pide las dos y llena el renglón. El primer sello del proyecto cubre ese archivo, así que queda una fecha verificable de que el acuerdo existía, sin publicarlo. Si alguien duda después, basta con calcular la huella del PDF y compararla.
 
-### 3. El repo vacío
+### 2. Lo que hace `aucove init --repo`
 
-En GitHub, en la organización, crea un repo **vacío**: New repository, un nombre (por ejemplo `ising-diluido`) y Private, sin README, sin `.gitignore` y sin licencia. No le agregues nada: en el paso 5, `aucove init --repo` le sube el proyecto completo desde tu computadora.
+`init` se corre una sola vez, en el [paso 7 de la configuración inicial](../../README.md#7-el-proyecto-en-tu-computadora), dentro de una carpeta vacía que será la del proyecto. Se corre en una terminal normal (PowerShell en Windows, Terminal en macOS) o en el panel Terminal de Claude Desktop, y no a través de tu agente, a propósito: te pide escribir confirmaciones y pegar el token de administración, y nada de eso debe pasar por la IA.
 
-Con la 0.1.0 también podrás crear el repo desde la plantilla publicada (`aucove/aucove-template`, «Use this template»), clonarlo y correr en el paso 5 `aucove init`, sin `--repo`, dentro del clon.
-
-### 4. Tu computadora y tus dos tokens
-
-Prepara antes tu computadora como cualquier persona del equipo, con los [pasos 1 y 2 de Investigador](investigador.md#antes-del-primer-día): el correo `noreply`, git con tu nombre y ese correo, tu agente y aucove. `init` hace el primer commit con esa identidad y, si git no la tiene, se detiene sin escribir nada.
-
-Necesitas el token de uso diario, igual que todos ([los pasos están en Investigador](investigador.md#tu-token-de-github)). Para `init` necesitas además un token de administración, que solo se usa ese día:
-
-- el mismo formulario, con el permiso **Administration** en «Read and write», y **Secrets** y **Environments** en «Read-only», además de los otros, y una expiración de 1 día;
-- no lo guardes en `GH_TOKEN`: lo pegas cuando `init` lo pide, y no se muestra ni se guarda;
-- al terminar `init`, bórralo en GitHub.
-
-Como dueño de la organización, tus tokens no necesitan aprobación. Los de tu equipo sí: los apruebas en la organización, Settings → Personal access tokens → Pending requests.
-
-### 5. `aucove init --repo`
-
-Se corre una sola vez, en una terminal normal (PowerShell en Windows, Terminal en macOS), dentro de una carpeta vacía que será la del proyecto. No se corre dentro de tu agente, a propósito: te pide escribir confirmaciones y pegar el token de administración, y nada de eso debe pasar por la IA. Tu agente entra en el paso siguiente.
-
-```bash
-mkdir ising-diluido
-cd ising-diluido
-aucove init --repo labfe/ising-diluido
-```
-
-`init` arma en la carpeta la plantilla de la versión instalada con tus respuestas y, cuando confirmas, crea el repositorio de git y lo sube al repo vacío en un solo commit. Para subirlo, git usa tus credenciales de GitHub: si nunca has subido nada a GitHub desde esta computadora, corre antes `git ls-remote https://github.com/labfe/ising-diluido.git`, que te pide iniciar sesión, o `gh auth setup-git` si usas GitHub CLI.
-
-Antes de correrlo, compruébalo sin escribir nada:
-
-```bash
-aucove init --repo labfe/ising-diluido --dry-run
-```
-
-Revisa tu token, que el repo esté vacío y que git tenga tu identidad y pueda leer el repo, y muestra lo que haría.
-
-> [!TIP]
-> Si prefieres que tu agente te acompañe desde el principio, ábrelo en la carpeta vacía antes de este paso: puede revisar contigo que todo esté listo y explicarte cada pregunta. No instales aucove desde la app ni le pidas que escriba nada en la carpeta, porque todavía no tiene las reglas del proyecto. `init` lo corres tú, en una terminal aparte o en el panel Terminal de Claude Desktop, y, al terminar, reinicias el agente en la misma carpeta para que cargue las herramientas del proyecto y tu token.
+`init` arma en la carpeta la plantilla de la versión instalada con tus respuestas y, cuando confirmas, crea el repositorio de git y lo sube al repo vacío en un solo commit. Para subirlo, git usa tus credenciales de GitHub: si nunca has subido nada a GitHub desde esta computadora, corre antes `git ls-remote https://github.com/labfe/ising-diluido.git`, que te pide iniciar sesión, o `gh auth setup-git` si usas GitHub CLI. Antes, `aucove init --repo labfe/ising-diluido --dry-run` lo comprueba todo sin escribir nada.
 
 Opciones: `--language es` para no contestar el idioma, `--format none` sin LaTeX, `--disclosure open` para un proyecto abierto desde el inicio e `--individual` para un proyecto de una sola persona.
 
@@ -122,9 +83,11 @@ Qué dejó: la carpeta del proyecto, con su repositorio de git conectado al de G
 
 Si `init` falla antes de subir el commit, deja la carpeta vacía otra vez: corrige lo que dice el error y repítelo. Si falla después, por ejemplo al aplicar las protecciones, repite el mismo comando en la misma carpeta y retoma donde quedó. [Si algo falla](cuando-pasa.md#si-algo-falla) explica los errores más comunes.
 
-### 6. Abre tu agente y prepara el proyecto
+Con la 0.1.0 también podrás crear el repo desde la plantilla publicada (`aucove/aucove-template`, «Use this template»), clonarlo y correr `aucove init`, sin `--repo`, dentro del clon.
 
-En la misma carpeta, abre tu agente. No hay que copiar ni instalar nada más: la carpeta que dejó `init` ya trae lo que conecta al agente con aucove (`AGENTS.md`, `CLAUDE.md` y `.mcp.json`), y aucove ya está instalado en tu computadora. Si ya tenías el agente abierto en esa carpeta, reinícialo: las herramientas del proyecto y tu token se leen al arrancar.
+### 3. Abre tu agente y prepara el proyecto
+
+En la misma carpeta, abre tu agente. No hay que copiar ni instalar nada más: la carpeta que dejó `init` ya trae lo que conecta al agente con aucove (`AGENTS.md`, `CLAUDE.md` y `.mcp.json`), y aucove ya está instalado en tu computadora. Si ya tenías el agente abierto en esa carpeta, abre otra sesión en ella: las herramientas del proyecto y tu token se leen al empezar cada sesión. Solo hace falta reiniciar la app si creaste o cambiaste `GH_TOKEN` después de abrirla.
 
 ```bash
 claude
@@ -168,7 +131,7 @@ Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece pr
 
 Laura no tuvo que conocer claves como `account_type` o `data_policy`: el agente tradujo sus respuestas. Después de la entrega, revisa los cambios en GitHub y los integra con «Squash and merge»; mientras no haya suplente, GitHub la deja integrar su propia entrega por el bypass que confirmó en `init`.
 
-### 7. Las primeras tareas
+### 4. Las primeras tareas
 
 > **Laura:** Propón las primeras tareas a partir del plan.
 >
@@ -194,9 +157,9 @@ Vas a aceptar la tarea #2 «Método: Wolff y promedios de desorden»: se quitar�
 Para confirmar, escribe exactamente «accept 2» y pulsa Intro: accept 2
 ```
 
-### 8. Avisa a tu equipo
+### 5. Avisa a tu equipo
 
-Comprueba que cada persona aceptó la invitación a la organización y pásale la [guía del investigador](investigador.md): instalar, crear su token, clonar y abrir su agente. Aprueba sus tokens cuando aparezcan en Pending requests. Si alguien trabajará desde el navegador, instala la app de Claude para GitHub en el repo.
+Comprueba que cada persona aceptó la invitación a la organización y pásale la [configuración inicial](../../README.md#configuración-inicial), sus pasos como investigador, o [Configurar aucove con tu agente](configurar-con-agente.md), si prefiere hacerla con su agente: tu agente puede redactar el mensaje. Aprueba sus tokens cuando aparezcan en la organización: **Settings** → **Personal access tokens** → **Pending requests**. Si alguien trabajará desde el navegador, instala la app de Claude para GitHub en el repo.
 
 Cuando termines, prepara la [firma del proyecto](firma-del-proyecto.md), que toma unos 15 minutos: con ella, quien revise el trabajo desde afuera comprueba que cada registro lo emitió tu proyecto, y no solo cuándo existía.
 
@@ -204,7 +167,7 @@ Cuando termines, prepara la [firma del proyecto](firma-del-proyecto.md), que tom
 
 - **Revisar entregas.** En tu agente, `/pendientes` te resume cada entrega: qué cambió, la nota de sesión, los checks y los avisos de choque. Luego, en GitHub, abre la entrega en Pull requests, mira la pestaña «Files changed» y el enlace al PDF que dejó el CI, pulsa «Review changes» → «Approve» y, por último, «Squash and merge». Si algo no está bien, elige «Request changes» con un comentario y la persona corrige en la misma entrega. El plazo esperado es de 72 horas.
 - **Nadie aprueba lo suyo.** Tus entregas las aprueba el suplente.
-- **Aceptar tareas.** Cualquiera puede proponer tareas. Tú o el suplente las aceptan como en el paso 7.
+- **Aceptar tareas.** Cualquiera puede proponer tareas. Tú o el suplente las aceptan como en el paso 4.
 - **Decisiones y rumbo.** `/decision` registra una decisión del grupo; una decisión no se borra, se reemplaza con otra. `/direccion` propone un cambio en el plan; si lo aceptas, editas `plan.md` en una tarea tuya.
 - **Si el proyecto usa LaTeX.** Alguien cuida que el artículo se lea como un solo texto: el editor, que eres tú salvo que el grupo nombre a otra persona. Su aprobación hace falta en las entregas que tocan LaTeX, y `/editar-articulo` le ayuda a encontrar repeticiones, huecos y notación inconsistente.
 

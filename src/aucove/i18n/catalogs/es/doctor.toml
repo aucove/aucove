@@ -165,6 +165,7 @@ skip_unreadable = "Con este token no se ven los ajustes de integración: hace fa
 ok = "Tus tareas no tienen estados a medias."
 ok_expire = "`expire-claims` corrió bien en `{base}` en los últimos 2 días."
 warn = "Estados a medias (tarea, anomalía → operación que lo cierra): {items}."
+ok_expire_new = "`expire-claims` todavía no corre en `{base}`: es normal en los primeros dos días del proyecto, porque corre una vez al día."
 warn_expire_never = "`expire-claims` no tiene ningún run exitoso en `{base}`: los reclamos no vencen."
 warn_expire_stale = "El último run exitoso de `expire-claims` en `{base}` es de hace {days} días: los reclamos no vencen (en los repos públicos, GitHub desactiva los workflows programados tras 60 días sin actividad)."
 fix = "Repite la operación indicada sobre esa tarea (`{name} claim <n>`, `{name} release <n>` o `{name} submit` desde su rama); lo que indica `expire-claims` lo repara ese workflow en su próxima corrida."

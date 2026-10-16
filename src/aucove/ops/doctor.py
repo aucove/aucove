@@ -83,7 +83,7 @@ import subprocess
 import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, TypeVar
 from urllib.parse import urlencode
@@ -1111,8 +1111,9 @@ class _Doctor:
             run = self.expire[0]
             now = self._server_now()
             if run is None:
-                parts.append(t("doctor.half_states.warn_expire_never", base=base))
-                fixes.append(t("doctor.half_states.fix_expire"))
+                if not self._new_project(base, now):  # en un proyecto nuevo, todavía no tuvo ocasión de correr
+                    parts.append(t("doctor.half_states.warn_expire_never", base=base))
+                    fixes.append(t("doctor.half_states.fix_expire"))
             elif run.created_at is not None and now - run.created_at > EXPIRE_STALE:
                 parts.append(t("doctor.half_states.warn_expire_stale", base=base, days=(now - run.created_at).days))
                 fixes.append(t("doctor.half_states.fix_expire"))
@@ -1121,7 +1122,29 @@ class _Doctor:
         message = t("doctor.half_states.ok") if self.half is not None else t("doctor.half_states.skip_board")
         if self.expire is not None and self.expire[0] is not None:
             message = f"{message} {t('doctor.half_states.ok_expire', base=base)}"
+        elif self.expire is not None:  # sin run todavía, en un proyecto nuevo
+            message = f"{message} {t('doctor.half_states.ok_expire_new', base=base)}"
         return Check("half_states", "ok", message)
+
+    def _new_project(self, base: str, now: datetime) -> bool:
+        """El commit raíz de la base, el que creó el proyecto, tiene menos de ``EXPIRE_STALE`` (REQ-CI-31).
+
+        «Use this template» e ``init --repo`` lo crean el día que nace el proyecto, así que
+        ``expire-claims``, que corre una vez al día, todavía no tuvo ocasión de correr. Sin git o sin
+        la ref, ``False``: se avisa como siempre.
+        """
+        git = self._git()
+        if git is None or not base:
+            return False
+        try:
+            proc = git.run("log", "--max-parents=0", "--format=%ct", f"refs/remotes/origin/{base}", "--",
+                           check=False, read=True)
+        except (GitError, GitUnavailable, OSError, ValueError):
+            return False
+        stamps = [int(x) for x in proc.stdout.decode("ascii", "replace").split() if x.isdigit()]
+        if proc.returncode != 0 or not stamps:
+            return False
+        return now - datetime.fromtimestamp(min(stamps), timezone.utc) < EXPIRE_STALE
 
     def _server_now(self) -> datetime:
         """La hora de la forja (cabecera ``Date``, como ``expire-claims``) o, sin ella, la local."""
