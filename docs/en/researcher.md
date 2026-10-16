@@ -18,15 +18,18 @@ The difference is in [How it works › Where the code runs](how-it-works.md#wher
 
 ### 1. Accept the invitation and protect your email
 
-GitHub emails you the invitation to the group's organization: accept it. Then, on GitHub, go to Settings → Emails, check "Keep my email addresses private" and use in git the `noreply` address that page shows you. That way your personal email does not end up in the project history.
-
-```bash
-git config --global user.email "<number>+<your-username>@users.noreply.github.com"
-```
+GitHub emails you the invitation to the group's organization: accept it. Then, on GitHub, go to Settings → Emails and check "Keep my email addresses private". That page shows your `noreply` address, of the form `<number>+<your-username>@users.noreply.github.com`: write it down for step 2. That way your personal email does not end up in the project history.
 
 ### 2. Install git, your agent and aucove
 
-git and your AI agent (for example Claude Code, Codex, Gemini CLI or GitHub Copilot) install like any other program. aucove installs in two steps, first uv and then aucove, with commands that pin the exact version and its dependencies: they are in the [installation section of the README](../../README.md#installation). Then close and reopen the terminal and your agent.
+git and your AI agent (for example Claude Code, Codex, Gemini CLI or GitHub Copilot) install like any other program. Then tell git who you are, with your name and the `noreply` address from step 1, which git puts in every commit:
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "<number>+<your-username>@users.noreply.github.com"
+```
+
+aucove installs in two steps, first uv and then aucove, with commands that pin the exact version and its dependencies: they are in the [installation section of the README](../../README.md#installation). Then close and reopen the terminal and your agent.
 
 ### 3. Create your GitHub token
 

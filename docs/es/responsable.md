@@ -45,7 +45,9 @@ En GitHub, en la organización, crea un repo **vacío**: New repository, un nomb
 
 Con la 0.1.0 también podrás crear el repo desde la plantilla publicada (`aucove/aucove-template`, «Use this template»), clonarlo y correr en el paso 5 `aucove init`, sin `--repo`, dentro del clon.
 
-### 4. Tus dos tokens
+### 4. Tu computadora y tus dos tokens
+
+Prepara antes tu computadora como cualquier persona del equipo, con los [pasos 1 y 2 de Investigador](investigador.md#antes-del-primer-día): el correo `noreply`, git con tu nombre y ese correo, tu agente y aucove. `init` hace el primer commit con esa identidad y, si git no la tiene, se detiene sin escribir nada.
 
 Necesitas el token de uso diario, igual que todos ([los pasos están en Investigador](investigador.md#tu-token-de-github)). Para `init` necesitas además un token de administración, que solo se usa ese día:
 

@@ -45,7 +45,9 @@ On GitHub, in the organization, create an **empty** repo: New repository, a name
 
 With 0.1.0 you will also be able to create the repo from the published template (`aucove/aucove-template`, "Use this template"), clone it and run `aucove init`, without `--repo`, inside the clone in step 5.
 
-### 4. Your two tokens
+### 4. Your computer and your two tokens
+
+First get your computer ready like anyone on the team, with [steps 1 and 2 of Researcher](researcher.md#before-the-first-day): the `noreply` email, git with your name and that email, your agent and aucove. `init` makes the first commit with that identity and, if git does not have it, stops without writing anything.
 
 You need the everyday token, like everyone else ([the steps are in Researcher](researcher.md#your-github-token)). For `init` you also need an administration token, used only that day:
 

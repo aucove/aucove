@@ -195,6 +195,13 @@ Un secreto del repo o de la organización lo puede leer un workflow de cualquier
 </details>
 
 <details>
+<summary><code>init --repo</code> dice que git no tiene tu identidad</summary>
+
+git necesita tu nombre y tu correo para el commit de `init`, y no los tiene para tu cuenta: quizá solo los configuraste dentro de otro repo. Configúralos con tu dirección `noreply` ([paso 2 de Investigador](investigador.md#2-instala-git-tu-agente-y-aucove)) y repite `init`: la carpeta sigue vacía.
+
+</details>
+
+<details>
 <summary>Perdiste la llave del proyecto, o te la robaron</summary>
 
 Ponle fecha de fin a la llave y crea otra: [Cambiar la llave, o anular una que te robaron](firma-del-proyecto.md#cambiar-la-llave-o-anular-una-que-te-robaron). Lo firmado y sellado antes de esa fecha sigue valiendo.

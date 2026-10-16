@@ -195,6 +195,13 @@ A workflow on any branch can read a secret of the repo or of the organization, s
 </details>
 
 <details>
+<summary><code>init --repo</code> says that git does not have your identity</summary>
+
+git needs your name and email for the `init` commit, and it does not have them for your account: perhaps you set them only inside another repo. Set them with your `noreply` address ([step 2 of Researcher](researcher.md#2-install-git-your-agent-and-aucove)) and run `init` again: the folder is still empty.
+
+</details>
+
+<details>
 <summary>You lost the project key, or it was stolen</summary>
 
 Give the key an end date and create another: [Changing the key, or revoking a stolen one](project-signature.md#changing-the-key-or-revoking-a-stolen-one). What was signed and sealed before that date stays valid.
