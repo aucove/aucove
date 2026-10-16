@@ -6,6 +6,16 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Added
+
+- `doctor` warns when a packaged Windows app, such as Claude Desktop, keeps its own copy of aucove in its private storage, which that app uses instead of the one installed from a terminal, and says how to remove it.
+
+### Changed
+
+- The readable output of `init` counts the new files instead of listing every one, describes what it did on GitHub in words, and its texts no longer cite the specification. When the organization's Actions policy cannot be read, the pending steps say where to check it on the web.
+- Outside a project, `doctor` points to `init --repo <owner>/<repo> --dry-run`, which checks the token, the empty repository and git without writing anything.
+- The README and the guides: install and update aucove only from a terminal outside the agent's app, check `aucove --version` from the agent, quit Claude Desktop from its tray icon, check `init` first with `--dry-run`, and a new case in "If something fails" for a second copy of aucove.
+
 ### Fixed
 
 - The researcher guide sets git's name as well as the `noreply` email, after installing git; the lead guide asks for it before `init --repo`, which stops without writing anything when git has no identity, and "If something fails" covers that case.

@@ -16,6 +16,8 @@ warn_relative_path = "Also, the `PATH` has entries that depend on the current di
 fix_python = "Install Python 3.11 or later."
 fix_launcher = "Install the core with `uv tool install \"{name}=={pin}\" --constraints requirements-lock.txt`, with the `requirements-lock.txt` of that version's Release; then run `uv tool update-shell` and restart the terminal."
 fix_relative_path = "Remove those entries from the `PATH` or replace them with absolute paths, then restart the terminal and Claude Code."
+warn_packaged = "Also, the app `{app}` has its own copy of `{name}` {version}: on Windows, whatever is installed from inside a packaged app, such as Claude Desktop, stays in its private storage, and that app uses that copy instead of yours."
+fix_packaged = "From a PowerShell opened from the Start menu, outside that app, remove that copy with `Remove-Item -Recurse -Force \"{path}\"`, and install and update `{name}` only from there."
 
 [doctor.git]
 ok = "git {version} at {path}."
@@ -26,7 +28,7 @@ fix = "Install git and reopen the terminal."
 [doctor.project_root]
 ok = "Project at {path}."
 warn = "You are not inside a project: there is no `project.yaml` with `.git` from here upwards."
-fix = "Run `{name} doctor` inside the project repository or use `--root`."
+fix = "Run `{name} doctor` inside the project repository or use `--root`. For a new project, `{name} init --repo <owner>/<repo> --dry-run` checks your token, the empty repo and git without writing anything."
 
 [doctor.project_yaml]
 ok = "`project.yaml` is valid."

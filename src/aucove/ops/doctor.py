@@ -334,6 +334,31 @@ def token_link(repo: str) -> str:
     return f"{TOKEN_URL}?{urlencode(params, safe='()')}"
 
 
+def packaged_copies(env: Mapping[str, str]) -> list[tuple[str, str, str]]:
+    """Copias del núcleo que instaló una app empaquetada de Windows (MSIX) en su almacenamiento privado.
+
+    Lo que se instala desde dentro de una app así, como Claude Desktop (su agente o su panel Terminal),
+    queda en ``%LOCALAPPDATA%\\Packages\\<app>\\LocalCache\\Roaming\\uv\\tools\\<nombre>``, y esa app usa esa
+    copia en lugar de la que se instala desde una terminal normal, aunque sea de otra versión. Devuelve
+    ``(app, versión, ruta)``, con la versión del ``.dist-info`` (``?`` si no se lee). Fuera de Windows no
+    hay ``LOCALAPPDATA`` y no devuelve nada.
+    """
+    local = _env_get(env, "LOCALAPPDATA")
+    if not local:
+        return []
+    out: list[tuple[str, str, str]] = []
+    try:
+        for tools in sorted(Path(local, "Packages").glob(f"*/LocalCache/Roaming/uv/tools/{_meta.NAME}")):
+            if not tools.is_dir():
+                continue
+            infos = sorted((tools / "Lib" / "site-packages").glob(f"{_meta.NAME}-*.dist-info"))
+            version = infos[0].name[len(_meta.NAME) + 1:-len(".dist-info")] if infos else "?"
+            out.append((tools.parents[4].name, version, str(tools)))
+    except OSError:  # sin permiso para recorrer Packages: no hay nada que avisar
+        return out
+    return out
+
+
 def is_noreply(email: str | None) -> bool:
     """``True`` si ``email`` es una dirección noreply de GitHub (00-marco D-44)."""
     if not isinstance(email, str):
@@ -666,6 +691,13 @@ class _Doctor:
             )
         else:
             check = Check("python", "ok", t("doctor.python.ok", version=version, name=_meta.NAME, launcher=launcher))
+        copies = packaged_copies(self.env)
+        if copies:  # 05 §9.2: la copia privada de una app empaquetada de Windows (MSIX)
+            app, copy_version, where = copies[0]
+            note = t("doctor.python.warn_packaged", name=_meta.NAME, version=copy_version, app=app)
+            note_fix = t("doctor.python.fix_packaged", name=_meta.NAME, path=where)
+            check = Check("python", "warn", f"{check.message} {note}",
+                          note_fix if check.fix is None else f"{check.fix} {note_fix}")
         relative = cwd_path_entries(path)  # S4: Claude Code las resuelve contra el directorio del hook
         if not relative:
             return check

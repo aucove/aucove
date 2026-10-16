@@ -46,7 +46,7 @@ Se mantienen: solo squash y sin auto-merge, Actions no aprueba PR, las capas loc
 phrase = "acepto el perfil advisory"
 
 [init.bypass]
-text = "No hay suplente en roles.yaml: tus PR no tienen quién los apruebe. Si confirmas, quedarás ({login}) como actor de bypass del ruleset de la base, solo para PR, y la auditoría marcará con flag:bypass cada integración sin aprobación (06-permisos §3.4). Si no, tus PR quedarán bloqueados hasta que declares un suplente."
+text = "No hay suplente en roles.yaml: tus PR no tienen quién los apruebe. Si confirmas, quedarás ({login}) como actor de bypass del ruleset de la base, solo para PR, y la auditoría marcará con flag:bypass cada integración sin aprobación. Si no, tus PR quedarán bloqueados hasta que declares un suplente."
 
 # Descripciones de las etiquetas (06-permisos §4.5), en el idioma del proyecto (D-02).
 [init.label]
@@ -95,23 +95,50 @@ part_modified = "La parte `{path}` no está en roles.yaml pero tiene cambios: b�
 unknown_value = "No se pudo crear `{path}` porque falta un valor de la plantilla: cópialo de la plantilla publicada."
 retention = "Fija en la web la retención de artefactos y registros de Actions en {days} días (Settings → Actions → General)."
 pull_request_target = "Repositorio público: permite `pull_request_target` en la política de Actions del repositorio, desde la web, para que corra la validación de los PR."
-advisory_decision = "Registra la aceptación del perfil advisory en una decisión de `memory/decisions/` desde tu primera tarea (06-permisos REQ-PERM-41)."
+advisory_decision = "Registra la aceptación del perfil advisory en una decisión de `memory/decisions/` desde tu primera tarea."
 bypass_declined = "Sin suplente ni bypass, tus PR quedan bloqueados hasta que declares un suplente en roles.yaml y vuelvas a ejecutar init."
-invited = "`{login}` recibió una invitación como colaborador externo: lo correcto es invitarlo a la organización (06-permisos REQ-PERM-55)."
-org = "Ajustes de la organización que conviene que cambie un owner (06-permisos §4.10): {changes}."
+invited = "`{login}` recibió una invitación como colaborador externo: lo correcto es invitarlo a la organización."
+org = "Ajustes de la organización que conviene que cambie un owner: {changes}."
 setup_task = "Prepara el proyecto en la tarea #{task}, «{title}»: abre tu agente en la carpeta del proyecto y pídele que te guíe para completar el plan, las personas y las partes."
-evidence_secrets_repo = "No se pudieron leer los nombres de los secretos de Actions del repositorio: comprueba en la web que ninguno se llame `{secret}`. La llave del proyecto solo va en el environment (10-seguridad REQ-SEC-87)."
+evidence_secrets_repo = "No se pudieron leer los nombres de los secretos de Actions del repositorio: comprueba en la web que ninguno se llame `{secret}`. La llave del proyecto solo va en el environment."
 evidence_secrets_org = "No se pudieron leer los nombres de los secretos de Actions de la organización: comprueba con un owner que ninguno visible para este repositorio se llame `{secret}`."
+actions_unknown = "No se pudo leer la política de Actions de la organización con el token del repositorio. Revisa en GitHub (la organización → Settings → Actions → General) que permita las acciones creadas por GitHub y `astral-sh/setup-uv`: si no, los checks del proyecto no pueden correr."
 evidence_secret = "Agrega la llave privada del proyecto como secreto `{secret}` del environment `{environment}`, en la web o con `gh secret set {secret} --env {environment}` (guía del admin)."
 
 # Vista legible del resultado.
 [init.render]
 head = "init en {repo} (perfil {profile}):"
 files = "Archivos ({count}):"
+files_more = "…y {count} nuevos (la lista completa sale con `--json`)."
+files_new = "Archivos: {count} nuevos (la lista completa sale con `--json`)."
+github = "En GitHub:"
 labels = "Etiquetas creadas o actualizadas: {names}."
 pushed = "Los archivos se subieron a la rama base."
 pending = "Pendiente:"
-reminders = "Antes de trabajar: cada persona activa el correo noreply de GitHub y firma el acuerdo de autoría y de apertura (00-marco D-44 y D-49)."
+reminders = "Antes de trabajar: cada persona activa el correo noreply de GitHub y firma el acuerdo de autoría y de apertura."
+
+[init.render.action]
+created = "nuevo"
+updated = "cambiado"
+deleted = "borrado"
+pending = "pendiente"
+
+[init.render.protection]
+repo_settings = "Ajustes del repositorio"
+actions_permissions = "Política de Actions"
+workflow_permissions = "Permisos del token de los workflows"
+retention = "Retención de artefactos y registros"
+pull_request_target = "`pull_request_target` en la política de Actions"
+environment = "Environment de la firma del proyecto"
+ruleset = "Ruleset `{name}`"
+collaborator = "Colaborador `{name}`"
+
+[init.render.status]
+applied = "aplicado"
+unchanged = "sin cambios"
+unsupported = "no disponible"
+unsupported_advisory = "no disponible con el perfil advisory"
+skipped = "pendiente, en la web"
 
 # La tarea de preparación del responsable (00-marco D-70; 05-operaciones §9.3).
 [init.setup_task]
@@ -131,7 +158,7 @@ text_path = "El paquete no trae el texto de {id}. Ruta del archivo con su texto 
 text_bad = "No se pudo leer {path} como un archivo de texto UTF-8 de hasta 1 MiB."
 default_holder = "Los autores de {name}"
 summary = "- Licencias: texto {text}, código {code} y datos {data}; titular: {holder}. Van en project.yaml, LICENSE, LICENSES/ y REUSE.toml."
-open_text = "Antes de publicar el texto con {id}, revisa la política de licencias y de preprints de la revista de destino (11-trazabilidad REQ-TRACE-63)."
+open_text = "Antes de publicar el texto con {id}, revisa la política de licencias y de preprints de la revista de destino."
 
 [init.license.category]
 text = "texto (manuscrito, plan.md, memoria y lo demás)"

@@ -19,6 +19,8 @@ import pytest
 
 from aucove import _meta
 from aucove.forge.fake import FakeClock, FakeForge, Fault
+from aucove.i18n import translator
+from aucove.ops import init as init_op
 from aucove.ops.result import Result
 from tests.board_world import NOW, Typed, World, clean_env
 from tests.conftest import GitRepo, isolated_git_env
@@ -88,6 +90,8 @@ def test_init_repo_creates_the_project_in_an_empty_folder(tmp_path: Path) -> Non
     assert prot[f"ruleset:{_meta.NAME}-base"] == "applied" and prot["environment"] == "applied"
     assert {lab["action"] for lab in data["labels"]} == {"created"}
     assert data["setup_task"] is not None
+    text = init_op.render_text(result, translator("es"))  # la vista legible: los nuevos, contados
+    assert f"Archivos: {len(files)} nuevos" in text and "  nuevo:" not in text
     # A12: el árbol que deja pasa validate
     check = w.run("validate", login=LEAD)
     assert check.ok, check.error

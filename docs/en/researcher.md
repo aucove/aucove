@@ -29,7 +29,7 @@ git config --global user.name "Your Name"
 git config --global user.email "<number>+<your-username>@users.noreply.github.com"
 ```
 
-aucove installs in two steps, first uv and then aucove, with commands that pin the exact version and its dependencies: they are in the [installation section of the README](../../README.md#installation). Then close and reopen the terminal and your agent.
+aucove installs in two steps, first uv and then aucove, with commands that pin the exact version and its dependencies: they are in the [installation section of the README](../../README.md#installation). **Run them in a terminal opened from the Start menu, not from your agent's app:** on Windows, whatever is installed from Claude Desktop stays in a separate copy that only that app sees. Then close and reopen the terminal and your agent (quit Claude Desktop from its icon in the system tray) and ask the agent to run `aucove --version`: it must show the README's version.
 
 ### 3. Create your GitHub token
 

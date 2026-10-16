@@ -69,8 +69,16 @@ aucove init --repo labfe/ising-diluido
 
 `init` arma en la carpeta la plantilla de la versión instalada con tus respuestas y, cuando confirmas, crea el repositorio de git y lo sube al repo vacío en un solo commit. Para subirlo, git usa tus credenciales de GitHub: si nunca has subido nada a GitHub desde esta computadora, corre antes `git ls-remote https://github.com/labfe/ising-diluido.git`, que te pide iniciar sesión, o `gh auth setup-git` si usas GitHub CLI.
 
+Antes de correrlo, compruébalo sin escribir nada:
+
+```bash
+aucove init --repo labfe/ising-diluido --dry-run
+```
+
+Revisa tu token, que el repo esté vacío y que git tenga tu identidad y pueda leer el repo, y muestra lo que haría.
+
 > [!TIP]
-> Si prefieres que tu agente te acompañe desde el principio, ábrelo en la carpeta vacía antes de este paso: puede ayudarte a instalar aucove y explicarte cada pregunta. `init` lo corres tú en una terminal aparte y, al terminar, reinicias el agente en la misma carpeta para que cargue las herramientas del proyecto y tu token.
+> Si prefieres que tu agente te acompañe desde el principio, ábrelo en la carpeta vacía antes de este paso: puede revisar contigo que todo esté listo y explicarte cada pregunta. No instales aucove desde la app ni le pidas que escriba nada en la carpeta, porque todavía no tiene las reglas del proyecto. `init` lo corres tú, en una terminal aparte o en el panel Terminal de Claude Desktop, y, al terminar, reinicias el agente en la misma carpeta para que cargue las herramientas del proyecto y tu token.
 
 Opciones: `--language es` para no contestar el idioma, `--format none` sin LaTeX, `--disclosure open` para un proyecto abierto desde el inicio e `--individual` para un proyecto de una sola persona.
 
@@ -98,18 +106,16 @@ No hay suplente en roles.yaml: tus PR no tienen quién los apruebe. Si confirmas
 Para confirmar, escribe exactamente «bypass lmendez» y pulsa Intro: bypass lmendez
 Token de administración de GitHub (permisos Administration de lectura y escritura, y Secrets y Environments de lectura; no se muestra ni se guarda): (pegas el token; no se ve)
 init en labfe/ising-diluido (perfil enforced):
-Archivos (70):
-  created: .gitattributes
-  created: .github/CODEOWNERS
-  …
-Etiquetas creadas o actualizadas: task, state:proposed, state:expired, …
-  applied: repo_settings
-  applied: ruleset:aucove-base
+Archivos: 70 nuevos (la lista completa sale con `--json`).
+Etiquetas creadas o actualizadas: task, direction, state:proposed, …
+En GitHub:
+  Ajustes del repositorio: aplicado
+  Ruleset `aucove-base`: aplicado
   …
 Los archivos se subieron a la rama base.
 Pendiente:
   - Prepara el proyecto en la tarea #1, «Preparar el proyecto»: abre tu agente en la carpeta del proyecto y pídele que te guíe para completar el plan, las personas y las partes.
-Antes de trabajar: cada persona activa el correo noreply de GitHub y firma el acuerdo de autoría y de apertura (00-marco D-44 y D-49).
+Antes de trabajar: cada persona activa el correo noreply de GitHub y firma el acuerdo de autoría y de apertura.
 ```
 
 Qué dejó: la carpeta del proyecto, con su repositorio de git conectado al de GitHub, como si lo hubieras clonado; GitHub configurado (protecciones, etiquetas, cuánto tiempo se guardan las pruebas y el environment `aucove-evidence` para la firma del proyecto); los archivos del proyecto en un commit, y tu tarea de preparación, la #1, ya aceptada. Ahora borra el token de administración en GitHub.

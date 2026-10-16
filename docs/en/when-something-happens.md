@@ -163,6 +163,25 @@ The agent stops and asks you to install it with the command from the guide. It d
 </details>
 
 <details>
+<summary>The agent sees a different version of aucove than your terminal, or cannot find it</summary>
+
+On Windows, Claude Desktop is a packaged app: whatever is installed from inside it, by the agent or from its Terminal panel, stays in a private copy that only that app sees and that hides the one you install from PowerShell. `aucove doctor`, run from PowerShell, tells you whether it exists and where. To remove it:
+
+1. Quit Claude Desktop from its icon in the system tray.
+2. In a PowerShell opened from the Start menu, check whether it exists; if it shows nothing, there is no copy:
+
+   ```powershell
+   Get-Item "$env:LOCALAPPDATA\Packages\Claude_*\LocalCache\Roaming\uv\tools\aucove"
+   ```
+
+3. If it exists, delete it with `Remove-Item -Recurse -Force` followed by the path that step 2 showed, in quotes.
+4. Open Claude Desktop and ask the agent to run `aucove --version`: it must show the same version as your PowerShell.
+
+From then on, install and update aucove only from PowerShell.
+
+</details>
+
+<details>
 <summary>The sealing says that a merge was left without the project signature</summary>
 
 The job summary, a yellow warning in Actions and the comment on the submission say so, with the reason. The record was sealed anyway, because the date comes first, and the signature of the milestone index covers it later. So that the next ones are signed:

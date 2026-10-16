@@ -246,6 +246,35 @@ def test_restricted_actions_policy(tmp_path: Path) -> None:
     assert protections(result)["actions_permissions"] == "unchanged"  # ya fija el SHA: no amplía la política
 
 
+def test_an_unreadable_org_actions_policy_leaves_a_pending_step(tmp_path: Path) -> None:
+    """REQ-PERM-56: sin poder leer la política de la organización el resultado es desconocido; el aviso
+    queda, y ``pending_steps`` dice dónde revisarla en la web."""
+    w = init_world(tmp_path)
+    w.forge.seed_admin(actions_org=None)
+    result = valid(run_init(w, language="es"))
+    assert result.ok, result.error
+    (warning,) = [x for x in result.warnings if x.code == "W_FORGE_ACTIONS_RESTRICTED"]
+    assert warning.details is not None and warning.details["level"] is None
+    assert any("Settings → Actions → General" in step and "astral-sh/setup-uv" in step
+               for step in result.data["pending_steps"])  # type: ignore[union-attr, index]
+
+
+def test_the_readable_view(tmp_path: Path) -> None:
+    """La vista legible: los archivos cambiados y borrados con su nombre, los nuevos contados, y GitHub en
+    palabras, sin identificadores ni referencias a la spec."""
+    w = init_world(tmp_path)
+    result = run_init(w, language="es")
+    assert result.ok, result.error
+    text = init_op.render_text(result, translator("es"))
+    files = result.data["files"]  # type: ignore[index]
+    created = sum(1 for f in files if f["action"] == "created")  # type: ignore[index]
+    assert f"Archivos ({len(files)}):" in text and f"…y {created} nuevos" in text
+    assert "  cambiado: project.yaml" in text and "  borrado: LICENSES/MIT-0.txt" in text
+    assert "En GitHub:" in text and "  Ajustes del repositorio: aplicado" in text
+    assert f"  Ruleset `{_meta.NAME}-base`: aplicado" in text
+    assert "repo_settings" not in text and "REQ-" not in text and "00-marco" not in text
+
+
 def test_dry_run_writes_nothing(tmp_path: Path) -> None:
     w = init_world(tmp_path)
     term = Terminal()

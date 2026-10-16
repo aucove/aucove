@@ -858,6 +858,8 @@ def _actions(st: _Run, admin: ForgeAdmin, caps: Capabilities, uses: Sequence[str
     restriction = actions_restriction(org_policy, repo_policy, uses, org_owned=caps.owner_type == "Organization")
     if restriction is not None:
         st.warn("W_FORGE_ACTIONS_RESTRICTED", restriction)
+        if restriction["level"] is None:  # REQ-PERM-56: desconocido; se revisa en la web
+            st.pending.append(st.lang("init.pending.actions_unknown"))
     if repo_policy is not None and repo_policy.enabled and repo_policy.sha_pinning_required is True:
         st.protection("actions_permissions", "unchanged")
     else:
@@ -1081,23 +1083,55 @@ def _setup_task(st: _Run, forge: ForgeAdapter, plan: FilePlan, setup: _Setup, wr
 
 # -- vista legible ----------------------------------------------------------------------------------
 
+FILES_SHOWN = 10  # con más archivos, la vista legible nombra solo los cambiados y los borrados
+_PROTECTIONS = frozenset({"repo_settings", "actions_permissions", "workflow_permissions", "retention",
+                          "pull_request_target", "environment"})
+
+
+def _protection_label(t: Translator, ident: str) -> str:
+    kind, _, name = ident.partition(":")
+    if kind in ("ruleset", "collaborator") and name:
+        return t(f"init.render.protection.{kind}", name=name)
+    return t(f"init.render.protection.{ident}") if ident in _PROTECTIONS else ident
+
+
+def _protection_status(t: Translator, action: str, detail: object) -> str:
+    if action == "unsupported" and detail == "advisory":
+        return t("init.render.status.unsupported_advisory")
+    return t.get(f"init.render.status.{action}") or action
+
 
 def render_text(result: Result, t: Translator, *, fmt: str = "text") -> str:
-    """Archivos, etiquetas, protecciones, pasos pendientes y los recordatorios de D-44 y D-49."""
+    """Archivos, etiquetas, protecciones, pasos pendientes y los recordatorios de D-44 y D-49.
+
+    Con más de ``FILES_SHOWN`` archivos (``init --repo`` crea la plantilla entera) solo nombra los
+    cambiados y los borrados y cuenta los nuevos; la lista completa está en ``data.files`` (``--json``).
+    """
     del fmt
     data = result.data or {}
     if data.get("dry_run"):
         return ""
     lines = [t("init.render.head", repo=data.get("repo"), profile=data.get("profile"))]
     files = data.get("files") or []
-    if files:
+    shown = files if len(files) <= FILES_SHOWN else [f for f in files if f.get("action") != "created"]  # type: ignore[union-attr]
+    if files and not shown:  # todos nuevos: init --repo
+        lines.append(t("init.render.files_new", count=len(files)))
+    elif files:
         lines.append(t("init.render.files", count=len(files)))
-        lines.extend(f"  {f.get('action')}: {f.get('path')}" for f in files)  # type: ignore[union-attr]
+        for f in shown:
+            action = str(f.get("action"))  # type: ignore[union-attr]
+            lines.append(f"  {t.get(f'init.render.action.{action}') or action}: {f.get('path')}")  # type: ignore[union-attr]
+        if len(shown) < len(files):
+            lines.append("  " + t("init.render.files_more", count=len(files) - len(shown)))
     labels = [lab for lab in data.get("labels") or [] if lab.get("action") != "unchanged"]  # type: ignore[union-attr]
     if labels:
         lines.append(t("init.render.labels", names=", ".join(str(lab.get("name")) for lab in labels)))  # type: ignore[union-attr]
-    for prot in data.get("protections") or []:
-        lines.append(f"  {prot.get('action')}: {prot.get('id')}")  # type: ignore[union-attr]
+    protections = data.get("protections") or []
+    if protections:
+        lines.append(t("init.render.github"))
+    for prot in protections:
+        ident, action = str(prot.get("id")), str(prot.get("action"))  # type: ignore[union-attr]
+        lines.append(f"  {_protection_label(t, ident)}: {_protection_status(t, action, prot.get('detail'))}")  # type: ignore[union-attr]
     if data.get("pushed"):
         lines.append(t("init.render.pushed"))
     pending = data.get("pending_steps") or []

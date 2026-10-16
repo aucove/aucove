@@ -145,6 +145,7 @@ def env_for(tmp: Path, base: Mapping[str, str] | None = None, *, launcher: bool 
         parts.append(GIT_DIR)
     env = clean_env(base if base is not None else os.environ)
     env["PATH"] = os.pathsep.join(parts) if parts else str(tmp / "empty")
+    env["LOCALAPPDATA"] = str(tmp / "localappdata")  # sin las apps empaquetadas de quien corre las pruebas
     if email is not None:
         env["GIT_AUTHOR_EMAIL"] = email
     return env
@@ -1141,6 +1142,35 @@ def test_python_launcher_must_be_an_exe_on_windows(tmp_path: Path) -> None:
     outside.mkdir()
     python = checks_of(run_op(outside, env))["python"]
     assert python["status"] == "warn" and str(python["message"]).lower().endswith(".bat.")
+
+
+def test_a_copy_inside_a_packaged_app_is_reported(tmp_path: Path) -> None:
+    """05 §9.2: lo que se instala desde una app empaquetada de Windows queda en su copia privada, y esa app la
+    usa en lugar de la instalada; ``doctor`` la nombra con su versión y cómo quitarla."""
+    env = env_for(tmp_path)
+    tools = Path(env["LOCALAPPDATA"], "Packages", "Claude_abc123", "LocalCache", "Roaming", "uv", "tools", _meta.NAME)
+    (tools / "Lib" / "site-packages" / f"{_meta.NAME}-0.1.0rc2.dist-info").mkdir(parents=True)
+    outside = tmp_path / "fuera"
+    outside.mkdir()
+    python = checks_of(run_op(outside, env))["python"]
+    assert python["status"] == "warn"
+    assert "Claude_abc123" in str(python["message"]) and "0.1.0rc2" in str(python["message"])
+    assert f'Remove-Item -Recurse -Force "{tools}"' in str(python["fix"])
+
+
+def test_without_a_packaged_copy_there_is_nothing_to_report(tmp_path: Path) -> None:
+    outside = tmp_path / "fuera"
+    outside.mkdir()
+    python = checks_of(run_op(outside, env_for(tmp_path)))["python"]
+    assert python["status"] == "ok" and "Claude" not in str(python["message"])
+
+
+def test_outside_a_project_doctor_points_to_the_dry_run_of_init(tmp_path: Path) -> None:
+    """Fuera de un proyecto no hay repo contra el cual revisar el token: la pista es ``init --repo --dry-run``."""
+    outside = tmp_path / "fuera"
+    outside.mkdir()
+    root = checks_of(run_op(outside, env_for(tmp_path)))["project_root"]
+    assert root["status"] == "warn" and f"{_meta.NAME} init --repo <owner>/<repo> --dry-run" in str(root["fix"])
 
 
 def test_python_version_is_reported(tmp_path: Path) -> None:

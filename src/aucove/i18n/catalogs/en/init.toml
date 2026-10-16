@@ -46,7 +46,7 @@ Kept: squash only and no auto-merge, Actions cannot approve PRs, the local layer
 phrase = "I accept the advisory profile"
 
 [init.bypass]
-text = "roles.yaml has no deputy: nobody can approve your PRs. If you confirm, you ({login}) become a bypass actor of the base ruleset, for PRs only, and the audit flags every merge without approval with flag:bypass (06-permisos §3.4). If not, your PRs stay blocked until you declare a deputy."
+text = "roles.yaml has no deputy: nobody can approve your PRs. If you confirm, you ({login}) become a bypass actor of the base ruleset, for PRs only, and the audit flags every merge without approval with flag:bypass. If not, your PRs stay blocked until you declare a deputy."
 
 # Label descriptions (06-permisos §4.5), in the project language (D-02).
 [init.label]
@@ -95,23 +95,50 @@ part_modified = "The part `{path}` is not in roles.yaml but has changes: delete 
 unknown_value = "`{path}` could not be created because a template value is missing: copy it from the published template."
 retention = "Set the Actions artifact and log retention to {days} days on the web (Settings → Actions → General)."
 pull_request_target = "Public repository: allow `pull_request_target` in the repository Actions policy, on the web, so that PR validation runs."
-advisory_decision = "Record the acceptance of the advisory profile in a decision in `memory/decisions/` from your first task (06-permisos REQ-PERM-41)."
+advisory_decision = "Record the acceptance of the advisory profile in a decision in `memory/decisions/` from your first task."
 bypass_declined = "Without a deputy or bypass, your PRs stay blocked until you declare a deputy in roles.yaml and run init again."
-invited = "`{login}` got an invitation as an outside collaborator: the right way is to invite them to the organization (06-permisos REQ-PERM-55)."
-org = "Organization settings that an owner should change (06-permisos §4.10): {changes}."
+invited = "`{login}` got an invitation as an outside collaborator: the right way is to invite them to the organization."
+org = "Organization settings that an owner should change: {changes}."
 setup_task = "Prepare the project in task #{task}, “{title}”: open your agent in the project folder and ask it to guide you through the plan, the people and the parts."
-evidence_secrets_repo = "The names of the Actions secrets of the repository could not be read: check on the web that none is called `{secret}`. The project key only goes in the environment (10-seguridad REQ-SEC-87)."
+evidence_secrets_repo = "The names of the Actions secrets of the repository could not be read: check on the web that none is called `{secret}`. The project key only goes in the environment."
 evidence_secrets_org = "The names of the Actions secrets of the organization could not be read: check with an owner that none visible to this repository is called `{secret}`."
+actions_unknown = "The organization's Actions policy could not be read with the repository token. Check on GitHub (the organization → Settings → Actions → General) that it allows actions created by GitHub and `astral-sh/setup-uv`: otherwise the project checks cannot run."
 evidence_secret = "Add the private key of the project as the secret `{secret}` of the environment `{environment}`, on the web or with `gh secret set {secret} --env {environment}` (admin guide)."
 
 # Readable view of the result.
 [init.render]
 head = "init on {repo} ({profile} profile):"
 files = "Files ({count}):"
+files_more = "…and {count} new ones (the full list comes with `--json`)."
+files_new = "Files: {count} new (the full list comes with `--json`)."
+github = "On GitHub:"
 labels = "Labels created or updated: {names}."
 pushed = "The files were pushed to the base branch."
 pending = "Pending:"
-reminders = "Before working: everyone turns on the GitHub noreply email and signs the authorship and disclosure agreement (00-marco D-44 and D-49)."
+reminders = "Before working: everyone turns on the GitHub noreply email and signs the authorship and disclosure agreement."
+[init.render.action]
+created = "new"
+updated = "changed"
+deleted = "deleted"
+pending = "pending"
+
+[init.render.protection]
+repo_settings = "Repository settings"
+actions_permissions = "Actions policy"
+workflow_permissions = "Workflow token permissions"
+retention = "Artifact and log retention"
+pull_request_target = "`pull_request_target` in the Actions policy"
+environment = "Project signature environment"
+ruleset = "Ruleset `{name}`"
+collaborator = "Collaborator `{name}`"
+
+[init.render.status]
+applied = "applied"
+unchanged = "unchanged"
+unsupported = "not available"
+unsupported_advisory = "not available with the advisory profile"
+skipped = "pending, on the web"
+
 
 # The lead's setup task (00-marco D-70; 05-operaciones §9.3).
 [init.setup_task]
@@ -131,7 +158,7 @@ text_path = "The package does not include the text of {id}. Path of the file wit
 text_bad = "Could not read {path} as a UTF-8 text file of up to 1 MiB."
 default_holder = "The {name} authors"
 summary = "- Licenses: text {text}, code {code} and data {data}; holder: {holder}. They go in project.yaml, LICENSE, LICENSES/ and REUSE.toml."
-open_text = "Before publishing the text under {id}, check the licensing and preprint policy of the target journal (11-trazabilidad REQ-TRACE-63)."
+open_text = "Before publishing the text under {id}, check the licensing and preprint policy of the target journal."
 
 [init.license.category]
 text = "text (manuscript, plan.md, memory and everything else)"

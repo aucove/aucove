@@ -163,6 +163,25 @@ El agente se detiene y te pide instalarlo con el comando de la guía. No lo inst
 </details>
 
 <details>
+<summary>El agente ve otra versión de aucove que tu terminal, o no lo encuentra</summary>
+
+En Windows, Claude Desktop es una app empaquetada: lo que se instala desde dentro de ella, por el agente o desde su panel Terminal, queda en una copia privada que solo ve esa app y que tapa a la que instalas desde PowerShell. `aucove doctor`, corrido desde PowerShell, te dice si existe y dónde está. Para quitarla:
+
+1. Sal de Claude Desktop desde su ícono en la bandeja del sistema.
+2. En una PowerShell abierta desde el menú Inicio, mira si existe; si no muestra nada, no hay copia:
+
+   ```powershell
+   Get-Item "$env:LOCALAPPDATA\Packages\Claude_*\LocalCache\Roaming\uv\tools\aucove"
+   ```
+
+3. Si existe, bórrala con `Remove-Item -Recurse -Force` seguido de la ruta que mostró el paso 2, entre comillas.
+4. Abre Claude Desktop y pídele al agente que corra `aucove --version`: debe decir la misma versión que tu PowerShell.
+
+Desde entonces, instala y actualiza aucove solo desde PowerShell.
+
+</details>
+
+<details>
 <summary>El sellado dice que una integración quedó sin la firma del proyecto</summary>
 
 Lo dicen el resumen del job, un aviso amarillo en Actions y el comentario de la entrega, con el motivo. El registro se selló igual, porque la fecha va primero, y la firma del índice del hito lo cubre después. Para que las siguientes se firmen:
