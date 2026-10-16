@@ -3,7 +3,7 @@
 What each person in a research team that works with AI on a shared repository does, told as conversations with their agent and, when needed, with the terminal.
 
 > [!NOTE]
-> The guide describes the complete version 0.1. Version 0.1.0rc2 does not yet include shortcuts such as `/start` or the hooks: with it, you ask the agent for the same thing in your own words or use the `aucove` commands. The people, projects and numbers are examples, and the terminal output is abridged.
+> The guide describes the complete version 0.1. Version 0.1.0rc3 does not yet include shortcuts such as `/start` or the hooks: with it, you ask the agent for the same thing in your own words or use the `aucove` commands. The people, projects and numbers are examples, and the terminal output is abridged.
 
 | Page | For whom | What you will find |
 |---|---|---|

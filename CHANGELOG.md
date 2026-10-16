@@ -4,7 +4,9 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
-## [Unreleased]
+## [0.1.0rc3] - 2026-10-15
+
+Third preliminary release of `0.1.0`. With `init --repo`, a project starts from an empty folder and an empty GitHub repository, without cloning the framework: preparing a project with the agent on `0.1.0rc2` took two sessions, one of them in the framework's own clone.
 
 ### Added
 

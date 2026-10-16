@@ -5,7 +5,7 @@
 Preparas el proyecto una vez y, cada semana, revisas lo que entregan los demás.
 
 > [!NOTE]
-> Describe la versión 0.1 completa. Con la 0.1.0rc2, lo que aquí se pide con un atajo como `/empezar` se le pide al agente con palabras, o se hace con los comandos `aucove`.
+> Describe la versión 0.1 completa. Con la 0.1.0rc3, lo que aquí se pide con un atajo como `/empezar` se le pide al agente con palabras, o se hace con los comandos `aucove`.
 
 ## Preparar el proyecto
 
@@ -44,26 +44,6 @@ La fecha y la huella van en el renglón que trae `memory/constitution.md` en «I
 En GitHub, en la organización, crea un repo **vacío**: New repository, un nombre (por ejemplo `ising-diluido`) y Private, sin README, sin `.gitignore` y sin licencia. No le agregues nada: en el paso 5, `aucove init --repo` le sube el proyecto completo desde tu computadora.
 
 Con la 0.1.0 también podrás crear el repo desde la plantilla publicada (`aucove/aucove-template`, «Use this template»), clonarlo y correr en el paso 5 `aucove init`, sin `--repo`, dentro del clon.
-
-<details>
-<summary><b>Con la 0.1.0rc2</b>, que todavía no trae <code>init --repo</code></summary>
-
-Súbele al repo vacío el render de la plantilla de este repositorio:
-
-```bash
-git clone --branch v0.1.0rc2 --depth 1 https://github.com/aucove/aucove.git aucove-fuente
-uv run --project aucove-fuente python aucove-fuente/tools/render_template.py --lang es --out ising-diluido
-cd ising-diluido
-git init -b main
-git add -A
-git commit -s -m "Plantilla de aucove 0.1.0rc2"
-git remote add origin https://github.com/labfe/ising-diluido.git
-git push -u origin main
-```
-
-En el paso 5, corre `aucove init`, sin `--repo`, dentro de la carpeta `ising-diluido`.
-
-</details>
 
 ### 4. Tus dos tokens
 
@@ -142,7 +122,7 @@ En la misma carpeta, abre tu agente. No hay que copiar ni instalar nada más: la
 claude
 ```
 
-Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`; con la 0.1.0rc2, se lo pides con palabras: «prepara el proyecto en la tarea 1». Te entrevista en lenguaje normal:
+Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`; con la 0.1.0rc3, se lo pides con palabras: «prepara el proyecto en la tarea 1». Te entrevista en lenguaje normal:
 
 > **Laura:** `/empezar`
 >

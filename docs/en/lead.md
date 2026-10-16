@@ -5,7 +5,7 @@
 You set up the project once and, every week, you review what the others submit.
 
 > [!NOTE]
-> This describes the complete version 0.1. With 0.1.0rc2, what is done here with a shortcut such as `/start` you ask the agent for in your own words, or do with the `aucove` commands.
+> This describes the complete version 0.1. With 0.1.0rc3, what is done here with a shortcut such as `/start` you ask the agent for in your own words, or do with the `aucove` commands.
 
 ## Setting up the project
 
@@ -44,26 +44,6 @@ The date and the fingerprint go into the line that `memory/constitution.md` has 
 On GitHub, in the organization, create an **empty** repo: New repository, a name (for example `ising-diluido`) and Private, with no README, no `.gitignore` and no license. Do not add anything to it: in step 5, `aucove init --repo` pushes the whole project to it from your computer.
 
 With 0.1.0 you will also be able to create the repo from the published template (`aucove/aucove-template`, "Use this template"), clone it and run `aucove init`, without `--repo`, inside the clone in step 5.
-
-<details>
-<summary><b>With 0.1.0rc2</b>, which does not have <code>init --repo</code> yet</summary>
-
-Push the render of this repository's template to the empty repo:
-
-```bash
-git clone --branch v0.1.0rc2 --depth 1 https://github.com/aucove/aucove.git aucove-source
-uv run --project aucove-source python aucove-source/tools/render_template.py --lang en --out ising-diluido
-cd ising-diluido
-git init -b main
-git add -A
-git commit -s -m "aucove 0.1.0rc2 template"
-git remote add origin https://github.com/labfe/ising-diluido.git
-git push -u origin main
-```
-
-In step 5, run `aucove init`, without `--repo`, inside the `ising-diluido` folder.
-
-</details>
 
 ### 4. Your two tokens
 
@@ -142,7 +122,7 @@ In the same folder, open your agent. There is nothing else to copy or install: t
 claude
 ```
 
-When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`; with 0.1.0rc2, you ask in words: "prepare the project in task 1". It interviews you in plain language:
+When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`; with 0.1.0rc3, you ask in words: "prepare the project in task 1". It interviews you in plain language:
 
 > **Laura:** `/start`
 >

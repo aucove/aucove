@@ -7,7 +7,7 @@ The timestamps prove **when** each submission existed and that it did not change
 Whoever administers the repo sets it up once; it is almost always the lead. It takes about 15 minutes.
 
 > [!NOTE]
-> The project signature arrives with version 0.1.0rc2.
+> The project signature is available since version 0.1.0rc2.
 
 ## What is signed and who keeps the key
 

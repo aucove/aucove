@@ -7,7 +7,7 @@ Los sellos prueban **cuándo** existía cada entrega y que no cambió. La firma 
 Lo prepara una vez quien administra el repo, que casi siempre es el responsable. Toma unos 15 minutos.
 
 > [!NOTE]
-> La firma del proyecto llega con la versión 0.1.0rc2.
+> La firma del proyecto está disponible desde la versión 0.1.0rc2.
 
 ## Qué se firma y quién guarda la llave
 

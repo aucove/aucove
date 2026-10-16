@@ -93,8 +93,8 @@ On Windows, in PowerShell:
 
 ```powershell
 $lock = New-TemporaryFile
-Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc2/requirements-lock.txt -OutFile $lock.FullName
-$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc2" --constraints $lock.FullName
+Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc3/requirements-lock.txt -OutFile $lock.FullName
+$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc3" --constraints $lock.FullName
 uv tool update-shell
 ```
 
@@ -102,14 +102,14 @@ On macOS or Linux, in bash or zsh:
 
 ```bash
 LOCK="$(mktemp)"
-curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc2/requirements-lock.txt
-UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc2" --constraints "$LOCK"
+curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc3/requirements-lock.txt
+UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc3" --constraints "$LOCK"
 uv tool update-shell
 ```
 
 Then restart the terminal and your agent. `aucove doctor` checks the installation, the GitHub token and the project, and says what to fix.
 
-To verify evidence seals on your computer (`aucove evidence verify`), install it with the `evidence` extra: in the `uv tool install` command, write `"aucove[evidence]==0.1.0rc2"`. If aucove is already installed, the same command adds the extra. CI seals every submission without it.
+To verify evidence seals on your computer (`aucove evidence verify`), install it with the `evidence` extra: in the `uv tool install` command, write `"aucove[evidence]==0.1.0rc3"`. If aucove is already installed, the same command adds the extra. CI seals every submission without it.
 
 ### Getting started
 
@@ -124,8 +124,6 @@ aucove init --repo <organization>/<repo>
 - **From the terminal:** run `init` in PowerShell or Terminal, then open your agent in the folder.
 - **With the agent from the start, in a single folder:** open the agent in the empty folder and let it guide you, but run `init` yourself in a separate terminal, because it asks for confirmations and the token, which must not go through the AI. When it finishes, restart the agent in the same folder so it loads the project's tools and your token.
 
-With `0.1.0rc2`, which does not have `init --repo` yet, the [lead guide](docs/en/lead.md#3-the-empty-repo) explains how to push the template to the empty repo.
-
 The [user guide](docs/en/README.md) is organized by role ([en español](docs/es/README.md)):
 
 - **Researcher:** [setting up your computer and token, and a day of work with the agent](docs/en/researcher.md).
@@ -138,7 +136,7 @@ The [user guide](docs/en/README.md) is organized by role ([en español](docs/es/
 
 ### Status
 
-Version 0.1. `0.1.0rc2` is a preliminary release with the complete core (CLI and MCP server), the template, its CI and the project signature. The skills and hooks for Claude Code and Codex, such as `/start` and `/submit`, the published template repository and the devcontainer arrive with `0.1.0`. In the meantime, you ask the agent in your own words or use the `aucove` commands. The changes in each version are in [CHANGELOG.md](CHANGELOG.md), and the v0.1 specification, which is the normative authority, is in [`spec/`](spec/).
+Version 0.1. `0.1.0rc3` is a preliminary release with the complete core (CLI and MCP server), the template, its CI, the project signature and `init --repo`, which creates a project from an empty folder. The skills and hooks for Claude Code and Codex, such as `/start` and `/submit`, the published template repository and the devcontainer arrive with `0.1.0`. In the meantime, you ask the agent in your own words or use the `aucove` commands. The changes in each version are in [CHANGELOG.md](CHANGELOG.md), and the v0.1 specification, which is the normative authority, is in [`spec/`](spec/).
 
 ### Get involved
 
@@ -159,8 +157,8 @@ To report a vulnerability, follow [SECURITY.md](SECURITY.md) instead of opening 
 Every version is published from this repository with Trusted Publishing and carries attestations of its build (10-seguridad §6). To check that a wheel came from this repository's release workflow:
 
 ```bash
-pypi-attestations verify pypi --repository https://github.com/aucove/aucove pypi:aucove-0.1.0rc2-py3-none-any.whl
-gh attestation verify aucove-0.1.0rc2-py3-none-any.whl -R aucove/aucove
+pypi-attestations verify pypi --repository https://github.com/aucove/aucove pypi:aucove-0.1.0rc3-py3-none-any.whl
+gh attestation verify aucove-0.1.0rc3-py3-none-any.whl -R aucove/aucove
 ```
 
 The first command uses [pypi-attestations](https://pypi.org/project/pypi-attestations/), installed separately, and the second the GitHub CLI on the downloaded wheel.
@@ -290,8 +288,8 @@ En Windows, en PowerShell:
 
 ```powershell
 $lock = New-TemporaryFile
-Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc2/requirements-lock.txt -OutFile $lock.FullName
-$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc2" --constraints $lock.FullName
+Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc3/requirements-lock.txt -OutFile $lock.FullName
+$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc3" --constraints $lock.FullName
 uv tool update-shell
 ```
 
@@ -299,14 +297,14 @@ En macOS o Linux, en bash o zsh:
 
 ```bash
 LOCK="$(mktemp)"
-curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc2/requirements-lock.txt
-UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc2" --constraints "$LOCK"
+curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc3/requirements-lock.txt
+UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc3" --constraints "$LOCK"
 uv tool update-shell
 ```
 
 Después, reinicia la terminal y tu agente. `aucove doctor` comprueba la instalación, el token de GitHub y el proyecto, y dice qué arreglar.
 
-Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc2"`. Si aucove ya estaba instalado, el mismo comando le agrega el extra. El CI sella cada entrega sin él.
+Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc3"`. Si aucove ya estaba instalado, el mismo comando le agrega el extra. El CI sella cada entrega sin él.
 
 ### Primeros pasos
 
@@ -321,8 +319,6 @@ aucove init --repo <organización>/<repo>
 - **Por terminal:** corres `init` en PowerShell o en Terminal y luego abres el agente en la carpeta.
 - **Con el agente desde el principio, en una sola carpeta:** abres el agente en la carpeta vacía y te acompaña, pero `init` lo corres tú en una terminal aparte, porque pide confirmaciones y el token, que no deben pasar por la IA. Al terminar, reinicias el agente en la misma carpeta para que cargue las herramientas del proyecto y tu token.
 
-Con la `0.1.0rc2`, que todavía no trae `init --repo`, la [guía del responsable](docs/es/responsable.md#3-el-repo-vacío) explica cómo subir la plantilla al repo vacío.
-
 La [guía de uso](docs/es/README.md) va por perfil ([in English](docs/en/README.md)):
 
 - **Investigador:** [preparar tu computadora y tu token, y un día de trabajo con el agente](docs/es/investigador.md).
@@ -335,7 +331,7 @@ La [guía de uso](docs/es/README.md) va por perfil ([in English](docs/en/README.
 
 ### Estado
 
-Versión 0.1. La `0.1.0rc2` es una versión preliminar con el núcleo completo (CLI y servidor MCP), la plantilla, su CI y la firma del proyecto. Los skills y los hooks para Claude Code y Codex, como `/empezar` y `/entregar`, el repositorio plantilla publicado y el devcontainer llegan con la `0.1.0`. Mientras tanto, lo mismo se le pide al agente con palabras o se hace con los comandos `aucove`. Los cambios de cada versión están en [CHANGELOG.md](CHANGELOG.md), y la especificación v0.1, que es la autoridad normativa, en [`spec/`](spec/).
+Versión 0.1. La `0.1.0rc3` es una versión preliminar con el núcleo completo (CLI y servidor MCP), la plantilla, su CI, la firma del proyecto e `init --repo`, que crea un proyecto desde una carpeta vacía. Los skills y los hooks para Claude Code y Codex, como `/empezar` y `/entregar`, el repositorio plantilla publicado y el devcontainer llegan con la `0.1.0`. Mientras tanto, lo mismo se le pide al agente con palabras o se hace con los comandos `aucove`. Los cambios de cada versión están en [CHANGELOG.md](CHANGELOG.md), y la especificación v0.1, que es la autoridad normativa, en [`spec/`](spec/).
 
 ### Colabora
 
@@ -356,8 +352,8 @@ Para reportar una vulnerabilidad, sigue [SECURITY.md](SECURITY.md) en lugar de a
 Cada versión se publica desde este repositorio con Trusted Publishing y lleva atestaciones de su construcción (10-seguridad §6). Para comprobar que una rueda salió del workflow de release de este repositorio:
 
 ```bash
-pypi-attestations verify pypi --repository https://github.com/aucove/aucove pypi:aucove-0.1.0rc2-py3-none-any.whl
-gh attestation verify aucove-0.1.0rc2-py3-none-any.whl -R aucove/aucove
+pypi-attestations verify pypi --repository https://github.com/aucove/aucove pypi:aucove-0.1.0rc3-py3-none-any.whl
+gh attestation verify aucove-0.1.0rc3-py3-none-any.whl -R aucove/aucove
 ```
 
 El primer comando usa [pypi-attestations](https://pypi.org/project/pypi-attestations/), que se instala aparte, y el segundo, la CLI de GitHub sobre la rueda descargada.
