@@ -5,7 +5,7 @@
 You set up the project once and, every week, you review what the others submit.
 
 > [!NOTE]
-> This describes the complete version 0.1. With 0.1.0rc3, what is done here with a shortcut such as `/start` you ask the agent for in your own words, or do with the `aucove` commands.
+> This describes the complete version 0.1. With 0.1.0rc4, what is done here with a shortcut such as `/start` you ask the agent for in your own words, or do with the `aucove` commands.
 
 ## Setting up the project
 
@@ -93,7 +93,7 @@ In the same folder, open your agent. There is nothing else to copy or install: t
 claude
 ```
 
-When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`; with 0.1.0rc3, you ask in words: "prepare the project in task 1". It interviews you in plain language:
+When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`; with 0.1.0rc4, you ask in words: "prepare the project in task 1". It interviews you in plain language:
 
 > **Laura:** `/start`
 >

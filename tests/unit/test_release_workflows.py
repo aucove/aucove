@@ -157,13 +157,14 @@ def test_release_runs_only_on_version_tags(release: Mapping[Any, Any]) -> None:
 
 def test_release_jobs_and_their_order(release: Mapping[Any, Any]) -> None:
     j = jobs(release)
-    assert set(j) == {"ci", "live", "build", "pypi", "template", "gh-release"}
+    assert set(j) == {"ci", "live", "build", "pypi", "template", "gh-release", "install-check"}
     assert j["ci"]["uses"] == "./.github/workflows/ci.yml"  # la matriz completa (REQ-ARCH-6)
     assert j["live"]["uses"] == "./.github/workflows/nightly.yml"  # REQ-FORGE-64: antes de cada versión
     assert needs(j["build"]) == {"ci", "live"}
     assert needs(j["pypi"]) == {"build"}
     assert needs(j["template"]) == {"build", "pypi"}  # REQ-ARCH-7: después de PyPI
     assert needs(j["gh-release"]) == {"build", "pypi", "template"}
+    assert needs(j["install-check"]) == {"build", "gh-release"}  # el lock sale de la Release
 
 
 def test_only_the_pypi_job_gets_an_oidc_token(release: Mapping[Any, Any]) -> None:
@@ -237,6 +238,26 @@ def test_gh_release_uses_the_changelog_and_attaches_the_assets(release: Mapping[
     assert 'python3 tools/release.py notes --version "$VERSION" --repo "$REPO"' in text
     assert "gh release create" in text and "--verify-tag" in text and "flags+=(--prerelease)" in text
     assert "assets/requirements-lock.txt assets/sbom.cdx.json" in text
+
+
+def test_install_check_installs_the_published_version_like_the_readme(release: Mapping[Any, Any]) -> None:
+    """01-arquitectura §2.3: después de la Release, en los tres sistemas, como lo dice el README."""
+    job = jobs(release)["install-check"]
+    # La plantilla se omite en una preliminar: sin un if explícito, el job quedaría omitido también.
+    assert job["if"] == "${{ !cancelled() && needs.gh-release.result == 'success' }}"
+    assert job["permissions"] == {"contents": "read"}
+    assert job["strategy"]["matrix"] == {"os": ["ubuntu-latest", "windows-latest", "macos-latest"]}
+    assert job["strategy"]["fail-fast"] is False and job["runs-on"] == "${{ matrix.os }}"
+    [uv] = [s for s in job["steps"] if str(s.get("uses", "")).startswith("astral-sh/setup-uv@")]
+    assert uv["with"]["enable-cache"] is False
+    text = run_text(job)
+    assert '"https://github.com/$REPO/releases/download/v$VERSION/requirements-lock.txt"' in text
+    assert 'uv tool install --refresh "aucove==$VERSION" --constraints "$lock"' in text  # sin la rueda local
+    assert text.index("uv tool install") < text.index("aucove --version")
+    assert "render_project(lang, published_variables(version))" in text
+    assert "init --repo octo-org/empty --dry-run" in text and "E_HUMAN_ONLY_AGENT_ENV" in text
+    for step in job["steps"]:
+        assert "${{" not in str(step.get("run", "")), step.get("name")  # por env, nunca interpolado en run
 
 
 # -- nightly.yml --------------------------------------------------------------------------------

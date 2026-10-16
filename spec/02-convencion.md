@@ -658,7 +658,7 @@ Reglas de este proyecto para cualquier agente de IA. Las mantiene el responsable
 2. Si `project.yaml` dice `format: latex`, lee la guía del artículo, `tex/guide.md`: qué cubre cada sección y cada parte, la notación, la terminología y el tono.
 3. Consulta tu contexto con `aucove context` o la herramienta `get_context`: persona, rol, tarea y partes.
 4. Trabaja solo dentro de una tarea reclamada (`aucove claim <n>` o `claim_task`); si no existe, proponla (`propose_task`).
-5. Si `aucove --version` falla o `aucove doctor` informa un desajuste, detente y pide a la persona que instale el núcleo con el comando de la guía; no lo instales tú.
+5. Si `aucove --version` falla, o `aucove doctor` informa un desajuste o que falta el token o la identidad de git, detente y dile a la persona qué paso de la preparación le falta (README, «Prepara tu computadora»), con lo que dice `doctor`. No lo hagas tú: no instales el núcleo, no cambies la configuración de git y nunca le pidas el token ni lo muestres.
 6. Si el contexto dice «Preparación pendiente» y la persona es la responsable, ofrécele preparar el proyecto en su tarea de preparación: pregúntale lo que falta y completa el plan, las personas y las partes. A cualquier otra persona, explícale que lo prepara la responsable.
 
 ## 3. Cómo trabajar

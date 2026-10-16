@@ -3,7 +3,7 @@
 Qué hace cada persona de un equipo de investigación que trabaja con IA sobre un mismo repositorio, contado como conversaciones con su agente y, cuando hace falta, con la terminal.
 
 > [!NOTE]
-> La guía describe la versión 0.1 completa. La 0.1.0rc3 todavía no trae los atajos como `/empezar` ni los hooks: con ella, lo mismo se le pide al agente con palabras o se hace con los comandos `aucove`. Las personas, los proyectos y los números son de ejemplo, y las salidas de la terminal están abreviadas.
+> La guía describe la versión 0.1 completa. La 0.1.0rc4 todavía no trae los atajos como `/empezar` ni los hooks: con ella, lo mismo se le pide al agente con palabras o se hace con los comandos `aucove`. Las personas, los proyectos y los números son de ejemplo, y las salidas de la terminal están abreviadas.
 
 | Página | Para quién | Qué encuentras |
 |---|---|---|

@@ -22,15 +22,20 @@ It works with Claude Code, Codex and other AI tools that read `AGENTS.md`.
 | `data/README.md` | Index of the datasets, which are not versioned. |
 | `project.yaml` | Configuration: convention, language, format, forge and build. |
 
-## Install the core
+## Set up your computer
 
-You need [uv](https://docs.astral.sh/uv/).
+Do this once on each computer, with [aucove's initial setup](https://github.com/{{var:framework_repo}}/blob/v{{var:core_pin}}/README.md#initial-setup): your GitHub account with the private email, git with your identity, the core, your GitHub token for this repository in `GH_TOKEN`, the clone of this repository and your agent open in that folder.
+If you would rather have your agent with you, use [Setting up aucove with your agent](https://github.com/{{var:framework_repo}}/blob/v{{var:core_pin}}/docs/en/setup-with-your-agent.md).
+
+This project uses the `aucove` core `{{var:core_pin}}`.
+Install and update it only from a terminal opened from the Start menu (or Terminal on macOS), never from inside your agent's app: on Windows, whatever is installed from inside Claude Desktop stays in a separate copy that only that app sees.
+First you need [uv](https://docs.astral.sh/uv/).
 On macOS or Linux:
 
 ```sh
 LOCK="$(mktemp)"
 curl -fsSL -o "$LOCK" https://github.com/{{var:framework_repo}}/releases/download/v{{var:core_pin}}/requirements-lock.txt
-uv tool install "aucove=={{var:core_pin}}" --constraints "$LOCK"
+UV_COMPILE_BYTECODE=1 uv tool install "aucove=={{var:core_pin}}" --constraints "$LOCK"
 uv tool update-shell
 ```
 
@@ -39,11 +44,11 @@ On Windows (PowerShell):
 ```powershell
 $lock = New-TemporaryFile
 Invoke-WebRequest -UseBasicParsing https://github.com/{{var:framework_repo}}/releases/download/v{{var:core_pin}}/requirements-lock.txt -OutFile $lock.FullName
-uv tool install "aucove=={{var:core_pin}}" --constraints $lock.FullName
+$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove=={{var:core_pin}}" --constraints $lock.FullName
 uv tool update-shell
 ```
 
-Restart the terminal and check the installation with `aucove doctor`.
+Close the terminal, open a new one and check everything with `aucove doctor` in the project folder.
 
 ## If you are the lead
 

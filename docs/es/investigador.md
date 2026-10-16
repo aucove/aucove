@@ -5,7 +5,7 @@
 Lo que haces tú: preparar tu computadora una vez y, después, conversar con tu agente.
 
 > [!NOTE]
-> Describe la versión 0.1 completa. Los atajos como `/empezar` o `/entregar` llegan con la 0.1.0 para Claude Code y Codex. Con la 0.1.0rc3, o con otro agente, se le pide lo mismo con palabras, por ejemplo «empecemos con la tarea 8» o «entrega la tarea», o se hace con los comandos `aucove`.
+> Describe la versión 0.1 completa. Los atajos como `/empezar` o `/entregar` llegan con la 0.1.0 para Claude Code y Codex. Con la 0.1.0rc4, o con otro agente, se le pide lo mismo con palabras, por ejemplo «empecemos con la tarea 8» o «entrega la tarea», o se hace con los comandos `aucove`.
 
 ## Antes del primer día
 

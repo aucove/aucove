@@ -13,6 +13,8 @@
 # - template actualiza aucove-template solo con una versión final (REQ-ARCH-7 y REQ-ARCH-8),
 #   con un token de la GitHub App del environment template-publish (REQ-SEC-83).
 # - gh-release crea la GitHub Release con las notas de CHANGELOG.md y los dos assets.
+# - install-check instala la versión publicada desde PyPI como dice el README, en Linux, macOS y
+#   Windows, y comprueba su versión, la plantilla de la rueda y la barrera de las operaciones H.
 name: release
 
 on:
@@ -231,3 +233,90 @@ jobs:
           gh release create "v$VERSION" --repo "$REPO" --verify-tag --title "aucove $VERSION" \
             --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}" \
             assets/requirements-lock.txt assets/sbom.cdx.json
+
+  # Después de la Release: la versión publicada, instalada como dice el README (con el requirements-lock.txt de la
+  # Release) en los tres sistemas. Si falla, la versión ya está publicada: el arreglo va en la siguiente.
+  install-check:
+    needs: [build, gh-release]
+    if: ${{ !cancelled() && needs.gh-release.result == 'success' }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"   # el mismo uv que ci.yml
+          enable-cache: false
+      - name: Instalar desde PyPI como dice el README
+        env:
+          REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          lock="$RUNNER_TEMP/requirements-lock.txt"
+          curl -fsSL --retry 5 -o "$lock" "https://github.com/$REPO/releases/download/v$VERSION/requirements-lock.txt"
+          # El índice de PyPI puede tardar unos minutos en servir la versión recién publicada.
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if UV_COMPILE_BYTECODE=1 uv tool install --refresh "aucove==$VERSION" --constraints "$lock"; then
+              break
+            fi
+            if [ "$attempt" = 10 ]; then
+              echo "::error::aucove==$VERSION no se pudo instalar desde PyPI"
+              exit 1
+            fi
+            sleep 30
+          done
+          uv tool dir --bin >> "$GITHUB_PATH"
+      - name: La versión, la plantilla de la rueda y la barrera de las operaciones H
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          shown="$(aucove --version)"
+          if [ "$shown" != "$VERSION" ]; then
+            echo "::error::aucove --version dice $shown, no $VERSION"
+            exit 1
+          fi
+          tools="$(uv tool dir)"
+          if command -v cygpath >/dev/null 2>&1; then tools="$(cygpath -u "$tools")"; fi
+          py="$tools/aucove/bin/python"
+          if [ ! -x "$py" ]; then py="$tools/aucove/Scripts/python.exe"; fi
+          # La plantilla que arma init --repo sale de la rueda: los datos empaquetados y template_vars.toml.
+          "$py" -I - "$VERSION" <<'EOF'
+          import sys
+          from aucove import _meta
+          from aucove.render.project import published_variables, render_project
+          version = sys.argv[1]
+          assert _meta.__version__ == version, (_meta.__version__, version)
+          for lang in ("en", "es"):
+              files = render_project(lang, published_variables(version))
+              for path in ("AGENTS.md", "README.md", "project.yaml", "roles.yaml", ".mcp.json", ".github/CODEOWNERS"):
+                  assert path in files, (lang, path)
+              assert version.encode() in files["project.yaml"], lang
+              print(lang, len(files), "archivos")
+          EOF
+          # En el CI, una operación solo humana se niega antes de leer nada (A6), aun con --dry-run.
+          empty="$RUNNER_TEMP/carpeta-vacia"
+          mkdir -p "$empty"
+          status=0
+          aucove --json --root "$empty" init --repo octo-org/empty --dry-run > "$RUNNER_TEMP/init.json" || status=$?
+          leftover="$(find "$empty" -mindepth 1 -print -quit)"
+          if [ "$status" != 9 ] || [ -n "$leftover" ]; then
+            echo "::error::init --dry-run terminó con $status o escribió en la carpeta"
+            exit 1
+          fi
+          aucove --json --root "$empty" doctor > "$RUNNER_TEMP/doctor.json"
+          "$py" -I - "$RUNNER_TEMP/init.json" "$RUNNER_TEMP/doctor.json" <<'EOF'
+          import json
+          import sys
+          with open(sys.argv[1], encoding="utf-8") as f:
+              init = json.load(f)
+          assert init["error"]["code"] == "E_HUMAN_ONLY_AGENT_ENV", init
+          with open(sys.argv[2], encoding="utf-8") as f:
+              checks = {c["id"]: c["status"] for c in json.load(f)["data"]["checks"]}
+          assert checks["python"] == "ok" and checks["git"] == "ok", checks
+          print("init se negó y doctor ve Python y git")
+          EOF

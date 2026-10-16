@@ -4,16 +4,22 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
-## [Unreleased]
+## [0.1.0rc4] - 2026-10-16
+
+Fourth preliminary release of `0.1.0`. It brings what the first real run of `init --repo` against GitHub taught: the README's initial setup, step by step and by role, with a guide to do it with an agent; `doctor` finds the second copy of aucove that Claude Desktop keeps on Windows; and every release now installs itself from PyPI on Linux, macOS and Windows.
 
 ### Added
 
 - A guide to set up aucove with an agent (`docs/es/configurar-con-agente.md`, `docs/en/setup-with-your-agent.md`): the messages to paste at each stage, by role, and what the agent checks and never does, such as installing, running `init` or asking for the token.
+- After each release, `release.yml` installs the published version from PyPI as the README says, with the Release's `requirements-lock.txt`, on Linux, macOS and Windows, and checks its version, the template that the wheel renders and that `init --repo --dry-run` refuses to run in CI.
 - `doctor` warns when a packaged Windows app, such as Claude Desktop, keeps its own copy of aucove in its private storage, which that app uses instead of the one installed from a terminal, and says how to remove it.
 
 ### Changed
 
 - The readable output of `init` counts the new files instead of listing every one, describes what it did on GitHub in words, and its texts no longer cite the specification. When the organization's Actions policy cannot be read, the pending steps say where to check it on the web.
+- Each project's README links to the initial setup, at the tag of its `core_pin`, and its installation commands match the README's: install only from a terminal outside the agent's app, with `UV_COMPILE_BYTECODE`.
+- In each project's `AGENTS.md`, item 5 of section 2 asks the agent to tell the person which setup step is missing when `doctor` reports a mismatch, a missing token or a missing git identity, without doing it itself and without ever asking for the token (02-convencion §8.3). Projects created with an earlier version get `conv.agents.modified` on section 2 when they move to this one, until the lead copies that item from the template.
+- The live and e2e test runs in CI list failures and errors in their summary (`-rfEs`), not only skips.
 - In the first two days of a project, `doctor` no longer warns that `expire-claims` has never run, since the workflow runs once a day.
 - Outside a project, `doctor` points to `init --repo <owner>/<repo> --dry-run`, which checks the token, the empty repository and git without writing anything.
 - The README's "Installation" and "Getting started" become a single "Initial setup" in eight steps that say who does each one, the lead or a researcher: the GitHub account and the `noreply` email, the organization and the empty repo, git and its identity, aucove, the everyday token, storing it in `GH_TOKEN` on each system without showing it and checking it, the project (`init --repo`, with the one-day administration token and its own prefilled link, or `git clone`) and the agent. The researcher and lead guides link to it instead of repeating it, and "If something fails" covers a token that the terminal sees but the agent does not.

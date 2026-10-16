@@ -81,7 +81,7 @@ jobs:
           TEST_GH_TOKEN_READ_ONLY: ${{ secrets.TEST_GH_TOKEN_READ_ONLY }}
           TEST_GH_TOKEN_NO_PERMISSION: ${{ secrets.TEST_GH_TOKEN_NO_PERMISSION }}
           TEST_GH_TOKEN_TEAM_LEAD: ${{ secrets.TEST_GH_TOKEN_TEAM_LEAD }}
-        run: uv run --no-sync pytest -m live -rs -p no:cacheprovider
+        run: uv run --no-sync pytest -m live -rfEs -p no:cacheprovider
 
   template-drift:
     # Llamado desde release.yml, el contexto github es el del push de la etiqueta.

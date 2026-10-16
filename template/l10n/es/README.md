@@ -22,15 +22,20 @@ Funciona con Claude Code, Codex y otras herramientas de IA que leen `AGENTS.md`.
 | `data/README.md` | Índice de los conjuntos de datos, que no se versionan. |
 | `project.yaml` | Configuración: convención, idioma, formato, forja y compilación. |
 
-## Instalar el núcleo
+## Prepara tu computadora
 
-Necesitas [uv](https://docs.astral.sh/uv/).
+Se hace una vez en cada computadora, con la [configuración inicial de aucove](https://github.com/{{var:framework_repo}}/blob/v{{var:core_pin}}/README.md#configuración-inicial): tu cuenta de GitHub con el correo privado, git con tu identidad, el núcleo, tu token de GitHub para este repositorio en `GH_TOKEN`, el clon de este repositorio y tu agente abierto en esa carpeta.
+Si prefieres que tu agente te acompañe, usa [Configurar aucove con tu agente](https://github.com/{{var:framework_repo}}/blob/v{{var:core_pin}}/docs/es/configurar-con-agente.md).
+
+Este proyecto usa el núcleo `aucove` `{{var:core_pin}}`.
+Instálalo y actualízalo solo desde una terminal abierta desde el menú Inicio (o Terminal en macOS), nunca desde la app de tu agente: en Windows, lo que se instala desde Claude Desktop queda en una copia aparte que solo ve esa app.
+Antes necesitas [uv](https://docs.astral.sh/uv/).
 En macOS o Linux:
 
 ```sh
 LOCK="$(mktemp)"
 curl -fsSL -o "$LOCK" https://github.com/{{var:framework_repo}}/releases/download/v{{var:core_pin}}/requirements-lock.txt
-uv tool install "aucove=={{var:core_pin}}" --constraints "$LOCK"
+UV_COMPILE_BYTECODE=1 uv tool install "aucove=={{var:core_pin}}" --constraints "$LOCK"
 uv tool update-shell
 ```
 
@@ -39,11 +44,11 @@ En Windows (PowerShell):
 ```powershell
 $lock = New-TemporaryFile
 Invoke-WebRequest -UseBasicParsing https://github.com/{{var:framework_repo}}/releases/download/v{{var:core_pin}}/requirements-lock.txt -OutFile $lock.FullName
-uv tool install "aucove=={{var:core_pin}}" --constraints $lock.FullName
+$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove=={{var:core_pin}}" --constraints $lock.FullName
 uv tool update-shell
 ```
 
-Reinicia la terminal y comprueba la instalación con `aucove doctor`.
+Cierra la terminal, abre una nueva y comprueba todo con `aucove doctor` en la carpeta del proyecto.
 
 ## Si eres responsable
 

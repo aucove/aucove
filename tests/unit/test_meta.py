@@ -18,7 +18,7 @@ SRC = REPO_ROOT / "src" / _meta.NAME
 
 def test_name_and_version() -> None:
     assert _meta.NAME == "aucove"
-    assert _meta.__version__ == "0.1.0rc3"  # la tercera versión preliminar (00-marco D-66 y D-69)
+    assert _meta.__version__ == "0.1.0rc4"  # la cuarta versión preliminar (00-marco D-66 y D-69)
     assert _meta.SUPPORTED_CONVENTIONS == ("0.1",)
 
 

@@ -99,6 +99,13 @@ job gh-release   : needs template (o template omitido) ; notas desde CHANGELOG.m
                    con enlace a https://github.com/{owner}/aucove-template/compare/v<anterior>...vX.Y.Z
                    en una versión final ; preliminar marcada como tal
                    adjunta assets/requirements-lock.txt y assets/sbom.cdx.json
+job install-check: needs build, gh-release ; en ubuntu-latest, windows-latest y macos-latest
+                   uv tool install aucove==X.Y.Z --constraints <requirements-lock.txt de la Release>,
+                     desde PyPI y como lo dice el README (reintenta mientras PyPI no sirva la versión)
+                   aucove --version -> X.Y.Z ; render_project de la rueda instalada, en en y es
+                   init --repo --dry-run se niega con E_HUMAN_ONLY_AGENT_ENV sin escribir nada
+                   doctor fuera de un proyecto: python y git en ok
+                   si falla, la versión ya está publicada: el arreglo va en la siguiente
 ```
 
 - **REQ-ARCH-7.** El job `template` DEBE correr solo después de que la versión `X.Y.Z` esté publicada en PyPI, para que el `core_pin` de la plantilla siempre sea instalable.

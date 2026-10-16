@@ -2,8 +2,8 @@
 # tools/render_template.py los usa para el render de la plantilla; `aucove init` (H3)
 # los reescribe en cada proyecto. Solo estas claves pueden aparecer en template/.
 # core se deriva de core_pin con la fórmula de init (01 REQ-ARCH-44; 00-marco D-66).
-core = ">=0.1.0rc3,<0.2"
-core_pin = "0.1.0rc3"
+core = ">=0.1.0rc4,<0.2"
+core_pin = "0.1.0rc4"
 # La plantilla publicada va en en (01-arquitectura §2.3); render_template.py --lang la reemplaza.
 language = "en"
 name = "aucove-template"

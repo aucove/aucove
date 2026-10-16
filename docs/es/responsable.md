@@ -5,7 +5,7 @@
 Preparas el proyecto una vez y, cada semana, revisas lo que entregan los demás.
 
 > [!NOTE]
-> Describe la versión 0.1 completa. Con la 0.1.0rc3, lo que aquí se pide con un atajo como `/empezar` se le pide al agente con palabras, o se hace con los comandos `aucove`.
+> Describe la versión 0.1 completa. Con la 0.1.0rc4, lo que aquí se pide con un atajo como `/empezar` se le pide al agente con palabras, o se hace con los comandos `aucove`.
 
 ## Preparar el proyecto
 
@@ -93,7 +93,7 @@ En la misma carpeta, abre tu agente. No hay que copiar ni instalar nada más: la
 claude
 ```
 
-Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`; con la 0.1.0rc3, se lo pides con palabras: «prepara el proyecto en la tarea 1». Te entrevista en lenguaje normal:
+Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`; con la 0.1.0rc4, se lo pides con palabras: «prepara el proyecto en la tarea 1». Te entrevista en lenguaje normal:
 
 > **Laura:** `/empezar`
 >

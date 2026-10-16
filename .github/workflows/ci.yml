@@ -279,7 +279,7 @@ jobs:
           docker version
           docker pull "$image"
       - name: Autoprueba de la plantilla (tests/e2e)
-        run: uv run --no-sync pytest tests/e2e -n auto -m "not live and not model" -rs
+        run: uv run --no-sync pytest tests/e2e -n auto -m "not live and not model" -rfEs
 
   # DCO de cada commit del PR (REQ-TRACE-66). Exime el PR que la API atribuye a
   # dependabot[bot] (00-marco D-07 c): cuenta quien abre el PR, no el correo del commit.

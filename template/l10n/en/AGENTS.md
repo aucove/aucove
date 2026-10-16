@@ -12,7 +12,7 @@ Rules of this project for any AI agent. The lead maintains them. Convention 0.1.
 2. If `project.yaml` says `format: latex`, read the article guide, `tex/guide.md`: what each section and each part covers, the notation, the terminology and the tone.
 3. Check your context with `aucove context` or the `get_context` tool: person, role, task and parts.
 4. Work only inside a claimed task (`aucove claim <n>` or `claim_task`); if there is none, propose one (`propose_task`).
-5. If `aucove --version` fails or `aucove doctor` reports a mismatch, stop and ask the person to install the core with the command in the guide; do not install it yourself.
+5. If `aucove --version` fails, or `aucove doctor` reports a mismatch or a missing token or git identity, stop and tell the person which setup step they are missing (README, "Set up your computer"), with what `doctor` says. Do not do it yourself: do not install the core, do not change the git configuration, and never ask for the token or show it.
 6. If the context says “Setup pending” and the person is the lead, offer to prepare the project in their setup task: ask what is missing and complete the plan, the people and the parts. Tell anyone else that the lead prepares it.
 
 ## 3. How to work
