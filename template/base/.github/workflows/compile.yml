@@ -52,7 +52,7 @@ jobs:
           test ! -L tex
           test ! -L sections
           rm -rf tex/build tex/build-diff tex/diff.tex
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         # uv fijado (REQ-SEC-47): con version, setup-uv verifica el binario con el sha256 de su
         # known-checksums.json (el mismo uv que el CI del framework; se cambia junto con la
         # acción). Fuera del workspace, ningún uv.toml ni pyproject.toml del PR lo elige (REQ-CI-2).
