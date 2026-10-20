@@ -223,7 +223,7 @@ Un secreto del repo o de la organización lo puede leer un workflow de cualquier
 <details>
 <summary><code>init --repo</code> dice que git no tiene tus credenciales, o GitHub rechaza el push</summary>
 
-`init` sube el proyecto con las credenciales de GitHub que git ya tiene guardadas, sin pedírtelas. Si el error dice `git_credentials`, git no tiene las tuyas: corre una vez en tu terminal `git ls-remote https://github.com/<organización>/<repo>.git`, que te pide iniciar sesión, o `gh auth setup-git` si usas GitHub CLI, y repite `init`. Si GitHub rechaza el push con `permission` o con `workflow_permission`, esas credenciales no pueden subir al repo o crear workflows: inicia sesión con una cuenta o un token que sí puedan. En los dos casos `init` deja la carpeta vacía, así que basta con repetirlo.
+`init` sube el proyecto con la sesión de GitHub que git ya tiene guardada, sin pedírtela. Si el error dice `git_credentials`, git no tiene la tuya: corre una vez en tu terminal `git ls-remote https://github.com/<organización>/<repo>.git`, que abre el navegador para iniciar sesión con Git Credential Manager ([paso 3 de la configuración inicial](../../README.md#3-git-y-tu-identidad)), y repite `init`. Si GitHub rechaza el push con `permission` o con `workflow_permission`, git subió con credenciales que no pueden escribir en el repo o crear workflows. Pasa, por ejemplo, si configuraste git con `gh auth setup-git` y tienes `GH_TOKEN`: GitHub CLI le da a git ese token, que no puede crear workflows. Quita esa configuración con `git config --global --unset-all credential.https://github.com.helper`, inicia sesión con `git ls-remote` y repite `init`. En los dos casos `init` deja la carpeta vacía, así que basta con repetirlo.
 
 </details>
 

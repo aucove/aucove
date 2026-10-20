@@ -52,7 +52,7 @@ hint = "Check `details.reason`; the admin guide explains how to create, publish,
 
 [error.E_AUTH_NOT_AUTHENTICATED]
 message = "There is no forge credential, or git has none to read the `init --repo` repository."
-hint = "Sign in to the forge; with `init --repo`, git also needs your credentials: `gh auth setup-git`, or a `git ls-remote` of the repository in your terminal."
+hint = "Sign in to the forge; with `init --repo`, git also needs your GitHub session: sign in with a `git ls-remote` of the repository in your terminal, with Git Credential Manager."
 
 [error.E_AUTH_TOKEN_INVALID]
 message = "The forge rejected the credential (401)."
@@ -92,7 +92,7 @@ hint = "Check `aucove doctor` (capability profile)."
 
 [error.E_FORGE_PUSH_REJECTED]
 message = "The forge rejected the push because of a protection, a proxy or a hook; it is not a non-fast-forward."
-hint = "Check `details.reason`: with `permission`, git does not have your GitHub credentials (`gh auth setup-git` sets them up); with `workflow_permission` (common in cloud sessions), try again with a token that includes the Workflows permission."
+hint = "Check `details.reason`: with `permission`, git does not have your GitHub session: sign in with a `git ls-remote` of the repository, with Git Credential Manager; with `workflow_permission`, the token git used cannot change workflows (common in cloud sessions): try again with a session or a token that can."
 
 [error.E_NET_OFFLINE]
 message = "There is no connection to the forge (DNS, connection refused or connection timeout), or `AUCOVE_OFFLINE=1` is set."

@@ -107,7 +107,26 @@ If you do not have an account, create one at [github.com/signup](https://github.
 
 #### 3. git and your identity
 
-1. Install git. On Windows, with the installer from [git-scm.com](https://git-scm.com/downloads) and its default options, which include the credential manager that remembers your GitHub sign-in. On macOS, with `xcode-select --install`; on Linux, with your system's package manager.
+1. Install git and Git Credential Manager, which signs in to GitHub in the browser and saves your session. aucove uses it to push your work and, with `init`, the project's workflows.
+   - **Windows:** the installer from [git-scm.com](https://git-scm.com/downloads), with its default options, already includes Git Credential Manager.
+   - **macOS:** with [Homebrew](https://brew.sh), in Terminal. Git Credential Manager configures itself:
+
+     ```bash
+     brew install git
+     brew install --cask git-credential-manager
+     ```
+
+   - **Linux:** git, with your system's package manager, and Git Credential Manager, with [its installation guide](https://github.com/git-ecosystem/git-credential-manager/blob/main/docs/install.md#linux-install-instructions). With its `.deb` package, on a desktop:
+
+     ```bash
+     sudo dpkg -i <path-to-the-package.deb>
+     git-credential-manager configure
+     git config --global credential.credentialStore secretservice
+     ```
+
+     Without a desktop, for example over SSH, choose another store with [its guide to stores](https://github.com/git-ecosystem/git-credential-manager/blob/main/docs/credstores.md).
+
+   Without Git Credential Manager, git asks for a username and password in the terminal, and GitHub does not accept your password.
 2. Open a new terminal (PowerShell on Windows, Terminal on macOS) and tell git who you are, with your name and the `noreply` address from step 1:
 
    ```bash
@@ -238,7 +257,7 @@ cd <repo>
 aucove doctor
 ```
 
-The first time, git asks you to sign in to GitHub in the browser. `aucove doctor` checks the installation, your token and the project, and each line says what is missing and how to fix it. If GitHub rejects your token, the lead may not have approved it yet.
+The first time, Git Credential Manager opens the browser for you to sign in to GitHub and saves your session. `aucove doctor` checks the installation, your token and the project, and each line says what is missing and how to fix it. If GitHub rejects your token, the lead may not have approved it yet.
 
 **Lead:** you create the project with `aucove init --repo`, in a terminal opened from the Start menu or in the Terminal panel of Claude Desktop, never through the agent: it asks you for typed confirmations and an administration token, and none of that should go through the AI.
 
@@ -249,7 +268,14 @@ The first time, git asks you to sign in to GitHub in the browser. `aucove doctor
    ```
 
    As in step 5, choose **Only select repositories** and check the repo. Check that, besides the permissions of step 5, **Administration** is on "Read and write" and **Secrets** and **Environments** on "Read-only", and that it expires in 1 day. Click **Generate token** and copy it, but do not store it in `GH_TOKEN`: you paste it when `init` asks for it.
-2. **Create an empty folder and check everything**, without writing anything yet:
+2. **Sign in to GitHub from git.** aucove runs git without windows or questions, so git must have your session before `init`:
+
+   ```bash
+   git ls-remote https://github.com/labfe/ising-diluido.git
+   ```
+
+   The first time, the browser opens: sign in and authorize Git Credential Manager. If the command ends without printing anything, git already has your session and the repo is empty.
+3. **Create an empty folder and check everything**, without writing anything yet:
 
    ```bash
    mkdir ising-diluido
@@ -257,15 +283,15 @@ The first time, git asks you to sign in to GitHub in the browser. `aucove doctor
    aucove init --repo labfe/ising-diluido --dry-run
    ```
 
-   It checks your everyday token, that the repo is empty and that git has your identity and can read the repo. If git asks you to sign in to GitHub, do it. If something is missing, the message says what to fix.
-3. **Create the project:**
+   It checks your everyday token, that the repo is empty and that git has your identity and can read the repo. If something is missing, the message says what to fix.
+4. **Create the project:**
 
    ```bash
    aucove init --repo labfe/ising-diluido
    ```
 
    It asks for the language and the licenses (Enter accepts what is in brackets), asks you to confirm by typing what it shows and to paste the administration token, and pushes the project to GitHub with its protections. The [lead guide](docs/en/lead.md#2-what-aucove-init---repo-does) shows each question and what to do if it fails.
-4. **Delete the administration token:** on GitHub, your photo → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**; open it and click **Delete**.
+5. **Delete the administration token:** on GitHub, your photo → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**; open it and click **Delete**.
 
 #### 8. Open your agent in the project
 
@@ -456,7 +482,26 @@ Si no tienes cuenta, créala en [github.com/signup](https://github.com/signup). 
 
 #### 3. git y tu identidad
 
-1. Instala git. En Windows, con el instalador de [git-scm.com](https://git-scm.com/downloads) y sus opciones por defecto, que incluyen el administrador de credenciales que recuerda tu sesión de GitHub. En macOS, con `xcode-select --install`; en Linux, con el gestor de paquetes de tu sistema.
+1. Instala git y Git Credential Manager, que inicia sesión en GitHub con el navegador y guarda tu sesión. aucove la usa para subir tu trabajo y, con `init`, los workflows del proyecto.
+   - **Windows:** el instalador de [git-scm.com](https://git-scm.com/downloads), con sus opciones por defecto, ya trae Git Credential Manager.
+   - **macOS:** con [Homebrew](https://brew.sh), en Terminal. Git Credential Manager se configura solo:
+
+     ```bash
+     brew install git
+     brew install --cask git-credential-manager
+     ```
+
+   - **Linux:** git, con el gestor de paquetes de tu sistema, y Git Credential Manager, con [su guía de instalación](https://github.com/git-ecosystem/git-credential-manager/blob/main/docs/install.md#linux-install-instructions). Con su paquete `.deb`, en un escritorio:
+
+     ```bash
+     sudo dpkg -i <ruta-del-paquete.deb>
+     git-credential-manager configure
+     git config --global credential.credentialStore secretservice
+     ```
+
+     Sin escritorio, por ejemplo por SSH, elige otro almacén con [su guía de almacenes](https://github.com/git-ecosystem/git-credential-manager/blob/main/docs/credstores.md).
+
+   Sin Git Credential Manager, git te pide usuario y contraseña en la terminal, y GitHub no acepta tu contraseña.
 2. Abre una terminal nueva (PowerShell en Windows, Terminal en macOS) y dile a git quién eres, con tu nombre y la dirección `noreply` del paso 1:
 
    ```bash
@@ -587,7 +632,7 @@ cd <repo>
 aucove doctor
 ```
 
-La primera vez, git te pide iniciar sesión en GitHub en el navegador. `aucove doctor` revisa la instalación, tu token y el proyecto, y cada línea dice qué falta y cómo arreglarlo. Si GitHub rechaza tu token, quizá el responsable todavía no lo aprueba.
+La primera vez, Git Credential Manager abre el navegador para que inicies sesión en GitHub y guarda tu sesión. `aucove doctor` revisa la instalación, tu token y el proyecto, y cada línea dice qué falta y cómo arreglarlo. Si GitHub rechaza tu token, quizá el responsable todavía no lo aprueba.
 
 **Responsable:** creas el proyecto con `aucove init --repo`, en una terminal abierta desde el menú Inicio o en el panel Terminal de Claude Desktop, nunca a través del agente: te pide confirmaciones escritas y un token de administración, y nada de eso debe pasar por la IA.
 
@@ -598,7 +643,14 @@ La primera vez, git te pide iniciar sesión en GitHub en el navegador. `aucove d
    ```
 
    Como en el paso 5, elige **Only select repositories** y marca el repo. Revisa que, además de los permisos del paso 5, estén **Administration** en «Read and write» y **Secrets** y **Environments** en «Read-only», y que venza en 1 día. Pulsa **Generate token** y cópialo, pero no lo guardes en `GH_TOKEN`: lo pegas cuando `init` lo pide.
-2. **Crea una carpeta vacía y comprueba todo**, sin escribir nada todavía:
+2. **Inicia sesión en GitHub desde git.** aucove corre git sin ventanas ni preguntas, así que git tiene que tener tu sesión antes de `init`:
+
+   ```bash
+   git ls-remote https://github.com/labfe/ising-diluido.git
+   ```
+
+   La primera vez se abre el navegador: inicia sesión y autoriza a Git Credential Manager. Si el comando termina sin imprimir nada, git ya tiene tu sesión y el repo está vacío.
+3. **Crea una carpeta vacía y comprueba todo**, sin escribir nada todavía:
 
    ```bash
    mkdir ising-diluido
@@ -606,15 +658,15 @@ La primera vez, git te pide iniciar sesión en GitHub en el navegador. `aucove d
    aucove init --repo labfe/ising-diluido --dry-run
    ```
 
-   Revisa tu token de uso diario, que el repo esté vacío y que git tenga tu identidad y pueda leer el repo. Si git te pide iniciar sesión en GitHub, hazlo. Si algo falta, el mensaje dice qué arreglar.
-3. **Crea el proyecto:**
+   Revisa tu token de uso diario, que el repo esté vacío y que git tenga tu identidad y pueda leer el repo. Si algo falta, el mensaje dice qué arreglar.
+4. **Crea el proyecto:**
 
    ```bash
    aucove init --repo labfe/ising-diluido
    ```
 
    Pregunta el idioma y las licencias (Intro acepta lo que está entre corchetes), te pide confirmar escribiendo lo que indica y pegar el token de administración, y sube el proyecto a GitHub con sus protecciones. La [guía del responsable](docs/es/responsable.md#2-lo-que-hace-aucove-init---repo) muestra cada pregunta y qué hacer si falla.
-4. **Borra el token de administración:** en GitHub, tu foto → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**; ábrelo y pulsa **Delete**.
+5. **Borra el token de administración:** en GitHub, tu foto → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**; ábrelo y pulsa **Delete**.
 
 #### 8. Abre tu agente en el proyecto
 

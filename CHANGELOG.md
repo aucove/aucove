@@ -4,6 +4,13 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
+## [Unreleased]
+
+### Changed
+
+- The README's initial setup installs Git Credential Manager on macOS and Linux too, as Git for Windows already does: git signs in to GitHub in the browser with the permission to push the project's workflows, which `init --repo` needs, and aucove uses that session for every push. Before `init`, the lead signs in once with `git ls-remote`, because aucove runs git without prompts.
+- The hints of `E_AUTH_NOT_AUTHENTICATED` and `E_FORGE_PUSH_REJECTED` point to Git Credential Manager instead of `gh auth setup-git`, which hands git the `GH_TOKEN` token, without the Workflows permission, so the first push of `init` failed with it.
+
 ## [0.1.0rc4] - 2026-10-16
 
 Fourth preliminary release of `0.1.0`. It brings what the first real run of `init --repo` against GitHub taught: the README's initial setup, step by step and by role, with a guide to do it with an agent; `doctor` finds the second copy of aucove that Claude Desktop keeps on Windows; and every release now installs itself from PyPI on Linux, macOS and Windows.

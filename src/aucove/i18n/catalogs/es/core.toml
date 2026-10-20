@@ -52,7 +52,7 @@ hint = "Revisa `details.reason`; la guía del admin explica cómo crear, publica
 
 [error.E_AUTH_NOT_AUTHENTICATED]
 message = "No hay credencial de la forja, o git no tiene la suya para leer el repo de `init --repo`."
-hint = "Inicia sesión en la forja; con `init --repo`, git también necesita tus credenciales: `gh auth setup-git` o un `git ls-remote` del repo en tu terminal."
+hint = "Inicia sesión en la forja; con `init --repo`, git también necesita tu sesión de GitHub: inicia sesión con un `git ls-remote` del repo en tu terminal, con Git Credential Manager."
 
 [error.E_AUTH_TOKEN_INVALID]
 message = "La forja rechazó la credencial (401)."
@@ -92,7 +92,7 @@ hint = "Revisa `aucove doctor` (perfil de capacidades)."
 
 [error.E_FORGE_PUSH_REJECTED]
 message = "La forja rechazó el push por una protección, un proxy o un hook; no es un avance no rápido."
-hint = "Revisa `details.reason`: con `permission`, git no tiene tus credenciales de GitHub (`gh auth setup-git` las configura); con `workflow_permission` (frecuente en sesiones en la nube), repite con un token que incluya el permiso Workflows."
+hint = "Revisa `details.reason`: con `permission`, git no tiene tu sesión de GitHub: inicia sesión con un `git ls-remote` del repo, con Git Credential Manager; con `workflow_permission`, el token que usó git no puede cambiar workflows (frecuente en sesiones en la nube): repite con una sesión o un token que sí pueda."
 
 [error.E_NET_OFFLINE]
 message = "No hay conexión con la forja (DNS, conexión rechazada o timeout de conexión), o está activo `AUCOVE_OFFLINE=1`."

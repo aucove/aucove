@@ -9,7 +9,7 @@ Tu agente puede acompañarte en la [configuración inicial](../../README.md#conf
 El agente no hace estos pasos, a propósito. Te dice cuándo y cómo, y los haces tú:
 
 - **Los clics en GitHub:** crear la organización, el repo y tus tokens.
-- **Instalar git, uv y aucove**, en una terminal abierta desde el menú Inicio. En Windows, lo que se instala desde la app del agente queda en una copia que solo ve esa app.
+- **Instalar git, Git Credential Manager, uv y aucove**, en una terminal abierta desde el menú Inicio. En Windows, lo que se instala desde la app del agente queda en una copia que solo ve esa app.
 - **Guardar tu token.** Nunca lo pegues en el chat: el agente solo comprueba que existe, sin mostrarlo.
 - **Correr `aucove init`**, en una terminal o en el panel Terminal de Claude Desktop. Pide confirmaciones escritas y el token de administración, que no deben pasar por la IA.
 

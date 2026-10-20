@@ -9,7 +9,7 @@ Your agent can walk you through the README's [initial setup](../../README.md#ini
 The agent does not do these steps, on purpose. It tells you when and how, and you do them:
 
 - **The clicks on GitHub:** creating the organization, the repo and your tokens.
-- **Installing git, uv and aucove**, in a terminal opened from the Start menu. On Windows, whatever is installed from inside the agent's app stays in a copy that only that app sees.
+- **Installing git, Git Credential Manager, uv and aucove**, in a terminal opened from the Start menu. On Windows, whatever is installed from inside the agent's app stays in a copy that only that app sees.
 - **Storing your token.** Never paste it into the chat: the agent only checks that it exists, without showing it.
 - **Running `aucove init`**, in a terminal or in the Terminal panel of Claude Desktop. It asks for typed confirmations and the administration token, which must not go through the AI.
 
