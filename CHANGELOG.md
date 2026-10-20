@@ -9,6 +9,7 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 ### Changed
 
 - The README's initial setup installs Git Credential Manager on macOS and Linux too, as Git for Windows already does: git signs in to GitHub in the browser with the permission to push the project's workflows, which `init --repo` needs, and aucove uses that session for every push. Before `init`, the lead signs in once with `git ls-remote`, because aucove runs git without prompts.
+- Each project's README says that on Windows with MiKTeX, `latexmk` needs Perl, which MiKTeX does not include, and how to install Strawberry Perl.
 - The hints of `E_AUTH_NOT_AUTHENTICATED` and `E_FORGE_PUSH_REJECTED` point to Git Credential Manager instead of `gh auth setup-git`, which hands git the `GH_TOKEN` token, without the Workflows permission, so the first push of `init` failed with it.
 
 ## [0.1.0rc4] - 2026-10-16
