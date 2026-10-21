@@ -77,7 +77,10 @@ def test_slugify_spec_example() -> None:
     ("¿?", 48, "decision"),
     ("Núcleo y puertas", 48, "nucleo-y-puertas"),
     ("abc def", 4, "abc"),
+    ("abc def", 3, "abc"),
     ("a" * 60, 48, "a" * 48),
+    # Sin partir una palabra: en una sesión de prueba (20/10/2026) salió «...-training-disabl».
+    ("Allow a consumer AI account with training disabled", 48, "allow-a-consumer-ai-account-with-training"),
 ])
 def test_slugify_cases(raw: str, max_len: int, expected: str) -> None:
     assert slugify(raw, max_len) == expected

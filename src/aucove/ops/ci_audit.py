@@ -46,7 +46,7 @@ from __future__ import annotations
 
 import re
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
@@ -72,13 +72,21 @@ if TYPE_CHECKING:
     from .context import OpContext
 
 __all__ = [
-    "COMMANDS", "LABEL", "MARKER_KIND", "MAX_COMMITS", "Audit", "MergeAudit", "audit_commit", "main", "squash_findings",
+    "COMMANDS", "JOB_PERMISSIONS", "LABEL", "MARKER_KIND", "MAX_COMMITS", "Audit", "MergeAudit", "audit_commit", "main",
+    "squash_findings",
 ]
 
 MergeAudit = Literal["compliant", "bypass_no_deputy", "bypass", "direct_push", "force_push"]
 LABEL = "flag:bypass"  # 00-marco §5.4
 MARKER_KIND = "audit"  # <!-- aucove:ci:audit v1 --> (REQ-CI-46)
 MAX_COMMITS = 100  # commits de un push que se auditan uno por uno
+# El GITHUB_TOKEN del job audit de main-broken.yml (09 §7.1): leer el PR, sus archivos y sus revisiones,
+# marcar con etiqueta y comentario o abrir un Issue (REQ-PERM-23), y leer los checks requeridos de la cabeza
+# (REQ-PERM-59): check runs y estado combinado. Sin checks y statuses, get_checks da 403 en toda integración
+# por PR (sesión de prueba del 20/10; tests/regression/test_audit_job_reads_checks.py).
+JOB_PERMISSIONS: Mapping[str, str] = {
+    "contents": "read", "pull-requests": "write", "issues": "write", "checks": "read", "statuses": "read",
+}
 _SHA = re.compile(r"[0-9a-f]{40}")
 _NOT_ON_TASK = "E_STATE_NOT_ON_TASK_BRANCH"
 _NOT_HELD = "E_CLAIM_NOT_HELD"
@@ -359,6 +367,10 @@ def run(args: argparse.Namespace, ctx: OpContext, out: TextIO) -> int:
     except (OpError, ForgeError, GitError) as exc:
         code = exc.code if isinstance(exc, OpError) else getattr(exc, "kind", type(exc).__name__)
         _say(t("ci.audit.failed", code=code))
+        if isinstance(exc, ForgeError):  # qué llamada se negó y, con un 403, el permiso que falta (08 §2.1)
+            for line in (exc.message, exc.hint):  # sin tokens (REQ-FORGE-6)
+                if line:
+                    _say(line)
         return EXIT_ERROR
     for a in audits:
         out.write(f"merge_audit={a.merge_audit} sha={a.sha} pr={a.pr if a.pr is not None else '-'}\n")

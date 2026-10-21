@@ -81,6 +81,7 @@ fail_no_token = "There is no forge token: it is not in {sources} and `gh auth to
 fail_auth = "The forge rejected the token: it expired or was revoked."
 fail_other = "The identity could not be verified on the forge (`{kind}`)."
 fix_token = "Create the recommended token at {url} (pick the repository by hand) and keep it in `GH_TOKEN`."
+fix_owner_wide = "If its owner is the project's organization, edit it on GitHub (your photo → Settings → Developer settings → Personal access tokens) and choose only this repository under Repository access: there is no need to create another. If its owner is your account, create another one at {url}."
 fix_git_email = "Turn on «Keep my email addresses private» on GitHub and run `git config user.email {email}`."
 fix_roles_email = "Ask the lead to change your `email` in `roles.yaml` to {email}."
 
@@ -119,7 +120,7 @@ ok = "{repo}: {visibility} repository, default branch `{branch}`; your permissio
 fail_base = "The base branch `{base}` is not the default branch of the repository (`{default}`)."
 fix_base = "Make `{base}` the default branch on GitHub, or change `forge.base_branch` in `project.yaml`."
 fail_not_found = "The forge does not show {repo}: it does not exist or the token has no access."
-fix_not_found = "Check `forge.repo` in `project.yaml` and that the token includes this repository ({url})."
+fix_not_found = "Check `forge.repo` in `project.yaml` and your token. There are three common causes: its Resource owner is not the project's organization, and you need to create another one at {url}; this repository is not selected under Repository access, and editing the token is enough; or the organization has not approved it yet."
 fail_permission = "The forge denied reading {repo}."
 fix_permission = "If the organization requires approving fine-grained tokens, ask an owner to approve yours (in the organization: Settings → Personal access tokens → Pending requests)."
 fail_other = "{repo} could not be read on the forge (`{kind}`)."

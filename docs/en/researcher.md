@@ -79,9 +79,9 @@ Diego is a postdoc. With Laura, the lead, he is writing a paper on the critical 
 >
 > **Diego:** `/submit`
 >
-> **Agent:** I wrote the session note: what we searched for and with what criteria, why we dropped the site-versus-bond comparison, and that the fit still has to be tested with our data. I compared your submission with the other active tasks and I see no clashes. I need your permission to open the submission.
+> **Agent:** I wrote the session note: what we searched for and with what criteria, why we dropped the site-versus-bond comparison, and that the fit still has to be tested with our data. I compared your submission with the other active tasks and I see no clashes. To open the submission I need you to confirm this declaration: "I declare that I have personally reviewed the content of this submission, including any parts produced with AI assistance; that the AI-use declaration is accurate and complete; and that I take responsibility for this content before the project team." Do you confirm it?
 >
-> *Diego accepts. The submission is opened on GitHub as a PR, and CI checks it, builds the PDF and leaves the seal:*
+> *Diego reads it and confirms it. The submission is opened on GitHub as a PR, and CI checks it, builds the PDF and leaves the seal:*
 >
 > **Submission seal** · PR #14 · task 8 · 2026-11-18, 17:42 UTC
 >
@@ -127,7 +127,7 @@ Pablo is a PhD student at another university. With Valeria, the lead, he is buil
 |---|---|
 | `/start` | Shows your tasks, claims the one you choose (or proposes a new one) and reads the plan. |
 | Whatever you need | Search, read, discuss ideas, write, code and run code. |
-| `/submit` | Writes the session note, looks for clashes with other tasks and opens the submission for review. |
+| `/submit` | Writes the session note, looks for clashes with other tasks, asks you to confirm the responsibility declaration and opens the submission for review. |
 | "save" | Optional: the agent saves on its own at the end of each block of changes. |
 | "update" | Brings into your task what is new in the shared version. The agent suggests it when needed. |
 | `/project-status` | What is open, who is doing what and what is waiting for review. |

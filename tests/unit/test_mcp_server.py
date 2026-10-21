@@ -169,6 +169,19 @@ def test_descriptors(lang: str) -> None:
     assert descriptor(specs[0], t)["title"] != descriptor(specs[0], other)["title"]
 
 
+@pytest.mark.parametrize("lang", ["es", "en"])
+def test_submit_task_carries_the_whole_attestation(lang: str) -> None:
+    """11 REQ-TRACE-23: sin los skills de entrega, el agente solo tiene la descripción para mostrar attest-v1.
+
+    En una sesión de prueba (20/10/2026, 0.1.0rc4), la descripción nombraba attest-v1 sin su texto.
+    """
+    t = translator(lang)
+    [spec] = [s for s in mcp_specs() if s.mcp_tool == "submit_task"]
+    description = descriptor(spec, t)["description"]
+    assert description == t("mcp.tool.submit_task.description")  # cabe en DESCRIPTION_MAX, sin recorte
+    assert t("cli.attest.text") in description and "sign_off" in description
+
+
 def _refs(node: object) -> list[str]:
     if isinstance(node, dict):
         found = [node["$ref"]] if isinstance(node.get("$ref"), str) else []

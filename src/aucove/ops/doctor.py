@@ -843,7 +843,7 @@ class _Doctor:
             fixes.append(t("doctor.identity.fix_token", url=link))
         elif ident.token_scope == "owner_wide":
             problems.append(t("doctor.identity.warn_owner_wide"))
-            fixes.append(t("doctor.identity.fix_token", url=link))
+            fixes.append(t("doctor.identity.fix_owner_wide", url=link))  # basta con editarlo, salvo si es de tu cuenta
         if ident.token_scope == "broad":  # REQ-FORGE-39
             self.warnings.append(
                 make_warning("W_AUTH_BROAD_TOKEN", t, details={"reason": "token_scope", "token_kind": ident.token_kind})

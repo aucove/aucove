@@ -28,7 +28,7 @@ description = "Dice si puedes crear, modificar o borrar cada ruta en la tarea ac
 
 [mcp.tool.propose_task]
 title = "Proponer una tarea"
-description = "Propone una tarea nueva: crea su Issue con las partes que toca y, si se indican, los IDs de plan.md. Queda propuesta hasta que el responsable la acepte. Úsala cuando el trabajo pedido no tenga tarea o para separar la parte de otra persona (opción split de claim_task)."
+description = "Propone una tarea nueva: crea su Issue con las partes que toca, el resumen (body, sin encabezados del formulario), el criterio de terminado (done, una condición por elemento) y, si se indican, los IDs de plan.md. Queda propuesta hasta que el responsable la acepte. Úsala cuando el trabajo pedido no tenga tarea o para separar la parte de otra persona (opción split de claim_task)."
 
 [mcp.tool.claim_task]
 title = "Reclamar una tarea"
@@ -52,7 +52,7 @@ description = "Registra tu evaluación de traslape después de claim_task (phase
 
 [mcp.tool.submit_task]
 title = "Entregar la tarea"
-description = "Entrega la tarea actual: escribe la nota de sesión, guarda y actualiza la rama, corre las comprobaciones locales y abre o actualiza el PR con la traza de uso de IA. Pide antes a la persona que confirme la declaración attest-v1 y llama con sign_off true; después evalúa el traslape y regístralo con record_overlap_assessment."
+description = "Entrega la tarea: escribe la nota de sesión, guarda, actualiza la rama, corre las comprobaciones locales y abre o actualiza el PR con la traza de uso de IA. Antes, muestra a la persona esta declaración (attest-v1) y llama con sign_off true solo si la confirma: «Declaro que revisé personalmente el contenido de esta entrega, incluidas las partes elaboradas con asistencia de IA; que la declaración de uso de IA es correcta y completa, y que asumo la responsabilidad por este contenido ante el equipo del proyecto.» Después, evalúa el traslape y regístralo con record_overlap_assessment."
 
 [mcp.tool.switch_task]
 title = "Cambiar de tarea"

@@ -60,7 +60,10 @@ def slugify(text: str, max_len: int = 48) -> str:
     t = unicodedata.normalize("NFKD", text)
     t = "".join(c for c in t if not unicodedata.combining(c)).lower()  # ñ -> n, á -> a
     t = re.sub(r"[^a-z0-9]+", "-", t).strip("-")
-    return t[:max_len].rstrip("-") or "decision"
+    if len(t) > max_len:  # corta en el último guion que cabe, sin partir una palabra
+        cut = t[: max_len + 1].rfind("-")
+        t = t[:cut] if cut > 0 else t[:max_len]
+    return t or "decision"
 
 
 def same_login(a: str | None, b: str | None) -> bool:

@@ -143,7 +143,7 @@ skipped = "pending, on the web"
 # The lead's setup task (00-marco D-70; 05-operaciones §9.3).
 [init.setup_task]
 title = "Prepare the project"
-summary = "Complete what init leaves as an example: the plan (`plan.md`), the people and their parts (`roles.yaml`), the constitution (`memory/constitution.md`), the data description (`data/README.md`) and, if needed, the project rules for agents (section 7 of `AGENTS.md`). The agent guides this task with questions."
+summary = "Complete what init leaves as an example: the plan (`plan.md`), the people and their parts (`roles.yaml`), the constitution (`memory/constitution.md`), the data description (`data/README.md`) and, if needed, the project rules for agents (section 7 of `AGENTS.md`). The agent guides this task with an interview, one question at a time: the topic, the questions and the hypotheses; the scope and the methods; the people, their GitHub accounts and, in a group, the deputy; who takes each part and the credit roles; each person's AI account and whether its provider trains on their data; the data, where it lives and whether it has information about people; the date and the fingerprint of the authorship agreement; the writing style; and the project rules for agents. The lead answers and reviews; the agent writes the files."
 done_plan = "`plan.md` has the project's objective, questions, hypotheses, scope and methods."
 done_roles = "`roles.yaml` lists every person, the owner of each part and, in a group, the deputy."
 done_data = "`data/README.md` describes the raw data and where it lives."

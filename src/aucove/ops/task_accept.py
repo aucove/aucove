@@ -91,6 +91,10 @@ def run(ctx: OpContext, *, task: object = None) -> Result:
     )
     if derive_state(partial).state != "proposed":  # aceptada o cerrada: decide el estado completo
         return _not_proposed(ctx, forge, n, warnings)
+    if body.spec is None:  # P2: sin un cuerpo legible no hay partes (03 §8.3; p. ej. un campo repetido)
+        [problem] = [i for i in body.issues if i.severity == "error"][:1] or [None]
+        details = {"reason": problem.reason, "field": problem.field, "line": problem.line} if problem else {}
+        raise OpError("E_CLAIM_NO_SECTIONS", details={k: v for k, v in details.items() if v is not None})
     owners = roles.section_owner()
     unknown = [s for s in body.sections if s not in owners]
     if unknown:  # P2 (REQ-TASK-40): no cambia nada

@@ -94,6 +94,7 @@ __all__ = ["BUDGET", "OP", "STEPS", "render_text", "run"]
 
 OP = "submit"
 BUDGET = 8000  # 05 §7.1
+PROBE_TIMEOUT_S = 60  # latexmk -v antes de compilar (05 §9.18 paso 5)
 STEPS = (
     "preflight", "write_note", "save", "update", "local_checks", "find_or_create_pr", "pr_body",
     "submission_comment", "request_reviewers", "context",
@@ -245,6 +246,14 @@ def _local_build(ctx: OpContext, snap: BaseSnapshot, override: bool | None) -> s
     assert project is not None
     env = dict(ctx.inv.env)
     exe = which_outside("latexmk", project.root, path=env.get("PATH", ""), pathext=env.get("PATHEXT"))
+    if exe is not None:
+        # El de MiKTeX sin Perl existe pero no corre: cuenta como ausente, y con if_available la entrega no se
+        # detiene por algo de la computadora, porque el CI compila igual (sesión de prueba del 20/10).
+        try:
+            runs = run_bounded([exe, "-v"], cwd=project.root, env=env, timeout=PROBE_TIMEOUT_S).returncode == 0
+        except Exception:  # noqa: BLE001 - un timeout o un fallo al lanzar: no corre
+            runs = False
+        exe = exe if runs else None
     if exe is None:
         return "fail" if mode == "always" else "skip"
     from .ci_plan import ENGINE_FLAGS, SHELL_FLAGS
@@ -533,7 +542,7 @@ def run(ctx: OpContext, *, summary: object = None, summary_file: object = None, 
             wanted.append(lead)
         elif deputy:
             wanted.append(deputy)
-        else:
+        elif cfg.mode != "individual":  # 00-marco D-57: sin suplente ni bypass, no hay nada que avisar
             warnings.append(make_warning("W_PERM_DEPUTY_MISSING", t))
         pull = _open_pull(ev, base)
         latest: dict[str, tuple[str, str]] = {}  # autor -> (grafía, último estado que cuenta)

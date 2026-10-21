@@ -103,8 +103,9 @@ summary = "Propose a new task: create its Issue with `task` and `state:proposed`
 [cli.op.task.propose.param]
 title = "Task title (at most 120 characters)."
 sections = "Part the task touches; can be repeated."
-body = "Summary of the task."
+body = "Summary of the task, up to 2000 characters and without the form headings (`### …`)."
 body_file = "File with the summary of the task."
+done = "One condition of the definition of done, on one line; can be repeated (1 to 20)."
 plan_refs = "`plan.md` ID the task refers to; can be repeated."
 idempotency_key = "Own key so the proposal is not duplicated (16 to 64 hex digits)."
 

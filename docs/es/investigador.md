@@ -79,9 +79,9 @@ Diego es posdoc. Con Laura, la responsable, escribe un artículo sobre los expon
 >
 > **Diego:** `/entregar`
 >
-> **Agente:** Redacté la nota de sesión: qué buscamos y con qué criterio, por qué descartamos comparar sitios y enlaces, y que falta probar el ajuste con nuestros datos. Comparé tu entrega con las demás tareas activas y no veo choques. Para abrir la entrega necesito tu permiso.
+> **Agente:** Redacté la nota de sesión: qué buscamos y con qué criterio, por qué descartamos comparar sitios y enlaces, y que falta probar el ajuste con nuestros datos. Comparé tu entrega con las demás tareas activas y no veo choques. Para abrir la entrega necesito que confirmes esta declaración: «Declaro que revisé personalmente el contenido de esta entrega, incluidas las partes elaboradas con asistencia de IA; que la declaración de uso de IA es correcta y completa, y que asumo la responsabilidad por este contenido ante el equipo del proyecto.» ¿La confirmas?
 >
-> *Diego acepta. La entrega queda abierta en GitHub como un PR, y el CI la revisa, compila el PDF y deja el sello:*
+> *Diego la lee y la confirma. La entrega queda abierta en GitHub como un PR, y el CI la revisa, compila el PDF y deja el sello:*
 >
 > **Sello de entrega** · PR #14 · tarea 8 · 18/11/2026, 17:42 UTC
 >
@@ -127,7 +127,7 @@ Pablo hace el doctorado en otra universidad. Con Valeria, la responsable, arma u
 |---|---|
 | `/empezar` | Te muestra tus tareas, reclama la que elijas (o propone una nueva) y lee el plan. |
 | Lo que necesites | Buscar, leer, discutir ideas, escribir, programar y correr código. |
-| `/entregar` | Escribe la nota de sesión, busca choques con otras tareas y abre la entrega para revisión. |
+| `/entregar` | Escribe la nota de sesión, busca choques con otras tareas, te pide confirmar la declaración de responsabilidad y abre la entrega para revisión. |
 | «guarda» | Opcional: el agente guarda solo al terminar cada bloque de cambios. |
 | «actualiza» | Trae a tu tarea lo nuevo de la versión común. El agente lo sugiere cuando hace falta. |
 | `/estado` | Qué está abierto, quién hace qué y qué espera revisión. |

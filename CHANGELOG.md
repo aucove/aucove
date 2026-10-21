@@ -6,11 +6,31 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Added
+
+- `task propose` and `propose_task` take the definition of done (`--done`, `done`), one condition per item and from 1 to 20; before, that section always said `_No response_`. A summary that carries a heading of the form, such as `### Definition of done`, is rejected with `E_VALIDATION_INPUT` (`reason: form_heading`): it repeated a field, and aucove could no longer read the task.
+- "If something fails" covers three new cases: `main` turning red because `aucove/base-audit` ends with `permission`, with the change by hand for projects created with an earlier version; a submission that cannot build the PDF on the computer because MiKTeX has no Perl; and a task that `status` shows with `parts: -`.
+- The lead guide has a box for projects of a single person (`mode: individual`). It also explains that the submission is a PR with the same title as the task, how to accept several tasks at once and how to claim them.
+
 ### Changed
 
 - The README's initial setup installs Git Credential Manager on macOS and Linux too, as Git for Windows already does: git signs in to GitHub in the browser with the permission to push the project's workflows, which `init --repo` needs, and aucove uses that session for every push. Before `init`, the lead signs in once with `git ls-remote`, because aucove runs git without prompts.
 - Each project's README says that on Windows with MiKTeX, `latexmk` needs Perl, which MiKTeX does not include, and how to install Strawberry Perl.
 - The hints of `E_AUTH_NOT_AUTHENTICATED` and `E_FORGE_PUSH_REJECTED` point to Git Credential Manager instead of `gh auth setup-git`, which hands git the `GH_TOKEN` token, without the Workflows permission, so the first push of `init` failed with it.
+- The description of the `submit_task` tool carries the whole text of the `attest-v1` declaration, which the agent shows the person before calling it with `sign_off: true` (11-trazabilidad REQ-TRACE-23); the researcher guide shows it too.
+- The setup task that `init` creates lists the topics of the interview and asks for one question at a time. The README, the lead guide and the agent guide give the exact message for the agent and say that the lead edits no file.
+- When the token does not see the repository, `doctor` names the three common causes: its owner is not the organization, the repository is not selected, or the approval is pending. When the token sees every repository of its owner, it says that editing the token is enough. The README says that `GH_TOKEN` holds one token at a time.
+- The comments of the template's `roles.yaml` list the valid values of `account_type` and the format of `credit`, and say that a consumer account needs `require_commercial: false` and a decision. The Perl note of each project's README also says to restart the agent's app.
+- With `compile_on_submit: if_available`, `submit` checks with `latexmk -v` that latexmk runs before building: one that exists but does not run, such as MiKTeX's without Perl, counts as missing, and `local-build` is skipped, since CI builds the PDF anyway.
+- `propose_task`, `propose_decision` and `propose_direction` also look for a plan ID that the local copy of the base lacks in the base on the forge: after a change to the plan is merged, `origin/<base>` stays behind until the next fetch.
+- The slug of a new decision is cut at the last hyphen that fits, without splitting a word. Existing IDs do not change.
+
+### Fixed
+
+- `aucove/base-audit` failed after every merge through a PR, in every project: to audit a merged PR it reads the required checks of its head, and the `audit` job of `main-broken.yml` lacked `checks: read` and `statuses: read` (09-ci §7.1). Projects created with an earlier version add both to the `permissions` line of that job by hand, in a task of the lead, as "If something fails" describes.
+- When `ci audit` fails because of the forge, it prints the call that was denied and, with a 403, the permission that GitHub names, not only `permission`.
+- `task accept` refuses a task whose body it cannot read (`E_CLAIM_NO_SECTIONS`, with `details.reason`), instead of accepting a task with no parts.
+- With `mode: individual`, `submit` no longer warns `W_PERM_DEPUTY_MISSING`: the mode has no deputy and no bypass (00-marco D-57), as `doctor` and `init` already said.
 
 ## [0.1.0rc4] - 2026-10-16
 

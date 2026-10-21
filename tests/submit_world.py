@@ -11,6 +11,7 @@ como haría ``sync-roles``. El FakeForge y el ``origin`` de git son independient
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
@@ -26,12 +27,17 @@ LEAD = "example-lead"
 RESEARCHER = "example-researcher"
 
 
-def template_world(tmp: Path, *, lang: str = "es", patch_roles: Callable[[str], str] | None = None) -> World:
+def template_world(tmp: Path, *, lang: str = "es", patch_roles: Callable[[str], str] | None = None,
+                   patch_project: Callable[[str], str] | None = None) -> World:
     """Repositorio con el render de la plantilla publicado en ``origin/main`` y un FakeForge."""
     path = tmp / "repo"
     list(load_tool("render_template").render_to(path, lang, fmt="latex"))
     if patch_roles is not None:
         change_roles(path, patch_roles)
+    if patch_project is not None:
+        project_file = path / "project.yaml"
+        project_file.write_text(patch_project(project_file.read_text(encoding="utf-8")), encoding="utf-8",
+                                newline="\n")
     env = isolated_git_env(tmp / "git-env")
     origin = tmp / "origin.git"
     repo = GitRepo(path, origin, env)
@@ -69,13 +75,21 @@ def change_roles(path: Path, patch_roles: Callable[[str], str]) -> None:
 
 
 def claimed(tmp: Path, *, number: int = 11, login: str = LEAD, sections: Sequence[str] = ("introduction",),
-            patch_roles: Callable[[str], str] | None = None, state: str = "claimed") -> World:
+            patch_roles: Callable[[str], str] | None = None, state: str = "claimed",
+            patch_project: Callable[[str], str] | None = None) -> World:
     """El render con ``task/<n>`` reclamada por ``login`` (forja falsa, git y caché)."""
-    w = template_world(tmp, patch_roles=patch_roles)
+    w = template_world(tmp, patch_roles=patch_roles, patch_project=patch_project)
     labels = ("state:expired",) if state == "expired" else ()
     w.task(number, claimant=login, author=login, sections=sections, accepter=LEAD, labels=labels)
     add_claim(w, number, login=login, sections=sections, state=state)
     return w
+
+
+def only_the_lead(text: str) -> str:
+    """El ``roles.yaml`` del render sin ``example-researcher``: el de un proyecto individual (D-57)."""
+    out, n = re.subn(r"  - login: example-researcher\n(?:    .*\n)*", "", text)
+    assert n == 1, "la plantilla no tiene a example-researcher"
+    return out
 
 
 def researcher_owns_results(text: str) -> str:

@@ -9,13 +9,16 @@ del proyecto; el adaptador agrega el marcador (§6.1). La tarea queda ``proposed
 proponga el responsable: aceptarla es una acción humana (D-09).
 
 ``k = sha256(login + "\\n" + casefold(strip(title)) + "\\n" + ",".join(sorted(sections)))[:16]``,
-o ``idempotency_key`` si se indica. El texto libre (``body`` o ``--body-file``) va como
-resumen de la tarea.
+o ``idempotency_key`` si se indica. El texto libre (``body`` o ``--body-file``) es el resumen de la
+tarea, y ``done``, su criterio de terminado: las dos cosas que REQ-SCHEMA-69 exige a un cuerpo válido.
+El resumen no lleva los encabezados del formulario (``### Summary``...): repetiría un campo y la tarea
+quedaría ilegible (03 §8.3), como pasó en una sesión de prueba del 20/10 con un ``### Definition of done``.
 """
 
 from __future__ import annotations
 
 import hashlib
+import re
 from collections.abc import Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -23,7 +26,7 @@ from typing import TYPE_CHECKING
 from .. import _meta
 from ..domain.marked import TITLE_MAX
 from ..domain.plan import parse_plan
-from ..domain.taskbody import render_task_body
+from ..domain.taskbody import CANON, MAX_DONE, MAX_SUMMARY, render_task_body
 from ..domain.tasks import derive_state
 from ..domain.text import same_login
 from ..i18n import LANGS
@@ -40,7 +43,9 @@ __all__ = ["OP", "check_plan_refs", "default_key", "plan_ids", "run"]
 
 OP = "task.propose"
 STEPS = ("find_existing", "create_issue")
-BODY_MAX = 8000
+BODY_MAX = MAX_SUMMARY  # el cuerpo es el resumen de la tarea (03 REQ-SCHEMA-69)
+DONE_ITEM_MAX = 500  # cada condición del criterio de terminado, en una línea
+_FORM_HEADING = re.compile(r"^### (.+?)\s*$")  # como el de domain.taskbody
 PROPOSED = "state:proposed"
 
 
@@ -77,7 +82,25 @@ def _body_text(ctx: OpContext, body: object, body_file: object) -> str:
     text = text.replace("\r\n", "\n").strip()
     if len(text) > BODY_MAX:
         raise _bad("body", "maxLength")
+    if any((m := _FORM_HEADING.match(line)) and m[1] in CANON for line in text.split("\n")):
+        raise _bad("body", "form_heading")  # repetiría un campo del formulario (03 §8.3)
     return text
+
+
+def _done_items(done: object) -> list[str]:
+    """Las condiciones de ``done``: de 1 a ``MAX_DONE``, cada una de una línea (03 REQ-SCHEMA-69)."""
+    if not isinstance(done, (list, tuple)) or not done or len(done) > MAX_DONE:
+        raise _bad("done")
+    items = [x.strip() if isinstance(x, str) else "" for x in done]
+    if not all(items) or any("\n" in x or "\r" in x or len(x) > DONE_ITEM_MAX for x in items):
+        raise _bad("done")
+    return items
+
+
+def _ids(raw: bytes) -> dict[str, str]:
+    text = raw.decode("utf-8", "replace").lstrip("\N{ZERO WIDTH NO-BREAK SPACE}").replace("\r\n", "\n")
+    items, _errors = parse_plan(text)
+    return {i.id: i.status for i in items}
 
 
 def plan_ids(ctx: OpContext, snap: BaseSnapshot) -> dict[str, str]:
@@ -88,21 +111,41 @@ def plan_ids(ctx: OpContext, snap: BaseSnapshot) -> dict[str, str]:
         raw = ctx.git().show(snap.sha, "plan.md")
     except Exception:  # noqa: BLE001 - sin plan legible no hay IDs
         return {}
-    if raw is None:
-        return {}
-    text = raw.decode("utf-8", "replace").lstrip("\N{ZERO WIDTH NO-BREAK SPACE}").replace("\r\n", "\n")
-    items, _errors = parse_plan(text)
-    return {i.id: i.status for i in items}
+    return _ids(raw) if raw is not None else {}
+
+
+def _forge_plan_ids(ctx: OpContext, snap: BaseSnapshot) -> dict[str, str] | None:
+    """``id -> status`` de ``plan.md`` en la cabeza de la base en la forja, si va delante de la copia local.
+
+    ``None`` si es la misma cabeza o no se puede leer (sin red, sin forja): decide la copia local. Solo
+    lee, así que vale igual con ``--dry-run`` (REQ-OPS-30).
+    """
+    try:
+        forge = ctx.forge()
+        head = forge.get_ref(snap.project.base_branch)
+        if head is None or head.sha == snap.sha:
+            return None
+        found = forge.get_file("plan.md", head.sha)
+    except Exception:  # noqa: BLE001 - sin la forja decide la copia local
+        return None
+    return _ids(found.content) if found is not None else {}
 
 
 def check_plan_refs(ctx: OpContext, snap: BaseSnapshot, refs: Sequence[str]) -> list[str]:
     """``refs`` sin repetir; ``E_VALIDATION_UNKNOWN_PLAN_ID`` si alguno no existe o está retirado
-    en ``plan.md`` de la base (03 REQ-SCHEMA-44; 05 §12.1)."""
+    en ``plan.md`` de la base (03 REQ-SCHEMA-44; 05 §9.10 y §12.1).
+
+    Un ID que la copia local de la base no tiene se busca también en la base de la forja: tras integrar
+    un cambio al plan, ``origin/<base>`` queda atrás hasta el siguiente fetch, y en una sesión de prueba
+    (20/10/2026) el agente tuvo que traerla a mano para proponer tareas con los IDs nuevos.
+    """
     wanted = list(dict.fromkeys(refs))
     if not wanted:
         return wanted
     plan = plan_ids(ctx, snap)
     bad = [r for r in wanted if plan.get(r) != "active"]
+    if bad and (fresh := _forge_plan_ids(ctx, snap)) is not None:
+        bad = [r for r in bad if fresh.get(r) != "active"]
     if bad:
         raise OpError("E_VALIDATION_UNKNOWN_PLAN_ID", details={"ids": bad})
     return wanted
@@ -115,10 +158,12 @@ def run(
     sections: object,
     body: object = None,
     body_file: object = None,
+    done: object = None,
     plan_refs: object = None,
     idempotency_key: object = None,
 ) -> Result:
-    """``task propose --title <t> --section <id>... [--body | --body-file] [--plan-ref <ID>]...``."""
+    """``task propose --title <t> --section <id>... --body <resumen> | --body-file <f> --done <condición>...
+    [--plan-ref <ID>]...``."""
     if not isinstance(title, str) or not title.strip() or len(title.strip()) > TITLE_MAX:
         raise _bad("title")
     if not isinstance(sections, (list, tuple)) or not sections or not all(isinstance(s, str) for s in sections):
@@ -129,6 +174,9 @@ def run(
     if idempotency_key is not None and not isinstance(idempotency_key, str):
         raise _bad("idempotency_key")
     text = _body_text(ctx, body, body_file)
+    if not text:
+        raise _bad("body", "required")  # un resumen vacío deja la tarea inválida (REQ-SCHEMA-69)
+    items = _done_items(done)
     ctx.project()
     snap = ctx.base()
     cfg, roles = snap.project, snap.roles
@@ -161,7 +209,7 @@ def run(
                        "created": False, "idempotency_key": key})
     lang = cfg.language if cfg.language in LANGS else "en"
     rendered = render_task_body({"summary": text, "sections": wanted, "plan_refs": list(dict.fromkeys(refs)),
-                                 "done": []}, lang)
+                                 "done": items}, lang)
     if steps.dry_run:
         steps.effect("forge_create", "issue", title.strip())
         return steps.dry_result()

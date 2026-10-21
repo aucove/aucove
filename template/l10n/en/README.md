@@ -72,7 +72,7 @@ Close the terminal, open a new one and check everything with `aucove doctor` in 
 With `format: latex`, from the root of the repository, `latexmk` uses `.latexmkrc`, which is equivalent to the CI build.
 The PDF ends up in `tex/build/`, which git ignores.
 On Windows with MiKTeX, `latexmk` needs Perl, which MiKTeX does not include (TeX Live does): first install [Strawberry Perl](https://strawberryperl.com/).
-For example, with `winget install --id StrawberryPerl.StrawberryPerl -e` in a terminal opened from the Start menu, and then open a new terminal.
+For example, with `winget install --id StrawberryPerl.StrawberryPerl -e` in a terminal opened from the Start menu; then open a new terminal and restart your agent's app, which only sees what was installed before it opened.
 
 ## Licenses
 

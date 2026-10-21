@@ -70,6 +70,19 @@ def test_accept_validates_p2_before_changing_anything(world: World) -> None:
     assert typed.seen == [] and world.forge.calls.writes() == []
 
 
+def test_accept_refuses_a_body_it_cannot_read(world: World) -> None:
+    """P2: con un campo repetido no hay partes legibles; antes se aceptaba sin partes (sesión del 20/10)."""
+    body = render_task_body({"summary": "Resumen.", "sections": ["methods"], "plan_refs": [], "done": ["Hecho."]},
+                            "en").replace("### Summary\n\nResumen.", "### Summary\n\nResumen.\n\n### Definition of done\n\n- Otro.")
+    world.forge.seed_issue(number=8, title="Ilegible", body=body, labels=["task", "state:proposed"], author="carla",
+                           events=[LabelEvent(1, "labeled", "state:proposed", "carla", at(-60))])
+    typed = Typed()
+    result = human(world, "task.accept", typed, task=8)
+    assert result.error is not None and result.error.code == "E_CLAIM_NO_SECTIONS"
+    assert result.error.details["reason"] == "repeated_field" and result.error.details["field"] == "done"
+    assert typed.seen == [] and world.forge.calls.writes() == []
+
+
 def test_accept_is_for_lead_and_deputy(world: World) -> None:
     world.task(5, accepted=False)
     result = human(world, "task.accept", login="carla", task=5)

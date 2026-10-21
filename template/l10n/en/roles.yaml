@@ -9,6 +9,14 @@ version: 1
 lead: example-lead
 # deputy: example-researcher   # deputy (D-17): an active person with role researcher
 # editor: example-researcher   # article editor (D-56); if absent, the lead is the editor
+# account_type is the data regime of each person's AI account (03-esquemas §4.4). With
+# data_policy.level: internal, the valid values are team (Claude Team), enterprise (Claude Enterprise or
+# Gov), api (an API key of your own or of your institution), cloud_provider (Amazon Bedrock, Google
+# Cloud or Microsoft Foundry), local (a model of your own), none (no AI use) and consumer_training_off
+# (Claude Free, Pro or Max with training turned off). A consumer account also needs
+# require_commercial: false in the data_policy of project.yaml and a decision that records it.
+# credit holds the person's CRediT roles, in lowercase with hyphens (03-esquemas §4.3), for example
+# [conceptualization, methodology, writing-original-draft].
 people:
   - login: example-lead
     name: "Example Lead"

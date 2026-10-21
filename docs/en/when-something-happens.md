@@ -158,7 +158,7 @@ On macOS, Claude Desktop opened from the Dock does not take your variables from 
 <details>
 <summary>The token is new, but GitHub says you do not have permission</summary>
 
-Most likely the organization has not approved it yet. The lead approves it in the organization: Settings → Personal access tokens → Pending requests. If that is not it, check that the token includes the project repo.
+Most likely the organization has not approved it yet. The lead approves it in the organization: Settings → Personal access tokens → Pending requests. If that is not it, check that the token includes the project repo. If `aucove doctor` says that GitHub does not show the repo, also look at the token's Resource owner: it has to be the project's organization. If it is your account, create another one, because the owner cannot be changed.
 
 </details>
 
@@ -192,6 +192,39 @@ On Windows, Claude Desktop is a packaged app: whatever is installed from inside 
 4. Open Claude Desktop and ask the agent to run `aucove --version`: it must show the same version as your PowerShell.
 
 From then on, install and update aucove only from PowerShell.
+
+</details>
+
+<details>
+<summary><code>aucove status</code> shows a task with <code>parts: -</code></summary>
+
+aucove cannot read the task's form, almost always because its text repeats a heading, such as `### Definition of done` (`### Criterio de terminado` in a project in Spanish, where you see `partes: -`). Until then the task has no parts, and it cannot be accepted or claimed. Whoever proposed it, or the lead, fixes it on GitHub: open the Issue, press the three dots → **Edit**, leave a single heading for each section, with the conditions under the one for done, and save. Then `aucove status` shows its parts.
+
+</details>
+
+<details>
+<summary>The submission does not build the PDF on your computer because Perl is missing</summary>
+
+On Windows with MiKTeX, `latexmk` needs Perl, which MiKTeX does not include. With `compile_on_submit: if_available` in `project.yaml`, the submission then skips the build on your computer (the `local-build` check stays at `skip`); if it stops at `local-build` saying that MiKTeX cannot find Perl, what it already did stays saved and it resumes from there. CI builds the PDF anyway. To build on your computer too, install [Strawberry Perl](https://strawberryperl.com/) in a terminal opened from the Start menu, with `winget install --id StrawberryPerl.StrawberryPerl -e`, and restart your agent's app, which only sees what was installed before it opened. If you do not want to build on your computer, submit from your terminal with `aucove submit --no-compile`.
+
+</details>
+
+<details>
+<summary><code>main</code> turns red because <code>aucove/base-audit</code> ends with <code>permission</code></summary>
+
+After a submission is merged, the `aucove/base-audit` job of the `main-broken` workflow says "The audit did not finish (`permission`)", also when you run it again. The rest passes, the validation, the PDF and the seal, so you can keep working. It is an aucove bug in the projects whose `.github/workflows/main-broken.yml` does not let that job read the checks of the merged submission: in the `audit` job, the permissions line says
+
+```yaml
+    permissions: { contents: read, pull-requests: write, issues: write }
+```
+
+The lead changes it by hand, in a task of theirs, to
+
+```yaml
+    permissions: { contents: read, pull-requests: write, issues: write, checks: read, statuses: read }
+```
+
+and submits the task as usual. The agent does not edit `.github/`, so you make that change yourself. From the next merge on, the audit finishes.
 
 </details>
 

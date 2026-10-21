@@ -247,6 +247,8 @@ On macOS, Claude Desktop opened from the Dock takes the PATH from `~/.zshrc`, bu
 
 When the token expires, `aucove doctor` warns you and gives you the link of step 5 already filled in: create another one and repeat this step, and the new one replaces the old one.
 
+`GH_TOKEN` holds a single token, and a fine-grained token only reaches the repos of its owner. If you have projects in two organizations, create a token for each one and switch the one in `GH_TOKEN` when you move from one project to the other; then quit your agent's app and open it again.
+
 #### 7. The project on your computer
 
 **Researcher:** wait until the lead tells you the project is ready. Then, in a terminal, clone it into a folder of yours and check it:
@@ -299,7 +301,7 @@ Open your agent in the project folder: with `claude` (or `codex`, `gemini`, `cop
 
 Ask it to run `aucove doctor`. It must say `[ok] identity`, with your username and a fine-grained token from `GH_TOKEN`. If it says there is no token, even though your terminal sees it (step 6), the app was opened before you stored it: quit it completely and open it again. On macOS, Claude Desktop also needs the token in its environment editor (step 6). In a freshly created project other warnings show up too, such as the missing deputy; the lead guide takes care of them.
 
-What comes next: the lead prepares the project with their agent in task #1 ([lead guide](docs/en/lead.md#3-open-your-agent-and-prepare-the-project)) and tells the team; the researcher starts working ([researcher guide](docs/en/researcher.md)).
+What comes next, if you are the lead: preparing the project in task #1. With 0.1.0rc4 there are no shortcuts such as `/start` yet; they come with 0.1.0. Write to your agent "Check with aucove doctor that everything is ready. If it is, prepare the project with me in task 1, one question at a time". It interviews you and writes the files for you: you do not edit any of them. The [lead guide](docs/en/lead.md#3-open-your-agent-and-prepare-the-project) tells you how it goes on, up to telling your team. If you are a researcher, start working with the [researcher guide](docs/en/researcher.md).
 
 ### The user guide
 
@@ -622,6 +624,8 @@ En macOS, Claude Desktop abierto desde el Dock toma de `~/.zshrc` el PATH, pero 
 
 Cuando el token venza, `aucove doctor` te avisa y te da el enlace del paso 5 ya armado: crea otro y repite este paso, y el nuevo reemplaza al anterior.
 
+`GH_TOKEN` guarda un solo token, y un token fine-grained solo llega a los repos de su propietario. Si tienes proyectos en dos organizaciones, crea un token para cada una y cambia el de `GH_TOKEN` cuando pases de un proyecto al otro; después, cierra del todo la app de tu agente y ábrela otra vez.
+
 #### 7. El proyecto en tu computadora
 
 **Investigador:** espera a que el responsable te avise que el proyecto está listo. Después, en una terminal, clónalo en una carpeta tuya y compruébalo:
@@ -674,7 +678,7 @@ Abre tu agente en la carpeta del proyecto: con `claude` (o `codex`, `gemini`, `c
 
 Pídele que corra `aucove doctor`. Debe decir `[ok] identity`, con tu usuario y un token fine-grained de `GH_TOKEN`. Si dice que no hay token, aunque tu terminal sí lo ve (paso 6), la app se abrió antes de que lo guardaras: ciérrala del todo y ábrela otra vez. En macOS, Claude Desktop necesita además el token en su editor de entorno (paso 6). En un proyecto recién creado también salen otros avisos, como que falta el suplente; los resuelve la guía del responsable.
 
-Lo que sigue: el responsable prepara el proyecto con su agente en la tarea #1 ([guía del responsable](docs/es/responsable.md#3-abre-tu-agente-y-prepara-el-proyecto)) y avisa a su equipo; el investigador empieza a trabajar ([guía del investigador](docs/es/investigador.md)).
+Lo que sigue, si eres responsable: preparar el proyecto en la tarea #1. Con la 0.1.0rc4 todavía no hay atajos como `/empezar`, que llegan con la 0.1.0. Escríbele a tu agente «Comprueba con aucove doctor que todo esté listo. Si lo está, prepara conmigo el proyecto en la tarea 1, con una pregunta a la vez». Te entrevista y escribe los archivos por ti: tú no editas ninguno. La [guía del responsable](docs/es/responsable.md#3-abre-tu-agente-y-prepara-el-proyecto) cuenta cómo sigue, hasta avisar a tu equipo. Si eres investigador, empieza a trabajar con la [guía del investigador](docs/es/investigador.md).
 
 ### La guía de uso
 

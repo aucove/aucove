@@ -103,8 +103,9 @@ summary = "Propone una tarea nueva: crea su Issue con `task` y `state:proposed`.
 [cli.op.task.propose.param]
 title = "Título de la tarea (máx. 120 caracteres)."
 sections = "Parte que toca la tarea; se puede repetir."
-body = "Resumen de la tarea."
+body = "Resumen de la tarea, hasta 2000 caracteres y sin los encabezados del formulario (`### …`)."
 body_file = "Archivo con el resumen de la tarea."
+done = "Una condición del criterio de terminado, en una línea; se puede repetir (de 1 a 20)."
 plan_refs = "ID de `plan.md` al que se refiere la tarea; se puede repetir."
 idempotency_key = "Clave propia para no duplicar la propuesta (16 a 64 hexadecimales)."
 

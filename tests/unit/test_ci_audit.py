@@ -93,6 +93,27 @@ def w(tmp_path: Path) -> World:
     return new_world(tmp_path)
 
 
+def test_a_denied_call_says_which_one_and_the_permission(w: World, monkeypatch: pytest.MonkeyPatch,
+                                                          capsys: pytest.CaptureFixture[str]) -> None:
+    """Un 403 de la forja: la falla nombra la llamada y el permiso, no solo `permission` (08 §2.1)."""
+    from aucove.forge.base import ForgePermissionError
+
+    def denied(self: object, sha: str) -> None:
+        raise ForgePermissionError("get_checks: Resource not accessible by integration", http_status=403,
+                                   hint="X-Accepted-GitHub-Permissions: checks=read")
+
+    w.task(12, claimant="carla", sections=("methods",))
+    sha = squash(w, {"sections/methods/x.tex": "% x\n"})
+    merged_pr(w, 20, task=12, author="carla", sha=sha, files=["sections/methods/x.tex"],
+              reviews=[("bruno", "APPROVED", at(-20))])
+    monkeypatch.setattr(FakeForge, "get_checks", denied)  # después de sembrar los checks de la cabeza
+    code, _lines = run_all(w, w.base_sha, sha)
+    err = capsys.readouterr().err
+    assert code == audit.EXIT_ERROR
+    assert "get_checks: Resource not accessible by integration" in err
+    assert "X-Accepted-GitHub-Permissions: checks=read" in err
+
+
 def test_it_is_registered() -> None:
     assert "ops.ci_audit" in CI_MODULES and COMMAND.name == "audit"
 

@@ -82,6 +82,7 @@ fail_no_token = "No hay token de la forja: no está en {sources} y `gh auth toke
 fail_auth = "La forja rechazó el token: venció o se revocó."
 fail_other = "No se pudo verificar la identidad en la forja (`{kind}`)."
 fix_token = "Crea el token recomendado en {url} (el repositorio se elige a mano) y guárdalo en `GH_TOKEN`."
+fix_owner_wide = "Si su propietario es la organización del proyecto, edítalo en GitHub (tu foto → Settings → Developer settings → Personal access tokens) y, en Repository access, elige solo este repositorio: no hace falta crear otro. Si su propietario es tu cuenta, crea otro en {url}."
 fix_git_email = "Activa «Keep my email addresses private» en GitHub y ejecuta `git config user.email {email}`."
 fix_roles_email = "Pide al responsable que cambie tu `email` en `roles.yaml` por {email}."
 
@@ -120,7 +121,7 @@ ok = "{repo}: repositorio {visibility}, rama por defecto `{branch}`; tu permiso:
 fail_base = "La rama base `{base}` no es la rama por defecto del repositorio (`{default}`)."
 fix_base = "Haz que `{base}` sea la rama por defecto en GitHub o cambia `forge.base_branch` en `project.yaml`."
 fail_not_found = "La forja no muestra {repo}: no existe o el token no tiene acceso."
-fix_not_found = "Revisa `forge.repo` en `project.yaml` y que el token incluya este repositorio ({url})."
+fix_not_found = "Revisa `forge.repo` en `project.yaml` y tu token. Hay tres causas comunes: su propietario (Resource owner) no es la organización del proyecto, y hay que crear otro en {url}; no tiene elegido este repositorio en Repository access, y basta con editarlo, o la organización todavía no lo aprueba."
 fail_permission = "La forja negó la lectura de {repo}."
 fix_permission = "Si la organización exige aprobar los tokens fine-grained, pide a un owner que apruebe el tuyo (en la organización: Settings → Personal access tokens → Pending requests)."
 fail_other = "No se pudo leer {repo} en la forja (`{kind}`)."

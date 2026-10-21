@@ -204,16 +204,18 @@ def test_input_schema_specific_properties() -> None:
     assert required == []
     # 05 §9.10: propose_task.
     props, required = _props("task.propose")
-    assert {k: props[k] for k in ("title", "sections", "body", "plan_refs", "idempotency_key")} == {
+    assert {k: props[k] for k in ("title", "sections", "body", "done", "plan_refs", "idempotency_key")} == {
         "title": {"type": "string", "minLength": 1, "maxLength": 120},
         "sections": {"type": "array", "items": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
                      "minItems": 1, "maxItems": 10},
-        "body": {"type": "string", "maxLength": 8000},
+        "body": {"type": "string", "maxLength": 2000},
+        "done": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 500}, "minItems": 1,
+                 "maxItems": 20},
         "plan_refs": {"type": "array", "items": {"type": "string", "pattern": "^(RQ|HYP|IN|OUT|METH)-[1-9][0-9]*$"},
                       "maxItems": 20},
         "idempotency_key": {"type": "string", "pattern": "^[0-9a-f]{16,64}$"},
     }
-    assert "body_file" not in props and required == ["title", "sections"]
+    assert "body_file" not in props and required == ["title", "sections", "done"]
     # 05 §9.12: claim_task.
     props, required = _props("claim")
     assert {k: props[k] for k in ("task", "checkout", "fresh")} == {

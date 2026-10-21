@@ -9,6 +9,14 @@ version: 1
 lead: example-lead
 # deputy: example-researcher   # suplente (D-17): una persona activa con role researcher
 # editor: example-researcher   # editor del artículo (D-56); si falta, lo es el responsable
+# account_type es el régimen de datos de la cuenta de IA de cada persona (03-esquemas §4.4). Con
+# data_policy.level: internal valen team (Claude Team), enterprise (Claude Enterprise o Gov), api (una
+# clave de API propia o institucional), cloud_provider (Amazon Bedrock, Google Cloud o Microsoft
+# Foundry), local (un modelo propio), none (no usa IA) y consumer_training_off (Claude Free, Pro o Max
+# con el entrenamiento desactivado). Una cuenta de consumo pide además require_commercial: false en
+# data_policy de project.yaml y una decisión que lo registre.
+# credit lleva los roles CRediT de la persona, en minúsculas y con guiones (03-esquemas §4.3), por
+# ejemplo [conceptualization, methodology, writing-original-draft].
 people:
   - login: example-lead
     name: "Example Lead"

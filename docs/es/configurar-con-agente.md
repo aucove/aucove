@@ -64,10 +64,10 @@ Esto dijo la terminal al correr <el comando>. ¿Qué significa y qué hago?
 Abre otra sesión del agente, ahora dentro de la carpeta del proyecto, para que cargue sus reglas y sus herramientas. Pega:
 
 ```text
-Comprueba con aucove doctor que todo esté listo. Si lo está, prepara conmigo el proyecto en la tarea 1.
+Comprueba con aucove doctor que todo esté listo. Si lo está, prepara conmigo el proyecto en la tarea 1, con una pregunta a la vez.
 ```
 
-El agente revisa tu entorno y te entrevista para completar el plan, las personas y las partes, como en [Responsable › Abre tu agente y prepara el proyecto](responsable.md#3-abre-tu-agente-y-prepara-el-proyecto).
+El agente revisa tu entorno y te entrevista, una pregunta a la vez, para completar el plan, las personas y las partes; tú contestas y él escribe los archivos, como en [Responsable › Abre tu agente y prepara el proyecto](responsable.md#3-abre-tu-agente-y-prepara-el-proyecto).
 
 ## 4. Avisar a tu equipo (responsable)
 

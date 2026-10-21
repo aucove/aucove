@@ -20,7 +20,7 @@ from aucove.ops.claim import claim_message
 from aucove.ops.result import Result
 from aucove.ops.snapshot import parse_markers
 from aucove.ops.task_propose import default_key
-from tests.board_world import NOW, PROJECT, World, at, marker, new_world
+from tests.board_world import NOW, PLAN, PROJECT, World, at, marker, new_world
 
 BRANCH = "task/11"
 
@@ -302,7 +302,7 @@ def test_context_task_phase_returns_the_package(world: World) -> None:
 
 def test_propose_creates_the_issue_once(world: World) -> None:
     result = world.run("task.propose", title="  Nueva tarea ", sections=["methods"], body="Medir la tasa.",
-                       plan_refs=["RQ-1"])
+                       done=["La tasa está medida.", "  Con su incertidumbre. "], plan_refs=["RQ-1"])
     env = envelope(result)
     data = env["data"]
     assert data["created"] is True and data["task"]["state"] == "proposed"
@@ -312,19 +312,65 @@ def test_propose_creates_the_issue_once(world: World) -> None:
     assert set(issue.labels) == {"task", "state:proposed"}
     spec = parse_task_body(issue.body)
     assert (spec["summary"], spec["sections"], spec["plan_refs"]) == ("Medir la tasa.", ["methods"], ["RQ-1"])
+    assert spec["done"] == ["La tasa está medida.", "Con su incertidumbre."]  # el campo, no _No response_
     assert f"<!-- {_meta.NAME}:op v1 id=task-propose-{data['idempotency_key']} -->" in issue.body
-    again = world.run("task.propose", title="nueva TAREA", sections=["methods"])
+    again = world.run("task.propose", title="nueva TAREA", sections=["methods"], body="Medir.", done=["Hecho."])
     assert again.data["created"] is False and again.data["task"]["number"] == data["task"]["number"]  # type: ignore[index]
 
 
+def test_propose_finds_a_plan_id_that_the_local_base_does_not_have_yet(world: World) -> None:
+    """05 §9.10: tras integrar un cambio al plan, ``origin/main`` local queda atrás hasta el siguiente fetch.
+    En una sesión de prueba (20/10/2026), ``propose_task`` rechazaba los IDs nuevos del plan."""
+    args: dict[str, Any] = {"title": "X", "sections": ["methods"], "body": "X.", "done": ["Hecho."],
+                            "plan_refs": ["RQ-3"]}
+    stale = world.run("task.propose", **args)
+    assert stale.error is not None and stale.error.code == "E_VALIDATION_UNKNOWN_PLAN_ID"
+    plan = PLAN.replace("~~Pregunta vieja.~~\n", "~~Pregunta vieja.~~\n- RQ-3: ¿Y los fines de semana?\n")
+    main = world.forge.get_ref("main")
+    assert main is not None and "RQ-3" in plan
+    world.forge.seed_branch("main", world.forge.seed_commit({"plan.md": plan.encode()}, [main.sha], "plan", "ana",
+                                                            date=at(-10)))
+    dry = world.run("task.propose", dry_run=True, **args)
+    assert dry.ok, dry.error  # solo lee la forja: el ensayo da lo mismo que la ejecución (REQ-OPS-30)
+    result = world.run("task.propose", **args)
+    assert result.ok and result.data["created"] is True, result.error  # type: ignore[index]
+    still = world.run("task.propose", **{**args, "title": "Y", "plan_refs": ["RQ-2"]})
+    assert still.error is not None and still.error.details == {"ids": ["RQ-2"]}  # retirado en las dos
+
+
 def test_propose_validates_against_the_base(world: World) -> None:
-    unknown = world.run("task.propose", title="X", sections=["nada"])
+    unknown = world.run("task.propose", title="X", sections=["nada"], body="X.", done=["Hecho."])
     assert unknown.error.code == "E_VALIDATION_UNKNOWN_SECTION"  # type: ignore[union-attr]
-    retired = world.run("task.propose", title="X", sections=["methods"], plan_refs=["RQ-2"])
+    retired = world.run("task.propose", title="X", sections=["methods"], body="X.", done=["Hecho."], plan_refs=["RQ-2"])
     assert retired.error.code == "E_VALIDATION_UNKNOWN_PLAN_ID"  # type: ignore[union-attr]
     assert retired.error.details == {"ids": ["RQ-2"]}  # type: ignore[union-attr]
     world.forge.seed_user("zoe", permission="write")
-    stranger = world.run("task.propose", login="zoe", title="X", sections=["methods"])
+    stranger = world.run("task.propose", login="zoe", title="X", sections=["methods"], body="X.", done=["Hecho."])
     assert stranger.error.code == "E_PERM_NOT_A_MEMBER"  # type: ignore[union-attr]
-    keyed = world.run("task.propose", title="X", sections=["methods"], idempotency_key="ab" * 8)
+    keyed = world.run("task.propose", title="X", sections=["methods"], body="X.", done=["Hecho."], idempotency_key="ab" * 8)
     assert keyed.ok and keyed.data["idempotency_key"] == "ab" * 8  # type: ignore[index]
+
+
+def test_propose_needs_a_summary_and_a_definition_of_done(world: World) -> None:
+    """REQ-SCHEMA-69: sin resumen o sin criterio de terminado, la tarea sería inválida."""
+    for kwargs, param, reason in (
+        ({"done": ["Hecho."]}, "body", "required"),
+        ({"body": "Resumen."}, "done", "type"),
+        ({"body": "Resumen.", "done": ["  "]}, "done", "type"),
+        ({"body": "Resumen.", "done": ["dos\nlíneas"]}, "done", "type"),
+        ({"body": "Resumen.", "done": [f"c{i}" for i in range(21)]}, "done", "type"),
+    ):
+        result = world.run("task.propose", title="X", sections=["methods"], **kwargs)
+        assert result.error is not None and result.error.code == "E_VALIDATION_INPUT", kwargs
+        assert result.error.details == {"errors": [{"param": param, "reason": reason}]}, kwargs
+    assert world.forge.calls.writes() == []
+
+
+def test_the_summary_cannot_carry_a_form_heading(world: World) -> None:
+    """03 §8.3: un `### Definition of done` en el resumen repetiría el campo y la tarea quedaría ilegible."""
+    body = "Escribir el código.\n\n### Definition of done\n\n- Hay un script."
+    result = world.run("task.propose", title="X", sections=["methods"], body=body, done=["Hecho."])
+    assert result.error is not None and result.error.code == "E_VALIDATION_INPUT"
+    assert result.error.details == {"errors": [{"param": "body", "reason": "form_heading"}]}
+    other = world.run("task.propose", title="X", sections=["methods"], body="### Contexto\n\nOtro título.", done=["Hecho."])
+    assert other.ok, other.error  # un ### que no es del formulario es contenido (03 §8.3)

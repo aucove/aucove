@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -14,7 +15,7 @@ from aucove import _meta
 from aucove.config.yamlload import load_yaml
 from aucove.ops.snapshot import parse_markers
 from tests.board_world import World, at
-from tests.submit_world import LEAD, RESEARCHER, change_roles, claimed, researcher_owns_results
+from tests.submit_world import LEAD, RESEARCHER, change_roles, claimed, only_the_lead, researcher_owns_results
 from tests.task_world import remote_head
 
 P = _meta.ENV_PREFIX
@@ -84,6 +85,47 @@ def test_submit_opens_the_pr_with_note_trace_and_trailers(world: World) -> None:
     assert [r["round"] for r in rounds] == [1] and rounds[0]["note_path"] == NOTE
     codes = [w.code for w in result.warnings]
     assert "W_PERM_DEPUTY_MISSING" in codes and data["reviewers_requested"] == []  # type: ignore[index]
+
+
+def test_in_individual_mode_there_is_no_deputy_warning(tmp_path: Path) -> None:
+    """00-marco D-57: sin suplente ni bypass. El aviso decía que los PR del responsable necesitaban un bypass,
+    y el agente de una sesión de prueba (20/10) lo repitió."""
+    w = claimed(tmp_path, patch_roles=only_the_lead, patch_project=lambda text: text + "mode: individual\n")
+    _edit(w, INTRO, "Una oración nueva.")
+    assert w.run("save", login=LEAD, message="Agrega una oración", **AI).ok
+    result = _submit(w)
+    assert result.ok, result.error
+    assert "W_PERM_DEPUTY_MISSING" not in [x.code for x in result.warnings]
+    assert result.data["reviewers_requested"] == []  # type: ignore[index]
+
+
+@pytest.mark.parametrize("compile_flag", [None, True])
+def test_a_latexmk_that_does_not_run_counts_as_missing(world: World, monkeypatch: pytest.MonkeyPatch,
+                                                       compile_flag: bool | None) -> None:
+    """05 §9.18 paso 5: el latexmk de MiKTeX sin Perl existe pero no corre. Con ``if_available``, el de la
+    plantilla, la entrega lo salta; antes se detenía en ``local-build`` (sesión de prueba del 20/10)."""
+    from aucove.ops import submit as submit_op
+
+    calls: list[list[str]] = []
+
+    def no_perl(cmd: list[str], **_: object) -> SimpleNamespace:
+        calls.append(list(cmd))
+        return SimpleNamespace(returncode=1, stdout=b"", stderr=b"MiKTeX could not find the script engine 'perl'")
+
+    monkeypatch.setattr(submit_op, "which_outside", lambda *_a, **_k: "latexmk")
+    monkeypatch.setattr(submit_op, "run_bounded", no_perl)
+    args: dict[str, Any] = {"summary": "Redacté la introducción.", "note": {"done": "- Redacté la introducción."},
+                            "sign_off": True, **AI}
+    if compile_flag is not None:
+        args["compile"] = compile_flag  # always
+    result = world.run("submit", login=LEAD, **args)
+    assert calls == [["latexmk", "-v"]]  # no intentó compilar
+    if compile_flag is None:
+        assert result.ok, result.error
+        checks = {c["check"]: c["status"] for c in result.data["checks"]}  # type: ignore[index]
+        assert checks["local-build"] == "skip"
+    else:
+        assert result.error is not None and result.error.code == "E_VALIDATION_FAILED"
 
 
 def test_repeating_the_same_submission_changes_nothing(world: World) -> None:

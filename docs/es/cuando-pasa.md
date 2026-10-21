@@ -158,7 +158,7 @@ En macOS, Claude Desktop abierto desde el Dock no toma tus variables de `~/.zshr
 <details>
 <summary>El token es nuevo, pero GitHub responde que no tienes permiso</summary>
 
-Lo más probable es que la organización todavía no lo apruebe. El responsable lo aprueba en la organización: Settings → Personal access tokens → Pending requests. Si no es eso, revisa que el token incluya el repo del proyecto.
+Lo más probable es que la organización todavía no lo apruebe. El responsable lo aprueba en la organización: Settings → Personal access tokens → Pending requests. Si no es eso, revisa que el token incluya el repo del proyecto. Si `aucove doctor` dice que GitHub no muestra el repo, mira también el propietario del token (Resource owner): tiene que ser la organización del proyecto. Si es tu cuenta, crea otro, porque el propietario no se puede cambiar.
 
 </details>
 
@@ -192,6 +192,39 @@ En Windows, Claude Desktop es una app empaquetada: lo que se instala desde dentr
 4. Abre Claude Desktop y pídele al agente que corra `aucove --version`: debe decir la misma versión que tu PowerShell.
 
 Desde entonces, instala y actualiza aucove solo desde PowerShell.
+
+</details>
+
+<details>
+<summary><code>aucove status</code> muestra una tarea con <code>partes: -</code></summary>
+
+aucove no puede leer el formulario de la tarea, casi siempre porque su texto repite un encabezado, como `### Criterio de terminado` (`### Definition of done` en un proyecto en inglés, donde se ve `parts: -`). Mientras tanto la tarea no tiene partes, y no se puede aceptar ni reclamar. Quien la propuso o el responsable la arregla en GitHub: abre el Issue, pulsa los tres puntos → **Edit**, deja un solo encabezado de cada sección, con las condiciones bajo el de terminado, y guarda. Después, `aucove status` muestra sus partes.
+
+</details>
+
+<details>
+<summary>La entrega no compila el PDF en tu computadora porque falta Perl</summary>
+
+En Windows con MiKTeX, `latexmk` necesita Perl, que MiKTeX no trae. Con `compile_on_submit: if_available` en `project.yaml`, la entrega se salta entonces la compilación en tu computadora (el check `local-build` queda en `skip`); si se detiene en `local-build` diciendo que MiKTeX no encuentra Perl, lo que ya hizo queda guardado y retoma desde ahí. El CI compila el PDF de todos modos. Para compilar también en tu computadora, instala [Strawberry Perl](https://strawberryperl.com/) en una terminal abierta desde el menú Inicio, con `winget install --id StrawberryPerl.StrawberryPerl -e`, y reinicia la app de tu agente, que solo ve lo que se instaló antes de abrirla. Si no quieres compilar en tu computadora, entrega desde tu terminal con `aucove submit --no-compile`.
+
+</details>
+
+<details>
+<summary><code>main</code> queda en rojo porque <code>aucove/base-audit</code> termina con <code>permission</code></summary>
+
+Después de integrar una entrega, el job `aucove/base-audit` del workflow `main-broken` dice «The audit did not finish (`permission`)», también al repetirlo. Lo demás pasa, la validación, el PDF y el sello, así que puedes seguir trabajando. Es un error de aucove en los proyectos cuyo `.github/workflows/main-broken.yml` no le da a ese job permiso para leer los checks de la entrega integrada: en el job `audit`, la línea de permisos dice
+
+```yaml
+    permissions: { contents: read, pull-requests: write, issues: write }
+```
+
+El responsable la cambia a mano, en una tarea suya, por
+
+```yaml
+    permissions: { contents: read, pull-requests: write, issues: write, checks: read, statuses: read }
+```
+
+y entrega la tarea como siempre. El agente no edita `.github/`, así que ese cambio lo haces tú. Desde la integración siguiente, la auditoría termina.
 
 </details>
 

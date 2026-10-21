@@ -11,6 +11,9 @@ Preparas el proyecto una vez y, cada semana, revisas lo que entregan los demás.
 
 Se hace una vez. Primero, como responsable, la [configuración inicial](../../README.md#configuración-inicial) del README: tu cuenta, la organización, el repo vacío, git, aucove, tus tokens y el proyecto, que creas con `aucove init --repo`. Si prefieres que tu agente te acompañe, usa [Configurar aucove con tu agente](configurar-con-agente.md). Después siguen estos cinco pasos, en orden.
 
+> [!TIP]
+> **Si trabajas solo**, en un proyecto creado con `aucove init --individual` (`mode: individual` en `project.yaml`), no hay suplente ni bypass: integras tus entregas tú mismo cuando pasan los checks, sin que nadie las apruebe, y tú aceptas tus tareas. El acuerdo de autoría puede ser una declaración breve tuya, y del paso 5 solo aplica la firma del proyecto. Lo que esta guía dice del suplente no aplica, y `aucove doctor` tampoco lo pide.
+
 ### 1. El acuerdo de autoría
 
 Es un documento común y corriente, un PDF o un Word, que el grupo redacta y firma antes de empezar. No es un archivo de aucove ni vive en el repositorio, porque lleva firmas y datos personales: se guarda donde el grupo guarda sus documentos, por ejemplo la carpeta compartida de la institución. Fija:
@@ -93,7 +96,7 @@ En la misma carpeta, abre tu agente. No hay que copiar ni instalar nada más: la
 claude
 ```
 
-Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`; con la 0.1.0rc4, se lo pides con palabras: «prepara el proyecto en la tarea 1». Te entrevista en lenguaje normal:
+Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`. Con la 0.1.0rc4 todavía no hay atajos: escríbele «Comprueba con aucove doctor que todo esté listo. Si lo está, prepara conmigo el proyecto en la tarea 1, con una pregunta a la vez». Tú no editas ningún archivo: contestas, y el agente los escribe y te muestra los cambios antes de guardarlos. Te entrevista en lenguaje normal sobre el tema y las preguntas del proyecto, las personas y quién lleva cada parte, la cuenta de IA de cada quien y si entrena con sus datos, si los datos tienen información de personas, el acuerdo de autoría y el estilo de escritura:
 
 > **Laura:** `/empezar`
 >
@@ -129,7 +132,7 @@ Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece pr
 >
 > **Agente:** Escribí `plan.md`, `roles.yaml`, la constitución y `data/README.md`; regeneré los archivos que salen de `roles.yaml` y la validación pasa. ¿Entrego la tarea 1?
 
-Laura no tuvo que conocer claves como `account_type` o `data_policy`: el agente tradujo sus respuestas. Después de la entrega, revisa los cambios en GitHub y los integra con «Squash and merge»; mientras no haya suplente, GitHub la deja integrar su propia entrega por el bypass que confirmó en `init`.
+Laura no tuvo que conocer claves como `account_type` o `data_policy`: el agente tradujo sus respuestas. La entrega es un PR con el mismo título que la tarea, en la pestaña **Pull requests**: la tarea es el Issue #1 y su PR lleva otro número, por ejemplo el #2, porque en GitHub los Issues y los PR comparten la numeración. Laura revisa ahí los cambios y los integra con «Squash and merge», y GitHub cierra la tarea por su cuenta. Mientras no haya suplente, GitHub la deja integrar su propia entrega por el bypass que confirmó en `init`; en un proyecto individual no hay bypass: basta con que pasen los checks. Con la tarea 1 integrada, sigue el paso 4.
 
 ### 4. Las primeras tareas
 
@@ -156,6 +159,10 @@ PS C:\Users\laura\investigacion\ising-diluido> aucove task accept 2
 Vas a aceptar la tarea #2 «Método: Wolff y promedios de desorden»: se quitará la etiqueta `state:proposed` y quedará abierta para reclamarla.
 Para confirmar, escribe exactamente «accept 2» y pulsa Intro: accept 2
 ```
+
+Para aceptar varias de una vez, en la lista de la pestaña **Issues** marca la casilla de cada tarea, abre el menú de etiquetas que aparece arriba de la lista y desmarca `state:proposed`.
+
+Ya aceptada, cada tarea la reclama su dueño. Las tuyas se las pides a tu agente, «empecemos con la tarea 2» (con la 0.1.0, `/empezar 2`), o en tu terminal, `aucove claim 2`. Desde ahí trabajas como en la [guía del investigador](investigador.md#un-día-de-trabajo-en-física).
 
 ### 5. Avisa a tu equipo
 

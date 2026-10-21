@@ -64,10 +64,10 @@ This is what the terminal said when I ran <the command>. What does it mean and w
 Open another session of the agent, now inside the project folder, so it loads the project's rules and tools. Paste:
 
 ```text
-Check with aucove doctor that everything is ready. If it is, prepare the project with me in task 1.
+Check with aucove doctor that everything is ready. If it is, prepare the project with me in task 1, one question at a time.
 ```
 
-The agent checks your environment and interviews you to complete the plan, the people and the parts, as in [Lead › Open your agent and prepare the project](lead.md#3-open-your-agent-and-prepare-the-project).
+The agent checks your environment and interviews you, one question at a time, to complete the plan, the people and the parts; you answer and it writes the files, as in [Lead › Open your agent and prepare the project](lead.md#3-open-your-agent-and-prepare-the-project).
 
 ## 4. Telling your team (lead)
 

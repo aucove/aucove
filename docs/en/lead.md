@@ -11,6 +11,9 @@ You set up the project once and, every week, you review what the others submit.
 
 You do this once. First, as the lead, the README's [initial setup](../../README.md#initial-setup): your account, the organization, the empty repo, git, aucove, your tokens and the project, which you create with `aucove init --repo`. If you would rather have your agent with you, use [Setting up aucove with your agent](setup-with-your-agent.md). Then come these five steps, in order.
 
+> [!TIP]
+> **If you work alone**, in a project created with `aucove init --individual` (`mode: individual` in `project.yaml`), there is no deputy and no bypass: you merge your submissions yourself once the checks pass, with no one approving them, and you accept your own tasks. The authorship agreement can be a short statement of your own, and of step 5 only the project signature applies. What this guide says about the deputy does not apply, and `aucove doctor` does not ask for one either.
+
 ### 1. The authorship agreement
 
 It is an ordinary document, a PDF or a Word file, that the group drafts and signs before starting. It is not an aucove file and it does not live in the repository, because it carries signatures and personal data: it is kept wherever the group keeps its documents, for example the institution's shared folder. It sets:
@@ -93,7 +96,7 @@ In the same folder, open your agent. There is nothing else to copy or install: t
 claude
 ```
 
-When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`; with 0.1.0rc4, you ask in words: "prepare the project in task 1". It interviews you in plain language:
+When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`. With 0.1.0rc4 there are no shortcuts yet: write to it "Check with aucove doctor that everything is ready. If it is, prepare the project with me in task 1, one question at a time". You do not edit any file: you answer, and the agent writes them and shows you the changes before saving them. It interviews you in plain language about the project's topic and questions, the people and who takes each part, everyone's AI account and whether it trains on their data, whether the data has information about people, the authorship agreement and the writing style:
 
 > **Laura:** `/start`
 >
@@ -129,7 +132,7 @@ When it starts, the agent receives the "Setup pending" notice and offers to prep
 >
 > **Agent:** I wrote `plan.md`, `roles.yaml`, the constitution and `data/README.md`; I regenerated the files that come from `roles.yaml` and validation passes. Shall I submit task 1?
 
-Laura did not need to know keys such as `account_type` or `data_policy`: the agent translated her answers. After the submission, she reviews the changes on GitHub and merges them with "Squash and merge"; while there is no deputy, GitHub lets her merge her own submission through the bypass she confirmed in `init`.
+Laura did not need to know keys such as `account_type` or `data_policy`: the agent translated her answers. The submission is a PR with the same title as the task, under the **Pull requests** tab: the task is Issue #1 and its PR has a different number, for example #2, because Issues and PRs share their numbering on GitHub. Laura reviews the changes there and merges them with "Squash and merge", and GitHub closes the task on its own. While there is no deputy, GitHub lets her merge her own submission through the bypass she confirmed in `init`; in an individual project there is no bypass: the checks only have to pass. With task 1 merged, go on to step 4.
 
 ### 4. The first tasks
 
@@ -156,6 +159,10 @@ PS C:\Users\laura\research\ising-diluido> aucove task accept 2
 You are about to accept task #2 “Method: Wolff and disorder averages”: the `state:proposed` label will be removed and the task will be open to claim.
 To confirm, type exactly "accept 2" and press Enter: accept 2
 ```
+
+To accept several at once, in the list under the **Issues** tab check the box of each task, open the labels menu that shows up above the list and uncheck `state:proposed`.
+
+Once accepted, each task is claimed by its owner. Ask your agent for yours, "let's start with task 2" (with 0.1.0, `/start 2`), or in your terminal, `aucove claim 2`. From there you work as in the [researcher guide](researcher.md#a-day-of-work-in-physics).
 
 ### 5. Tell your team
 

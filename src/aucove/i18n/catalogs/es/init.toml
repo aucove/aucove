@@ -143,7 +143,7 @@ skipped = "pendiente, en la web"
 # La tarea de preparación del responsable (00-marco D-70; 05-operaciones §9.3).
 [init.setup_task]
 title = "Preparar el proyecto"
-summary = "Completar lo que init deja de ejemplo: el plan (`plan.md`), las personas y sus partes (`roles.yaml`), la constitución (`memory/constitution.md`), la descripción de los datos (`data/README.md`) y, si hacen falta, las reglas propias para los agentes (sección 7 de `AGENTS.md`). El agente guía esta tarea con preguntas."
+summary = "Completar lo que init deja de ejemplo: el plan (`plan.md`), las personas y sus partes (`roles.yaml`), la constitución (`memory/constitution.md`), la descripción de los datos (`data/README.md`) y, si hacen falta, las reglas propias para los agentes (sección 7 de `AGENTS.md`). El agente guía esta tarea con una entrevista, una pregunta a la vez: el tema, las preguntas y las hipótesis; el alcance y los métodos; las personas, sus cuentas de GitHub y, en un grupo, el suplente; quién lleva cada parte y los roles de crédito; la cuenta de IA de cada persona y si su proveedor entrena con sus datos; los datos, dónde viven y si tienen información de personas; la fecha y la huella del acuerdo de autoría; el estilo de escritura, y las reglas propias para los agentes. El responsable contesta y revisa; los archivos los escribe el agente."
 done_plan = "`plan.md` tiene el objetivo, las preguntas, las hipótesis, el alcance y los métodos del proyecto."
 done_roles = "`roles.yaml` tiene a todas las personas, el dueño de cada parte y, en un grupo, el suplente."
 done_data = "`data/README.md` describe los datos crudos y dónde viven."

@@ -158,9 +158,15 @@ def slugify(text: str, max_len: int = 48) -> str:
     t = unicodedata.normalize("NFKD", text)
     t = "".join(c for c in t if not unicodedata.combining(c)).lower()   # ñ -> n, á -> a
     t = re.sub(r"[^a-z0-9]+", "-", t).strip("-")
-    return t[:max_len].rstrip("-") or "decision"
+    if len(t) > max_len:  # corta en el último guion que cabe, sin partir una palabra
+        cut = t[: max_len + 1].rfind("-")
+        t = t[:cut] if cut > 0 else t[:max_len]
+    return t or "decision"
 # slugify("Fusionar RQ-3 en RQ-1: ¿año base 2019?") == "fusionar-rq-3-en-rq-1-ano-base-2019"
+# slugify("Allow a consumer AI account with training disabled") == "allow-a-consumer-ai-account-with-training"
 ```
+
+Una palabra más larga que `max_len` se corta en `max_len`. El slug solo se deriva al crear el registro: los IDs que ya existen no cambian, aunque se hayan cortado a media palabra antes de esta regla.
 
 ## 3. `project.yaml`
 

@@ -28,7 +28,7 @@ description = "Tell whether you can create, modify or delete each path in the cu
 
 [mcp.tool.propose_task]
 title = "Propose a task"
-description = "Propose a new task: create its Issue with the parts it touches and, if given, the plan.md IDs. It stays proposed until the lead accepts it. Use it when the requested work has no task or to split off another person's part (the split option of claim_task)."
+description = "Propose a new task: create its Issue with the parts it touches, the summary (body, without the form headings), the definition of done (done, one condition per item) and, if given, the plan.md IDs. It stays proposed until the lead accepts it. Use it when the requested work has no task or to split off another person's part (the split option of claim_task)."
 
 [mcp.tool.claim_task]
 title = "Claim a task"
@@ -52,7 +52,7 @@ description = "Record your overlap assessment after claim_task (phase claim) or 
 
 [mcp.tool.submit_task]
 title = "Submit the task"
-description = "Submit the current task: write the session note, save and update the branch, run the local checks and open or update the PR with the AI-use trace. First ask the person to confirm the attest-v1 declaration and call with sign_off true; then assess the overlap and record it with record_overlap_assessment."
+description = "Submit the task: write the session note, save, update the branch, run the local checks and open or update the PR with the AI-use trace. First show the person this declaration (attest-v1) and call with sign_off true only if they confirm it: \"I declare that I have personally reviewed the content of this submission, including any parts produced with AI assistance; that the AI-use declaration is accurate and complete; and that I take responsibility for this content before the project team.\" Then assess the overlap and record it with record_overlap_assessment."
 
 [mcp.tool.switch_task]
 title = "Switch tasks"
