@@ -5,7 +5,7 @@
 Preparas el proyecto una vez y, cada semana, revisas lo que entregan los demás.
 
 > [!NOTE]
-> Describe la versión 0.1 completa. Con la 0.1.0rc4, lo que aquí se pide con un atajo como `/empezar` se le pide al agente con palabras, o se hace con los comandos `aucove`.
+> Describe la versión 0.1 completa. Con la 0.1.0rc5, lo que aquí se pide con un atajo como `/empezar` se le pide al agente con palabras, o se hace con los comandos `aucove`.
 
 ## Preparar el proyecto
 
@@ -96,7 +96,7 @@ En la misma carpeta, abre tu agente. No hay que copiar ni instalar nada más: la
 claude
 ```
 
-Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`. Con la 0.1.0rc4 todavía no hay atajos: escríbele «Comprueba con aucove doctor que todo esté listo. Si lo está, prepara conmigo el proyecto en la tarea 1, con una pregunta a la vez». Tú no editas ningún archivo: contestas, y el agente los escribe y te muestra los cambios antes de guardarlos. Te entrevista en lenguaje normal sobre el tema y las preguntas del proyecto, las personas y quién lleva cada parte, la cuenta de IA de cada quien y si entrena con sus datos, si los datos tienen información de personas, el acuerdo de autoría y el estilo de escritura:
+Al arrancar, el agente recibe el aviso «Preparación pendiente» y te ofrece preparar el proyecto. Con la 0.1.0 escribes `/empezar`. Con la 0.1.0rc5 todavía no hay atajos: escríbele «Comprueba con aucove doctor que todo esté listo. Si lo está, prepara conmigo el proyecto en la tarea 1, con una pregunta a la vez». Tú no editas ningún archivo: contestas, y el agente los escribe y te muestra los cambios antes de guardarlos. Te entrevista en lenguaje normal sobre el tema y las preguntas del proyecto, las personas y quién lleva cada parte, la cuenta de IA de cada quien y si entrena con sus datos, si los datos tienen información de personas, el acuerdo de autoría y el estilo de escritura:
 
 > **Laura:** `/empezar`
 >

@@ -8,7 +8,7 @@ la ruta caliente de hooks, pueda usarlo sin costo.
 """
 
 NAME = "aucove"
-__version__ = "0.1.0rc4"  # hatch lee este valor ([tool.hatch.version] path); REQ-ARCH-20
+__version__ = "0.1.0rc5"  # hatch lee este valor ([tool.hatch.version] path); REQ-ARCH-20
 SUPPORTED_CONVENTIONS: tuple[str, ...] = ("0.1",)
 MCP_SERVER_NAME = NAME  # Claude Code: mcp__<NAME>__<tool>
 CACHE_DIR = "." + NAME  # directorio de caché local (01 §7)

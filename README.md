@@ -165,8 +165,8 @@ On Windows, in PowerShell:
 
 ```powershell
 $lock = New-TemporaryFile
-Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc4/requirements-lock.txt -OutFile $lock.FullName
-$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc4" --constraints $lock.FullName
+Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc5/requirements-lock.txt -OutFile $lock.FullName
+$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc5" --constraints $lock.FullName
 uv tool update-shell
 ```
 
@@ -174,14 +174,14 @@ On macOS or Linux, in bash or zsh:
 
 ```bash
 LOCK="$(mktemp)"
-curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc4/requirements-lock.txt
-UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc4" --constraints "$LOCK"
+curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc5/requirements-lock.txt
+UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc5" --constraints "$LOCK"
 uv tool update-shell
 ```
 
 Close the terminal, open a new one and check with `aucove --version`: it must show the version in these commands. If your agent was already open, close it and open it again; quit Claude Desktop from its icon in the system tray, not just its window. If your agent sees a different version than your terminal, see [If something fails](docs/en/when-something-happens.md#if-something-fails).
 
-To verify evidence seals on your computer (`aucove evidence verify`), install it with the `evidence` extra: in the `uv tool install` command, write `"aucove[evidence]==0.1.0rc4"`. If aucove is already installed, the same command adds the extra. CI seals every submission without it.
+To verify evidence seals on your computer (`aucove evidence verify`), install it with the `evidence` extra: in the `uv tool install` command, write `"aucove[evidence]==0.1.0rc5"`. If aucove is already installed, the same command adds the extra. CI seals every submission without it.
 
 #### 5. Create your GitHub token
 
@@ -301,7 +301,7 @@ Open your agent in the project folder: with `claude` (or `codex`, `gemini`, `cop
 
 Ask it to run `aucove doctor`. It must say `[ok] identity`, with your username and a fine-grained token from `GH_TOKEN`. If it says there is no token, even though your terminal sees it (step 6), the app was opened before you stored it: quit it completely and open it again. On macOS, Claude Desktop also needs the token in its environment editor (step 6). In a freshly created project other warnings show up too, such as the missing deputy; the lead guide takes care of them.
 
-What comes next, if you are the lead: preparing the project in task #1. With 0.1.0rc4 there are no shortcuts such as `/start` yet; they come with 0.1.0. Write to your agent "Check with aucove doctor that everything is ready. If it is, prepare the project with me in task 1, one question at a time". It interviews you and writes the files for you: you do not edit any of them. The [lead guide](docs/en/lead.md#3-open-your-agent-and-prepare-the-project) tells you how it goes on, up to telling your team. If you are a researcher, start working with the [researcher guide](docs/en/researcher.md).
+What comes next, if you are the lead: preparing the project in task #1. With 0.1.0rc5 there are no shortcuts such as `/start` yet; they come with 0.1.0. Write to your agent "Check with aucove doctor that everything is ready. If it is, prepare the project with me in task 1, one question at a time". It interviews you and writes the files for you: you do not edit any of them. The [lead guide](docs/en/lead.md#3-open-your-agent-and-prepare-the-project) tells you how it goes on, up to telling your team. If you are a researcher, start working with the [researcher guide](docs/en/researcher.md).
 
 ### The user guide
 
@@ -318,7 +318,7 @@ The [user guide](docs/en/README.md) is organized by role ([en español](docs/es/
 
 ### Status
 
-Version 0.1. `0.1.0rc4` is a preliminary release with the complete core (CLI and MCP server), the template, its CI, the project signature and `init --repo`, which creates a project from an empty folder. The skills and hooks for Claude Code and Codex, such as `/start` and `/submit`, the published template repository and the devcontainer arrive with `0.1.0`. In the meantime, you ask the agent in your own words or use the `aucove` commands. The changes in each version are in [CHANGELOG.md](CHANGELOG.md), and the v0.1 specification, which is the normative authority, is in [`spec/`](spec/).
+Version 0.1. `0.1.0rc5` is a preliminary release with the complete core (CLI and MCP server), the template, its CI, the project signature and `init --repo`, which creates a project from an empty folder. The skills and hooks for Claude Code and Codex, such as `/start` and `/submit`, the published template repository and the devcontainer arrive with `0.1.0`. In the meantime, you ask the agent in your own words or use the `aucove` commands. The changes in each version are in [CHANGELOG.md](CHANGELOG.md), and the v0.1 specification, which is the normative authority, is in [`spec/`](spec/).
 
 ### Get involved
 
@@ -339,8 +339,8 @@ To report a vulnerability, follow [SECURITY.md](SECURITY.md) instead of opening 
 Every version is published from this repository with Trusted Publishing and carries attestations of its build (10-seguridad §6). To check that a wheel came from this repository's release workflow:
 
 ```bash
-pypi-attestations verify pypi --repository https://github.com/aucove/aucove pypi:aucove-0.1.0rc4-py3-none-any.whl
-gh attestation verify aucove-0.1.0rc4-py3-none-any.whl -R aucove/aucove
+pypi-attestations verify pypi --repository https://github.com/aucove/aucove pypi:aucove-0.1.0rc5-py3-none-any.whl
+gh attestation verify aucove-0.1.0rc5-py3-none-any.whl -R aucove/aucove
 ```
 
 The first command uses [pypi-attestations](https://pypi.org/project/pypi-attestations/), installed separately, and the second the GitHub CLI on the downloaded wheel.
@@ -542,8 +542,8 @@ En Windows, en PowerShell:
 
 ```powershell
 $lock = New-TemporaryFile
-Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc4/requirements-lock.txt -OutFile $lock.FullName
-$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc4" --constraints $lock.FullName
+Invoke-WebRequest -UseBasicParsing https://github.com/aucove/aucove/releases/download/v0.1.0rc5/requirements-lock.txt -OutFile $lock.FullName
+$env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove==0.1.0rc5" --constraints $lock.FullName
 uv tool update-shell
 ```
 
@@ -551,14 +551,14 @@ En macOS o Linux, en bash o zsh:
 
 ```bash
 LOCK="$(mktemp)"
-curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc4/requirements-lock.txt
-UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc4" --constraints "$LOCK"
+curl -fsSL -o "$LOCK" https://github.com/aucove/aucove/releases/download/v0.1.0rc5/requirements-lock.txt
+UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc5" --constraints "$LOCK"
 uv tool update-shell
 ```
 
 Cierra la terminal, abre una nueva y comprueba con `aucove --version`: debe decir la versión de estos comandos. Si tu agente ya estaba abierto, ciérralo y ábrelo otra vez; a Claude Desktop, ciérralo desde su ícono en la bandeja del sistema, no solo su ventana. Si tu agente ve otra versión que tu terminal, mira [Si algo falla](docs/es/cuando-pasa.md#si-algo-falla).
 
-Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc4"`. Si aucove ya estaba instalado, el mismo comando le agrega el extra. El CI sella cada entrega sin él.
+Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc5"`. Si aucove ya estaba instalado, el mismo comando le agrega el extra. El CI sella cada entrega sin él.
 
 #### 5. Crea tu token de GitHub
 
@@ -678,7 +678,7 @@ Abre tu agente en la carpeta del proyecto: con `claude` (o `codex`, `gemini`, `c
 
 Pídele que corra `aucove doctor`. Debe decir `[ok] identity`, con tu usuario y un token fine-grained de `GH_TOKEN`. Si dice que no hay token, aunque tu terminal sí lo ve (paso 6), la app se abrió antes de que lo guardaras: ciérrala del todo y ábrela otra vez. En macOS, Claude Desktop necesita además el token en su editor de entorno (paso 6). En un proyecto recién creado también salen otros avisos, como que falta el suplente; los resuelve la guía del responsable.
 
-Lo que sigue, si eres responsable: preparar el proyecto en la tarea #1. Con la 0.1.0rc4 todavía no hay atajos como `/empezar`, que llegan con la 0.1.0. Escríbele a tu agente «Comprueba con aucove doctor que todo esté listo. Si lo está, prepara conmigo el proyecto en la tarea 1, con una pregunta a la vez». Te entrevista y escribe los archivos por ti: tú no editas ninguno. La [guía del responsable](docs/es/responsable.md#3-abre-tu-agente-y-prepara-el-proyecto) cuenta cómo sigue, hasta avisar a tu equipo. Si eres investigador, empieza a trabajar con la [guía del investigador](docs/es/investigador.md).
+Lo que sigue, si eres responsable: preparar el proyecto en la tarea #1. Con la 0.1.0rc5 todavía no hay atajos como `/empezar`, que llegan con la 0.1.0. Escríbele a tu agente «Comprueba con aucove doctor que todo esté listo. Si lo está, prepara conmigo el proyecto en la tarea 1, con una pregunta a la vez». Te entrevista y escribe los archivos por ti: tú no editas ninguno. La [guía del responsable](docs/es/responsable.md#3-abre-tu-agente-y-prepara-el-proyecto) cuenta cómo sigue, hasta avisar a tu equipo. Si eres investigador, empieza a trabajar con la [guía del investigador](docs/es/investigador.md).
 
 ### La guía de uso
 
@@ -695,7 +695,7 @@ La [guía de uso](docs/es/README.md) va por perfil ([in English](docs/en/README.
 
 ### Estado
 
-Versión 0.1. La `0.1.0rc4` es una versión preliminar con el núcleo completo (CLI y servidor MCP), la plantilla, su CI, la firma del proyecto e `init --repo`, que crea un proyecto desde una carpeta vacía. Los skills y los hooks para Claude Code y Codex, como `/empezar` y `/entregar`, el repositorio plantilla publicado y el devcontainer llegan con la `0.1.0`. Mientras tanto, lo mismo se le pide al agente con palabras o se hace con los comandos `aucove`. Los cambios de cada versión están en [CHANGELOG.md](CHANGELOG.md), y la especificación v0.1, que es la autoridad normativa, en [`spec/`](spec/).
+Versión 0.1. La `0.1.0rc5` es una versión preliminar con el núcleo completo (CLI y servidor MCP), la plantilla, su CI, la firma del proyecto e `init --repo`, que crea un proyecto desde una carpeta vacía. Los skills y los hooks para Claude Code y Codex, como `/empezar` y `/entregar`, el repositorio plantilla publicado y el devcontainer llegan con la `0.1.0`. Mientras tanto, lo mismo se le pide al agente con palabras o se hace con los comandos `aucove`. Los cambios de cada versión están en [CHANGELOG.md](CHANGELOG.md), y la especificación v0.1, que es la autoridad normativa, en [`spec/`](spec/).
 
 ### Colabora
 
@@ -716,8 +716,8 @@ Para reportar una vulnerabilidad, sigue [SECURITY.md](SECURITY.md) en lugar de a
 Cada versión se publica desde este repositorio con Trusted Publishing y lleva atestaciones de su construcción (10-seguridad §6). Para comprobar que una rueda salió del workflow de release de este repositorio:
 
 ```bash
-pypi-attestations verify pypi --repository https://github.com/aucove/aucove pypi:aucove-0.1.0rc4-py3-none-any.whl
-gh attestation verify aucove-0.1.0rc4-py3-none-any.whl -R aucove/aucove
+pypi-attestations verify pypi --repository https://github.com/aucove/aucove pypi:aucove-0.1.0rc5-py3-none-any.whl
+gh attestation verify aucove-0.1.0rc5-py3-none-any.whl -R aucove/aucove
 ```
 
 El primer comando usa [pypi-attestations](https://pypi.org/project/pypi-attestations/), que se instala aparte, y el segundo, la CLI de GitHub sobre la rueda descargada.

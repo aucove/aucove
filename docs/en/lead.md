@@ -5,7 +5,7 @@
 You set up the project once and, every week, you review what the others submit.
 
 > [!NOTE]
-> This describes the complete version 0.1. With 0.1.0rc4, what is done here with a shortcut such as `/start` you ask the agent for in your own words, or do with the `aucove` commands.
+> This describes the complete version 0.1. With 0.1.0rc5, what is done here with a shortcut such as `/start` you ask the agent for in your own words, or do with the `aucove` commands.
 
 ## Setting up the project
 
@@ -96,7 +96,7 @@ In the same folder, open your agent. There is nothing else to copy or install: t
 claude
 ```
 
-When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`. With 0.1.0rc4 there are no shortcuts yet: write to it "Check with aucove doctor that everything is ready. If it is, prepare the project with me in task 1, one question at a time". You do not edit any file: you answer, and the agent writes them and shows you the changes before saving them. It interviews you in plain language about the project's topic and questions, the people and who takes each part, everyone's AI account and whether it trains on their data, whether the data has information about people, the authorship agreement and the writing style:
+When it starts, the agent receives the "Setup pending" notice and offers to prepare the project. With 0.1.0 you type `/start`. With 0.1.0rc5 there are no shortcuts yet: write to it "Check with aucove doctor that everything is ready. If it is, prepare the project with me in task 1, one question at a time". You do not edit any file: you answer, and the agent writes them and shows you the changes before saving them. It interviews you in plain language about the project's topic and questions, the people and who takes each part, everyone's AI account and whether it trains on their data, whether the data has information about people, the authorship agreement and the writing style:
 
 > **Laura:** `/start`
 >

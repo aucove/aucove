@@ -4,7 +4,9 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
-## [Unreleased]
+## [0.1.0rc5] - 2026-10-20
+
+Fifth preliminary release of `0.1.0`. It brings what the first test session of a project of a single person taught: `aucove/base-audit` no longer fails after every merge through a PR, the agent gets the text of the declaration that it asks the person to confirm and a field for the definition of done of the tasks it proposes, and the guides cover working alone and the first steps after the setup task.
 
 ### Added
 
