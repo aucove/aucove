@@ -1,11 +1,11 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
     "python_full_version >= '3.14' and sys_platform != 'emscripten'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "(python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version < '3.12' and sys_platform == 'emscripten')",
+    "python_full_version < '3.12' or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten')",
 ]
 
 [[package]]
@@ -89,7 +89,7 @@ requires-dist = [
     { name = "httpx2", specifier = ">=2.13,<3" },
     { name = "jsonschema", extras = ["format-nongpl"], specifier = ">=4.23,<5" },
     { name = "mcp", specifier = ">=2.2,<3" },
-    { name = "opentimestamps", marker = "extra == 'evidence'", specifier = ">=0.4.5,<0.5" },
+    { name = "opentimestamps", marker = "extra == 'evidence'", specifier = ">=0.4.5,<0.6" },
     { name = "packaging", specifier = ">=24" },
     { name = "pyyaml", specifier = ">=6.0.2,<7" },
     { name = "rfc3161-client", marker = "extra == 'evidence'", specifier = ">=1.0,<2" },
@@ -873,15 +873,15 @@ wheels = [
 
 [[package]]
 name = "opentimestamps"
-version = "0.4.5"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pycryptodomex" },
     { name = "python-bitcoinlib" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fb/2a/5f19420091d137e5a4c49cbe3de1964a3741d3264bad5e0a528e54aaef15/opentimestamps-0.4.5.tar.gz", hash = "sha256:56726ccde97fb67f336a7f237ce36808e5593c3089d68d900b1c83d0ebf9dcfa", size = 35554, upload-time = "2023-01-25T14:53:56.035Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/f3/d99d0fee5bbfe7a36c62b89067a0f802fb107bc5c7cd720912640c840a6f/opentimestamps-0.5.0.tar.gz", hash = "sha256:c38e20e3970b821273c827a14365d3f8542aad390f26f340091daf10d4d2e428", size = 39377, upload-time = "2026-10-27T15:46:15.971Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/ff/59b7c642695afabf3ce92e311bff7a3bdcf8b9e420d0749f756763988db0/opentimestamps-0.4.5-py3-none-any.whl", hash = "sha256:a4912b3bd1b612a3ef5fac925b9137889e6c5cb91cc9e76c8202a2bf8abe26b5", size = 50285, upload-time = "2023-01-25T14:53:54.478Z" },
+    { url = "https://files.pythonhosted.org/packages/3e/bd/d85a57fab74dabdeb8bcfaf5de781be1d1410394b58720e3fa3c128c4e70/opentimestamps-0.5.0-py3-none-any.whl", hash = "sha256:bbe386274469292b54bb1d2e3af29b3e17f30025f12516bfc4aea3474b12e848", size = 51254, upload-time = "2026-10-27T15:46:14.463Z" },
 ]
 
 [[package]]
