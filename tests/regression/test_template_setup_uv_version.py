@@ -11,8 +11,8 @@ fijado (10-seguridad REQ-SEC-47), en jobs como ``report`` de ``build.yml``, que 
 ``pull-requests: write``.
 
 Con ``version``, setup-uv verifica el binario con el sha256 que trae su propio código
-(``known-checksums.json`` del SHA fijado). El CI del framework fija la última versión de uv
-que trae ese archivo para el mismo SHA de la acción; la plantilla usa la misma.
+(``known-checksums.json`` del SHA fijado). El CI del framework fija una versión de uv que
+trae ese archivo para el mismo SHA de la acción; la plantilla usa la misma.
 """
 
 from __future__ import annotations
