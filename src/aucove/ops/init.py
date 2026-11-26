@@ -605,6 +605,7 @@ def _configure(ctx: OpContext, start: _Start, current: Any, forge: ForgeAdapter,
         _check_worktree(git, base, push=not protected)
         check_targets(root, [c.path for c in plan.changes if c.action != "deleted"], start.entries)
     steps = Steps(ctx, OP, STEPS, deadline_s=None)  # 05 REQ-OPS-22: init no tiene plazo
+    steps.context.update(repo=repo, profile=caps.profile)  # si un paso falla, de qué repo y con qué perfil
     if steps.dry_run:
         return _dry(steps, st, plan, caps, protected, setup, fresh)
     ctx.confirm_human(OP, repo, _summary(st, plan, caps, protected, choices, new_licenses=asked, setup=setup,
@@ -842,7 +843,7 @@ def _dry(steps: Steps, st: _Run, plan: FilePlan, caps: Capabilities, protected: 
 
 def _repo_settings(st: _Run, admin: ForgeAdmin, caps: Capabilities, write: _Writer) -> None:
     """06 §4.2 y 11 §3.2 (REQ-PERM-36, REQ-TRACE-35): también en ``advisory`` (REQ-PERM-42)."""
-    changes = settings_changes(admin.repo_settings(), desired_settings(caps.visibility))
+    changes = settings_changes(admin.repo_settings(), desired_settings(caps.visibility, caps.owner_type))
     if changes:
         write(lambda: admin.update_repo_settings(changes))
         st.protection("repo_settings", "applied", ",".join(changes))
@@ -1111,6 +1112,13 @@ def render_text(result: Result, t: Translator, *, fmt: str = "text") -> str:
     data = result.data or {}
     if data.get("dry_run"):
         return ""
+    if not result.ok:  # failure_data (05 §6.3): el repo, el perfil y el paso; el error va después
+        lines = [t("init.render.head", repo=data["repo"], profile=data["profile"])] \
+            if data.get("repo") and data.get("profile") else []
+        step = data.get("failed_step")
+        if isinstance(step, str):
+            lines.append(t("init.render.stopped", step=t.get(f"init.render.step.{step}") or step))
+        return "\n".join(lines)
     lines = [t("init.render.head", repo=data.get("repo"), profile=data.get("profile"))]
     files = data.get("files") or []
     shown = files if len(files) <= FILES_SHOWN else [f for f in files if f.get("action") != "created"]  # type: ignore[union-attr]

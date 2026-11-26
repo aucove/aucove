@@ -108,6 +108,7 @@ evidence_secret = "Agrega la llave privada del proyecto como secreto `{secret}` 
 # Vista legible del resultado.
 [init.render]
 head = "init en {repo} (perfil {profile}):"
+stopped = "Se detuvo en {step}."
 files = "Archivos ({count}):"
 files_more = "…y {count} nuevos (la lista completa sale con `--json`)."
 files_new = "Archivos: {count} nuevos (la lista completa sale con `--json`)."
@@ -132,6 +133,17 @@ pull_request_target = "`pull_request_target` en la política de Actions"
 environment = "Environment de la firma del proyecto"
 ruleset = "Ruleset `{name}`"
 collaborator = "Colaborador `{name}`"
+
+[init.render.step]
+repo_settings = "los ajustes del repositorio"
+actions = "la política de Actions y el environment de la firma"
+collaborators = "los colaboradores"
+labels = "las etiquetas"
+files = "los archivos del proyecto"
+push = "la subida a GitHub"
+rulesets = "los rulesets"
+verify = "la verificación de las protecciones"
+setup_task = "la tarea de preparación"
 
 [init.render.status]
 applied = "aplicado"

@@ -165,6 +165,23 @@ def test_fake_collaborators_and_org(fake: FakeForge) -> None:
     assert admin.workflow_permissions("org") is None
 
 
+def test_fake_personal_private_repository() -> None:
+    """Como GitHub (issue #27): en un repo privado de una cuenta personal, ``allow_forking`` vale ``true`` y
+    no se puede cambiar; el ``PATCH`` aplica las demás claves y responde 422."""
+    fake = new_fake("advisory")  # privado
+    assert fake.capabilities(refresh=True).owner_type == "Organization"
+    fake.seed_admin(org=None)
+    caps = fake.capabilities(refresh=True)
+    assert caps.owner_type == "User" and caps.visibility != "public"
+    admin = fake.admin("admin-token")
+    assert admin.repo_settings()["allow_forking"] is True
+    with pytest.raises(ForgeValidationError) as denied:
+        admin.update_repo_settings({"allow_forking": False, "has_wiki": False})
+    assert denied.value.http_status == 422 and "org-owned private repositories" in str(denied.value)
+    settings = admin.repo_settings()
+    assert settings["allow_forking"] is True and settings["has_wiki"] is False
+
+
 def test_the_adapter_has_no_configuration_writes(fake: FakeForge) -> None:
     """REQ-FORGE-3: el adaptador normal no cambia la configuración del repositorio."""
     adapter: ForgeAdapter = fake

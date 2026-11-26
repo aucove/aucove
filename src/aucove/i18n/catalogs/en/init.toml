@@ -108,6 +108,7 @@ evidence_secret = "Add the private key of the project as the secret `{secret}` o
 # Readable view of the result.
 [init.render]
 head = "init on {repo} ({profile} profile):"
+stopped = "It stopped at {step}."
 files = "Files ({count}):"
 files_more = "…and {count} new ones (the full list comes with `--json`)."
 files_new = "Files: {count} new (the full list comes with `--json`)."
@@ -131,6 +132,17 @@ pull_request_target = "`pull_request_target` in the Actions policy"
 environment = "Project signature environment"
 ruleset = "Ruleset `{name}`"
 collaborator = "Collaborator `{name}`"
+
+[init.render.step]
+repo_settings = "the repository settings"
+actions = "the Actions policy and the signature environment"
+collaborators = "the collaborators"
+labels = "the labels"
+files = "the project files"
+push = "the push to GitHub"
+rulesets = "the rulesets"
+verify = "checking the protections"
+setup_task = "the setup task"
 
 [init.render.status]
 applied = "applied"

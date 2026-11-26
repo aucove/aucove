@@ -57,6 +57,7 @@ class Steps:
         self._detail: dict[str, str | None] = {}
         self.failed_reflections: list[str] = []
         self.plan: list[dict[str, str]] = []
+        self.context: dict[str, object] = {}  # campos de failure_data que la operación ya conoce
         interactive = ctx.inv.surface in _INTERACTIVE
         self._deadline = time.monotonic() + deadline_s if deadline_s is not None and interactive else None
 
@@ -94,8 +95,9 @@ class Steps:
         return out
 
     def failure_data(self, failed_step: str, extra: Mapping[str, object] | None = None) -> dict[str, object]:
-        """``failure_data`` (05 §6.3) con los campos de ``extra`` que no sean los suyos."""
-        data: dict[str, object] = {k: v for k, v in (extra or {}).items() if k not in ("failed_step", "steps")}
+        """``failure_data`` (05 §6.3) con los campos de ``context`` y de ``extra`` que no sean los suyos."""
+        fields = {**self.context, **(extra or {})}
+        data: dict[str, object] = {k: v for k, v in fields.items() if k not in ("failed_step", "steps")}
         data["failed_step"] = failed_step
         data["steps"] = self.as_list()
         return data

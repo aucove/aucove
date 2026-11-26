@@ -1078,7 +1078,7 @@ class _Doctor:
         assert caps is not None
         if settings is None or any(k not in settings for k in TRACE_SETTINGS):  # piden Contents W
             return Check("merge-settings", "skip", t("doctor.merge-settings.skip_unreadable"))
-        desired = desired_settings(caps.visibility)
+        desired = desired_settings(caps.visibility, caps.owner_type)
         trace = [k for k in TRACE_SETTINGS if settings[k] != desired[k]]
         other = [k for k in desired if k not in TRACE_SETTINGS and k in settings and settings[k] != desired[k]]
         fix = t("doctor.profile.fix_init", name=_meta.NAME)

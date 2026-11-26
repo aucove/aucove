@@ -417,7 +417,7 @@ Orden: (1) ajustes del repo, (2) permisos de Actions (`actions/permissions` con 
 - `allow_auto_merge: false`: un agente no puede programar una integración que ocurra sin un clic humano (D-09).
 - `allow_update_branch: false`: oculta "Update branch". Si el `lead` actualizara el PR de otro, pasaría a ser el último en empujar y no podría aprobarlo. La actualización la hace el reclamante con `aucove update`.
 - `has_wiki: false`: la wiki es contenido que se edita sin PR y se volvería superficie de inyección. Es DEBERÍA; `init` PUEDE omitirlo si el `lead` lo pide.
-- `allow_forking: false` solo aplica a repos privados.
+- `allow_forking: false` solo aplica a los repos privados o internos de una organización. GitHub no deja cambiar la política de forks de un repo público ni la de un repo privado de una cuenta personal, y en este responde 422 («Allow forks setting can only be changed on org-owned private repositories»): ahí `init` no manda la clave y `doctor` no la compara.
 
 ### 4.3 Permisos de Actions
 
@@ -581,7 +581,7 @@ Queda un riesgo: un PR que modifica `.github/workflows/**` (con `aucove-workflow
 
 Solo se admite squash, forzado en el ruleset (`allowed_merge_methods`) y en los ajustes del repo. El título del commit es el del PR y el cuerpo es el del PR (`PR_BODY`). Así, los trailers que `submit` escribe al final del cuerpo del PR (formato en 11-trazabilidad) quedan en el commit de la base.
 
-- **REQ-PERM-36.** `init` DEBE aplicar los ajustes de §4.2 (salvo `has_wiki`, que es DEBERÍA), incluidos `squash_merge_commit_title: "PR_TITLE"` y `squash_merge_commit_message: "PR_BODY"`.
+- **REQ-PERM-36.** `init` DEBE aplicar los ajustes de §4.2 (salvo `has_wiki`, que es DEBERÍA, y `allow_forking`, que solo va donde §4.2 dice), incluidos `squash_merge_commit_title: "PR_TITLE"` y `squash_merge_commit_message: "PR_BODY"`.
 
 Quien integra puede editar el mensaje en la web, y la API de merge acepta `commit_message`. Detectar que se perdieron los trailers le toca al check de trazabilidad posterior a la integración (11-trazabilidad y 09-ci).
 

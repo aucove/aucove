@@ -1642,7 +1642,7 @@ class FakeForge:
                     forge="fake",
                     repo=s.repo,
                     visibility=s.visibility,  # type: ignore[arg-type]
-                    owner_type="Organization",
+                    owner_type="User" if s.admin.org is None else "Organization",
                     viewer_permission=user.permission,  # type: ignore[arg-type]
                     default_branch=s.default_branch,
                     rules_available=None if unknown else enforced,
@@ -2990,6 +2990,9 @@ class FakeForge:
                 admin.retention = fields["retention"]  # type: ignore[assignment]
             if "org" in fields:
                 admin.org = copy.deepcopy(fields["org"])  # type: ignore[assignment]
+                personal = admin.org is None and self._s.visibility != "public"
+                if personal and "allow_forking" not in dict(fields.get("settings") or {}):  # type: ignore[call-overload]
+                    admin.settings["allow_forking"] = True  # GitHub no deja cambiarlo (issue #27)
             if "outside" in fields:
                 admin.outside = {str(x).casefold() for x in _seq(fields["outside"])}
             if "fresh" in fields:  # repo recién creado: sin rulesets, la base no está protegida
@@ -3718,6 +3721,11 @@ class FakeAdmin:
         try:
             with self._request("update_repo_settings", "PATCH", "E", {"changes": dict(changes)}):
                 self._require_admin()
+                if "allow_forking" in changes and self._s.admin.org is None and self._s.visibility != "public":
+                    # Como GitHub (issue #27): aplica las demás claves y rechaza la de los forks
+                    self._s.admin.settings.update({k: v for k, v in changes.items() if k != "allow_forking"})
+                    raise _HttpError(422, "Allow forks setting can only be changed on org-owned private "
+                                          "repositories")
                 self._s.admin.settings.update(changes)
                 return {k: v for k, v in self._s.admin.settings.items() if k in REPO_SETTINGS}
         except _HttpError as e:

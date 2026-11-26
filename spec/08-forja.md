@@ -529,7 +529,7 @@ Métodos de `ForgeAdmin` (§2.2; solo `init`, con el token de administración):
 | Método | Endpoint(s) | Permiso | Éxito → resultado | Errores → excepción |
 |---|---|---|---|---|
 | `identity` | `GET /user` | ninguno | 200 | 401 → `ForgeAuthError` |
-| `repo_settings` / `update_repo_settings` | `GET` / `PATCH /repos/{o}/{r}` | Administration R / W | 200 → las claves de `REPO_SETTINGS` | 403 → `ForgePermissionError`; cambio no aplicado → `ForgeValidationError` |
+| `repo_settings` / `update_repo_settings` | `GET` / `PATCH /repos/{o}/{r}` | Administration R / W | 200 → las claves de `REPO_SETTINGS` | 403 → `ForgePermissionError`; 422 o cambio no aplicado → `ForgeValidationError` (GitHub aplica las demás claves del `PATCH` y responde 422 por `allow_forking` en un repo privado de una cuenta personal: 06-permisos §4.2) |
 | `actions_policy` | `GET actions/permissions` y, con `selected`, `GET actions/permissions/selected-actions`; con `org`, las mismas rutas bajo `/orgs/{org}` | Administration R (org: Organization administration R) | 200 → `ActionsPolicy` | 403/404 → `None` |
 | `set_actions_policy` | `PUT actions/permissions` `{enabled, allowed_actions, sha_pinning_required}` | Administration W | 204 | 403 → `ForgePermissionError` |
 | `workflow_permissions` / `set_workflow_permissions` | `GET` / `PUT actions/permissions/workflow` (org: `GET /orgs/{org}/actions/permissions/workflow`) | Administration R / W | 200 / 204 | `GET` 403/404 → `None` |

@@ -175,7 +175,7 @@ def fake_forge(viewer: str = "bruno", *, profile: str = "enforced", rules: str =
     forge.seed_branch("main", base)
     if applied:
         visibility = str(options.get("visibility") or ("public" if profile == "enforced" else "private"))
-        forge.seed_admin(settings=desired_settings(visibility), org=dict(ORG_RECOMMENDED))
+        forge.seed_admin(settings=desired_settings(visibility, "Organization"), org=dict(ORG_RECOMMENDED))
         forge.ensure_labels(labels_for(translator("es")))
         # 09-ci §6: expire-claims corre a diario en la base (REQ-CI-31)
         forge.seed_workflow_run(EXPIRE_FILE, branch="main", sha=base, conclusion="success", event="schedule")
@@ -800,6 +800,16 @@ def test_other_settings_only_warn(tmp_path: Path, repo: GitRepo) -> None:
     t = translator("es")
     assert check == {"id": "merge-settings", "status": "warn", "fix": t("doctor.profile.fix_init", name=_meta.NAME),
                      "message": t("doctor.merge-settings.warn", settings="delete_branch_on_merge=false")}
+
+
+def test_a_personal_private_repository_keeps_its_forks(tmp_path: Path, repo: GitRepo) -> None:
+    """06 §4.2 (issue #27): en un repo privado de una cuenta personal, GitHub no deja cambiar
+    ``allow_forking`` y lo muestra en ``true``; ``doctor`` no lo cuenta como diferencia."""
+    forge = fake_forge(profile="advisory")
+    forge.seed_admin(org=None)
+    assert forge.repo_settings()["allow_forking"] is True
+    check = checks_of(run_op(repo.path, env_for(tmp_path, repo.env), forge=forge))["merge-settings"]
+    assert check["status"] == "ok", check
 
 
 def test_merge_settings_need_write_access(tmp_path: Path, repo: GitRepo) -> None:

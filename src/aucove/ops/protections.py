@@ -108,8 +108,10 @@ def labels_for(t: Translator) -> list[Label]:
     return [Label(name, color, t(f"init.label.{name.replace(':', '_')}")) for name, color in LABELS]
 
 
-def desired_settings(visibility: str) -> dict[str, object]:
-    """Ajustes del repositorio de 06 §4.2 (``allow_forking`` solo en repos privados)."""
+def desired_settings(visibility: str, owner_type: str) -> dict[str, object]:
+    """Ajustes del repositorio de 06 §4.2. ``allow_forking`` solo en un repo no público de una organización:
+    GitHub no deja cambiar la política de forks de uno público ni la de uno privado de una cuenta personal,
+    y en este responde 422 (issue #27)."""
     out: dict[str, object] = {
         "allow_squash_merge": True,
         "allow_merge_commit": False,
@@ -121,7 +123,7 @@ def desired_settings(visibility: str) -> dict[str, object]:
         "delete_branch_on_merge": True,
         "has_wiki": False,
     }
-    if visibility != "public":
+    if visibility != "public" and owner_type == "Organization":
         out["allow_forking"] = False
     return out
 

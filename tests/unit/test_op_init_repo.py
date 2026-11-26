@@ -36,8 +36,10 @@ def git(cwd: Path, env: Mapping[str, str], *args: str) -> str:
     return proc.stdout.decode("utf-8", "replace").strip()
 
 
-def fresh_world(tmp: Path, *, default_branch: str = "main", folder: Path | None = None) -> World:
-    """La carpeta vacía, el repo bare sin ramas al que lleva la URL de GitHub y el falso."""
+def fresh_world(tmp: Path, *, default_branch: str = "main", folder: Path | None = None,
+                profile: str = "enforced") -> World:
+    """La carpeta vacía, el repo bare sin ramas al que lleva la URL de GitHub y el falso (público en
+    ``enforced`` y privado en ``advisory``, como lo crea el falso)."""
     folder = folder if folder is not None else tmp / "estudio"
     folder.mkdir(parents=True, exist_ok=True)
     env = isolated_git_env(tmp / "git-env")
@@ -45,7 +47,8 @@ def fresh_world(tmp: Path, *, default_branch: str = "main", folder: Path | None 
     git(tmp, env, "init", "-q", "--bare", str(origin))
     env.update({"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": f"url.{origin.as_uri()}.insteadOf",
                 "GIT_CONFIG_VALUE_0": URL})
-    forge = FakeForge(REPO, viewer=LEAD, clock=FakeClock(NOW), profile="enforced", default_branch=default_branch)
+    forge = FakeForge(REPO, viewer=LEAD, clock=FakeClock(NOW), profile=profile,  # type: ignore[arg-type]
+                      default_branch=default_branch)
     forge.seed_user(LEAD, permission="admin")
     forge.seed_admin(fresh=True)
     return World(repo=GitRepo(folder, origin, env), forge=forge, base_sha="", env=clean_env(env))

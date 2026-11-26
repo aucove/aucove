@@ -42,8 +42,10 @@ def test_labels_follow_the_spec_table() -> None:
 
 
 def test_settings_changes_send_the_squash_pair() -> None:
-    desired = init_op.desired_settings("private")
-    assert desired["allow_forking"] is False and "allow_forking" not in init_op.desired_settings("public")
+    desired = init_op.desired_settings("private", "Organization")
+    assert desired["allow_forking"] is False and "allow_forking" not in init_op.desired_settings("public",
+                                                                                                  "Organization")
+    assert "allow_forking" not in init_op.desired_settings("private", "User")  # GitHub responde 422 (issue #27)
     current = dict(desired, squash_merge_commit_message="COMMIT_MESSAGES", has_wiki=True)
     assert init_op.settings_changes(current, desired) == {
         "squash_merge_commit_title": "PR_TITLE", "squash_merge_commit_message": "PR_BODY", "has_wiki": False}
