@@ -112,7 +112,9 @@ def test_get_and_list_pull_requests(sandbox: Sandbox) -> None:
     assert sandbox.forge.get_pull_request(999_999) is None
     listed = sandbox.forge.list_pull_requests(state="open", base=sandbox.base_branch)
     assert pr.number in [p.number for p in listed]
-    assert pr.number not in [p.number for p in sandbox.forge.list_pull_requests(state="closed")]
+    # Un PR abierto no sale entre los cerrados. Sin listar todos los cerrados: el sandbox suma unos 10 por
+    # corrida y la lista pasaría de las 10 páginas que acepta el adaptador (REQ-FORGE-8).
+    assert sandbox.forge.find_pull_request(branch, state="closed") is None
     assert _files(sandbox.forge.list_pull_request_files(pr.number)) == EXPECTED_FILES
     assert sandbox.forge.delete_ref(branch) is True
 

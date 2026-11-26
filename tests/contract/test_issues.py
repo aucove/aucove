@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import itertools
 from collections.abc import Iterable, Iterator
+from datetime import timedelta
 
 import pytest
 
@@ -66,11 +67,18 @@ def test_ct_iss_01_add_assignees_twice_lists_both(sandbox: Sandbox, issue: Issue
 
 
 def test_ct_iss_02_list_issues_has_no_pull_requests(sandbox: Sandbox, issue: Issue) -> None:
-    """CT-ISS-02: list_issues no devuelve PR (REQ-FORGE-9)."""
+    """CT-ISS-02: list_issues no devuelve PR (REQ-FORGE-9).
+
+    La lista va con ``since``, desde poco antes de crear la Issue: el PR nuevo cae dentro, y el resto del
+    sandbox no. Cada corrida de ``nightly`` deja unas 24 Issues y PR que no se pueden borrar, y la lista
+    completa pasó de las 10 páginas que acepta el adaptador (REQ-FORGE-8): desde el 21/11/2026, con el
+    sandbox público en 1100, esta prueba fallaba en cada corrida.
+    """
     head = sandbox.branch("iss-02")
     sandbox.forge.create_ref(head, sandbox.claim_commit())
     pr = sandbox.make_pull_request(head_branch=head)
-    numbers = sandbox.eventually(lambda: {i.number for i in sandbox.forge.list_issues(state="all")},
+    since = issue.created_at - timedelta(minutes=5)  # la hora de la forja, sin depender del reloj del runner
+    numbers = sandbox.eventually(lambda: {i.number for i in sandbox.forge.list_issues(state="all", since=since)},
                                  lambda found: issue.number in found)
     assert issue.number in numbers
     assert pr.number not in numbers
