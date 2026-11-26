@@ -35,7 +35,7 @@
 │   └── notes/.gitkeep        notes/task-<n>.md           (task)
 ├── bib/references.bib                                    (solo format: latex; editor)
 ├── data/README.md
-├── sections/<section-id>/                                (section; la plantilla trae las 7 partes de D-55)
+├── sections/<section-id>/                                (section; la plantilla trae las 8 partes de D-55)
 │   ├── <section-id>.tex   pending.bib                    (format: latex)
 │   ├── <section-id>.md                                   (format: none)
 │   ├── provenance.yaml (opcional)   figures/.gitkeep   tables/.gitkeep
@@ -43,7 +43,7 @@
 │   └── notes/**                                          (opcional, Markdown)
 ├── tex/                                                  (solo format: latex)
 │   ├── main.tex   preamble.tex   notation.tex   guide.md  (editor)
-│   ├── outline/<id>.tex                                  (editor; una por sección del artículo)
+│   ├── outline/<id>.tex                                  (editor; uno por sección del artículo o por bloque, como el resumen)
 │   └── assets/**                                          (opcional, lead)
 └── (local, no versionado) .aucove/  .claude/settings.local.json  .claude/worktrees/  CLAUDE.local.md  tex/build/  tex/build-diff/  data/<id>/
 ```
@@ -81,18 +81,18 @@ Origen: **T** = viene en el repo plantilla `aucove-template` (01-arquitectura §
 | `tex/main.tex` | Solo incluye archivos: preámbulo, notación, bibliografías y archivos de enlace (solo `format: latex`) | `editor` | no | no | T, I | §4.1 |
 | `tex/preamble.tex` | Paquetes, su configuración y metadatos (solo `format: latex`) | `editor` | no | opción de babel | T, I | §4.1 |
 | `tex/notation.tex` | Todas las definiciones (solo `format: latex`) | `editor` | no | no | T | §4.1 |
-| `tex/outline/<id>.tex` | Sección del artículo: título, entrada, orden de sus partes y transiciones (solo `format: latex`) | `editor` | no | sí | T (las 7 secciones de 00-marco D-55), I | §4.1.1 |
+| `tex/outline/<id>.tex` | Sección del artículo, o bloque como el resumen: título o entorno, entrada, orden de sus partes y transiciones (solo `format: latex`) | `editor` | no | sí | T (uno por cada parte de 00-marco D-55), I | §4.1.1 |
 | `tex/guide.md` | Guía del artículo: qué cubre cada sección y cada parte, notación, terminología y tono (solo `format: latex`) | `editor` | no | sí | T, I | §4.1.2 |
 | `tex/assets/**` | Recursos del responsable (logos de portada; solo `format: latex`) | `lead` | no | no | P | §4.1 |
-| `sections/<id>/<id>.tex` | Texto de la parte (con `format: latex`) | `section` | no | ejemplo sí | T (las 7 partes de 00-marco D-55), I | §4.2 |
+| `sections/<id>/<id>.tex` | Texto de la parte (con `format: latex`) | `section` | no | ejemplo sí | T (las 8 partes de 00-marco D-55), I | §4.2 |
 | `sections/<id>/<id>.md` | Texto de la parte (con `format: none`) | `section` | no | ejemplo sí | I (`init --format none`) | §4.2 |
 | `sections/<id>/pending.bib` | Citas pendientes de consolidar (solo `format: latex`) | `section` | no | comentario | T, I | §5.3 |
 | `sections/<id>/figures/**`, `tables/**` | Figuras y tablas de la parte | `section` | no | no | T, I (`.gitkeep`), P | §6.3 |
 | `sections/<id>/analysis/**`, `provenance.yaml` | Código, notebooks, derivados y procedencia | `section` | no | no | P | §6 |
 | `sections/<id>/notes/**` | Notas de trabajo de la parte, en Markdown | `section` | no | no | P | §4.2 |
 
-- **REQ-CONV-1.** El repo plantilla DEBE contener exactamente las rutas con origen T de la tabla 2.2, con las 7 partes de 00-marco D-55 (`introduction`, `background`, `theory`, `methodology`, `experiments`, `results` y `conclusions`), cuyos títulos y `roles.yaml` vienen en cada idioma. La plantilla es la variante `format: latex`; la variante `none` la produce `init --format none` (§2.3).
-- **REQ-CONV-2.** `aucove init` DEBE crear, para cada parte de `roles.yaml`, `figures/.gitkeep` y `tables/.gitkeep`. Con `format: latex` crea además `<id>.tex`, `pending.bib`, su `\addbibresource` en `main.tex` y su `\input` en el archivo de enlace de su sección (`tex/outline/<id>.tex`, que crea con el título de la parte si no existe; §4.1.1). Con `format: none` crea `<id>.md`; quita `tex/`, `bib/`, `.latexmkrc`, los `pending.bib` y los workflows del editor del artículo (09-ci REQ-CI-57); y quita de `project.yaml` el bloque `build`, `ci.pdf_retention_days` y `ci.latexdiff`. En los dos casos DEBE borrar las partes de la plantilla que `roles.yaml` no declare (y, con LaTeX, sus líneas de `main.tex` y su archivo de enlace).
+- **REQ-CONV-1.** El repo plantilla DEBE contener exactamente las rutas con origen T de la tabla 2.2, con las 8 partes de 00-marco D-55 (`abstract`, `introduction`, `background`, `theory`, `methodology`, `experiments`, `results` y `conclusions`), cuyos títulos y `roles.yaml` vienen en cada idioma. La plantilla es la variante `format: latex`; la variante `none` la produce `init --format none` (§2.3).
+- **REQ-CONV-2.** `aucove init` DEBE crear, para cada parte de `roles.yaml`, `figures/.gitkeep` y `tables/.gitkeep`. Con `format: latex` crea además `<id>.tex`, `pending.bib`, su `\addbibresource` en `main.tex` y su `\input` en su archivo de enlace (`tex/outline/<id>.tex`, que crea como sección, con el título de la parte, si no existe; si existe y es un bloque, el `\input` va antes de su `\end`; §4.1.1). Con `format: none` crea `<id>.md`; quita `tex/`, `bib/`, `.latexmkrc`, los `pending.bib` y los workflows del editor del artículo (09-ci REQ-CI-57); y quita de `project.yaml` el bloque `build`, `ci.pdf_retention_days` y `ci.latexdiff`. En los dos casos DEBE borrar las partes de la plantilla que `roles.yaml` no declare (y, con LaTeX, sus líneas de `main.tex` y su archivo de enlace).
 - **REQ-CONV-3.** Un proyecto recién inicializado DEBE pasar `aucove validate` sin hallazgos de severidad `error`.
 - **REQ-CONV-4.** Toda carpeta obligatoria que pueda quedar vacía DEBE contener un `.gitkeep` vacío.
 - **REQ-CONV-5.** La plantilla NO DEBE traer registros de ejemplo en `memory/decisions/`, porque la clase `append` los haría permanentes.
@@ -292,16 +292,20 @@ Son de clase `editor` (00-marco §5.2 y D-56): los modifica el editor del artíc
 \input{preamble}
 \input{notation}
 \addbibresource{../bib/references.bib}
+\addbibresource{../sections/abstract/pending.bib}
 \addbibresource{../sections/introduction/pending.bib}
 \addbibresource{../sections/experiments-a/pending.bib}
 \addbibresource{../sections/experiments-b/pending.bib}
 \begin{document}
 \maketitle
+\input{outline/abstract}
 \input{outline/introduction}
 \input{outline/experiments}
 \printbibliography
 \end{document}
 ```
+
+Las líneas del cuerpo van en el orden del artículo, y el editor lo elige según la clase: con `article`, el bloque del resumen (§4.1.1) va después de `\maketitle`, y hay clases que lo piden antes.
 
 **`tex/preamble.tex`:** `\usepackage` con sus opciones, comandos de configuración de paquetes (`\hypersetup`, `\sisetup`, `\ExecuteBibliographyOptions`) y metadatos (`\title`, `\author`, `\date`). La plantilla carga `biblatex` con `backend=biber` y `babel` con el idioma del proyecto. **`tex/notation.tex`:** todas las definiciones (`\newcommand`, `\DeclareMathOperator`, `\newtheorem`, `\newenvironment`, `\definecolor`, `\newlength`...). `tex/assets/**` solo lo usan `main.tex` y `preamble.tex`.
 
@@ -317,7 +321,7 @@ Macros locales de una sección (pregunta de 04-tareas): en v0.1 **no existen**. 
 
 #### 4.1.1 Archivos de enlace (`tex/outline/<id>.tex`)
 
-Cada sección del artículo tiene un archivo de enlace del editor (00-marco D-56), y `main.tex` los incluye en el orden del artículo. El archivo da el título de la sección, su entrada, el orden de sus partes y las transiciones entre ellas. Con una sola parte basta el título y su `\input`. Con subpartes (D-55), el editor escribe la entrada y las transiciones para que la sección se lea como un solo texto. La plantilla trae uno por cada una de las 7 partes, con el mismo `<id>`.
+Cada sección del artículo tiene un archivo de enlace del editor (00-marco D-56), y `main.tex` los incluye en el orden del artículo. El archivo da el título de la sección, su entrada, el orden de sus partes y las transiciones entre ellas. Con una sola parte basta el título y su `\input`. Con subpartes (D-55), el editor escribe la entrada y las transiciones para que la sección se lea como un solo texto. Lo que no es una sección, como el resumen o las palabras clave, es un bloque: un archivo de enlace que, en lugar del título, lleva de su primera línea a la última un solo entorno, de la clase o de `notation.tex`. La plantilla trae uno por cada una de las 8 partes, con el mismo `<id>`: el del resumen es un bloque y los demás son secciones.
 
 ```latex
 % tex/outline/experiments.tex (clase editor): la sección «Experimentos» del artículo.
@@ -333,15 +337,22 @@ A diferencia del primero, el segundo experimento usa datos administrativos.
 \input{../sections/experiments-b/experiments-b}
 ```
 
-- **REQ-CONV-92.** Cada `tex/outline/<id>.tex`, con `<id>` según el patrón de `section-id`, DEBE empezar, sin contar comentarios ni líneas en blanco, con `\section{<título>}` (o `\section*{<título>}`) y, en la línea siguiente, `\label{sec:<id>}`. El resto es prosa del editor y líneas `\input{../sections/<parte>/<parte>}` de partes, cada una sola en su línea. A la prosa le valen §4.3 a §4.6 como a una parte, con tres diferencias: su `\label` usa el `<id>` del archivo de enlace; no DEBE tener otro `\input` ni otro comando de sección (`conv.outline.grammar`); y no DEBE usar los demás comandos con ruta de REQ-CONV-31 y REQ-CONV-32 (`conv.latex.path-outside-section`), porque las figuras y las tablas van en las partes.
-- **REQ-CONV-93.** Cada parte declarada DEBE incluirse exactamente una vez en todo `tex/outline/`. Incluir una parte no declarada, o la misma parte dos veces, es `conv.outline.parts` (error). Una parte declarada que no se incluye es `conv.outline.missing` (warning), para que el alta pueda hacerse en dos tareas (§4.2.1). Un archivo de enlace sin partes es válido, por ejemplo una sección que escribe solo el editor.
+```latex
+% tex/outline/abstract.tex (clase editor): el resumen del artículo, un bloque.
+\begin{abstract}
+\input{../sections/abstract/abstract}
+\end{abstract}
+```
+
+- **REQ-CONV-92.** Cada `tex/outline/<id>.tex`, con `<id>` según el patrón de `section-id`, DEBE tener una de dos formas, sin contar comentarios ni líneas en blanco. (a) **Sección:** empieza con `\section{<título>}` (o `\section*{<título>}`) y, en la línea siguiente, `\label{sec:<id>}`. (b) **Bloque:** su primera línea es solo `\begin{<entorno>}` y la última es solo el `\end{<entorno>}` que lo cierra, así que nada queda fuera del entorno; `<entorno>`, de letras ASCII y con un `*` final opcional, es uno de la clase o de `notation.tex`, y el bloque no necesita `\label`. El resto es prosa del editor y líneas `\input{../sections/<parte>/<parte>}` de partes, cada una sola en su línea. A la prosa le valen §4.3 a §4.6 como a una parte, con tres diferencias: su `\label` usa el `<id>` del archivo de enlace; no DEBE tener otro `\input` ni otro comando de sección, y un bloque no tiene ninguno (`conv.outline.grammar`); y no DEBE usar los demás comandos con ruta de REQ-CONV-31 y REQ-CONV-32 (`conv.latex.path-outside-section`), porque las figuras y las tablas van en las partes. El entorno de un bloque es parte de esa prosa, así que los entornos de §4.6 siguen prohibidos.
+- **REQ-CONV-93.** Cada parte declarada DEBE incluirse exactamente una vez en todo `tex/outline/`. Incluir una parte no declarada, o la misma parte dos veces, es `conv.outline.parts` (error). Una parte declarada que no se incluye es `conv.outline.missing` (warning), para que el alta pueda hacerse en dos tareas (§4.2.1). Un archivo de enlace sin partes es válido, por ejemplo una sección, o un bloque de palabras clave, que escribe solo el editor.
 - **REQ-CONV-94.** El `.tex` de una parte NO DEBE contener `\part`, `\chapter` ni `\section`, porque el título y la etiqueta `sec:<id>` de la sección los pone su archivo de enlace. Sí PUEDE usar `\subsection` y niveles menores (`conv.latex.structure`, tabla de §4.6).
 
 #### 4.1.2 Guía del artículo (`tex/guide.md`)
 
 La escribe el editor (00-marco D-56) y la reciben todas las sesiones en su contexto (05-operaciones REQ-OPS-67). Dice qué cubre cada sección del artículo y cada parte, y fija la notación (con remisión a `notation.tex`), la terminología, el tono y la extensión aproximada. Es Markdown, con una oración por línea (REQ-CONV-26).
 
-- **REQ-CONV-95.** Con `format: latex`, `tex/guide.md` DEBE existir (`conv.tree.missing`) y DEBERÍA ocupar como máximo 16 KiB, porque entra al contexto de cada sesión. La plantilla trae una guía de ejemplo con las 7 secciones de D-55.
+- **REQ-CONV-95.** Con `format: latex`, `tex/guide.md` DEBE existir (`conv.tree.missing`) y DEBERÍA ocupar como máximo 16 KiB, porque entra al contexto de cada sesión. La plantilla trae una guía de ejemplo con el resumen y las 7 secciones de D-55.
 
 ### 4.2 Carpeta de una parte (los dos formatos)
 
@@ -856,7 +867,7 @@ Procedimiento manual mientras `upgrade` esté reservado, en una tarea `task/<n>`
 | `conv.file.encoding` | error | No UTF-8, con BOM o con CRLF | 38 |
 | `conv.main.grammar` | error | Línea fuera de la gramática de `main.tex` | 17 |
 | `conv.main.sections` | error | `\addbibresource` de una parte no declarada o repetido; `\input{outline/<id>}` de un archivo que no existe o repetido; un `pending.bib` antes de `references.bib` | 18, 19 |
-| `conv.outline.grammar` | error | Archivo de enlace que no empieza con `\section` y `\label{sec:<id>}`, o que tiene otro `\input` u otro comando de sección | 92 |
+| `conv.outline.grammar` | error | Archivo de enlace que no es una sección (`\section` y `\label{sec:<id>}` al inicio) ni un bloque (un solo entorno), o que tiene otro `\input` u otro comando de sección | 92 |
 | `conv.outline.parts` | error | Parte no declarada, o incluida dos veces, en `tex/outline/` | 93 |
 | `conv.outline.missing` | warning | Parte declarada sin `\input` en `tex/outline/` o sin `\addbibresource` en `main.tex`, o archivo de enlace sin `\input` en `main.tex` | 18, 93 |
 | `conv.latex.definition` | error | Definición fuera de `notation.tex` | 20, 34 |

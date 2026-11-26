@@ -35,7 +35,8 @@ Partes (REQ-CONV-2)
     Cada parte de ``roles.yaml`` tiene ``figures/.gitkeep`` y ``tables/.gitkeep``; con LaTeX,
     ``<id>.tex`` y ``pending.bib``, su ``\\addbibresource`` en ``main.tex`` y su ``\\input`` en un
     archivo de enlace (``tex/outline/<id>.tex``, que se crea con el título de la parte si
-    ninguno la incluye, y su ``\\input{outline/<id>}``); sin manuscrito, ``<id>.md``. Las partes
+    ninguno la incluye, y su ``\\input{outline/<id>}``); si ese archivo ya existe y es un bloque,
+    como el del resumen, el ``\\input`` va antes de su ``\\end``. Sin manuscrito, ``<id>.md``. Las partes
     de la plantilla traen su contenido; una parte nueva, el mínimo del catálogo
     (``init.file``). Las partes de la plantilla que ``roles.yaml`` no declara se borran, con su
     archivo de enlace y sus líneas de ``main.tex``, salvo que alguno de sus archivos cambiara.
@@ -85,6 +86,7 @@ from ..config.project import ProjectConfig, parse_project
 from ..config.roles import Roles, mode_problems, parse_roles
 from ..domain.compat import PIN_VERSION, core_range
 from ..domain.findings import Finding
+from ..domain.latex import scan, single_environment
 from ..domain.licenses import (
     ALL_RIGHTS_RESERVED,
     CATEGORIES,
@@ -740,7 +742,7 @@ class _Planner:
                 if data is not None:
                     self.created_outlines.append(part)
             elif current is not None:
-                data = _encode(current.rstrip("\n") + f"\n\n\\input{{../sections/{part}/{part}}}\n")
+                data = _encode(_include_part(current, part))
             else:
                 self.keep(rel, "modified")  # existe pero no es texto
                 data = None
@@ -917,6 +919,26 @@ def _outline_tex(part: str, title: str, t: Translator) -> bytes:
     header = t("init.file.outline", title=title, id=part).rstrip("\n")
     body = f"\\section{{{_latex_escape(title)}}}\n\\label{{sec:{part}}}\n\n\\input{{../sections/{part}/{part}}}\n"
     return _encode(f"{header}\n{body}")
+
+
+def _include_part(text: str, part: str) -> str:
+    """``text`` de un archivo de enlace con el ``\\input`` de ``part``: al final o, en un bloque, antes de su ``\\end``.
+
+    Dentro del bloque, el archivo sigue siendo un solo entorno (REQ-CONV-92). La línea en
+    blanco que separa el ``\\input`` de lo anterior solo va si el bloque ya tenía contenido.
+    """
+    line = f"\\input{{../sections/{part}/{part}}}"
+    sc = scan(text)
+    block = single_environment(sc)
+    if block is None:
+        return text.rstrip("\n") + f"\n\n{line}\n"
+    begin, end = block
+    clean = sc.lines()
+    filled = any(clean[i].strip() for i in range(begin, end - 1))
+    lines = text.split("\n")
+    lines[end - 1 : end - 1] = ["", line] if filled else [line]
+    out = "\n".join(lines)
+    return out if out.endswith("\n") else out + "\n"
 
 
 def _generated(tree: _Tree, t: Translator) -> Regeneration:

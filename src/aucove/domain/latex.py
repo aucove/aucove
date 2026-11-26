@@ -106,6 +106,10 @@ LABEL_PATTERN = re.compile(
 SECTION_ID_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_LABEL = 256
 
+# Línea que es solo ``\begin{<entorno>}`` o solo ``\end{<entorno>}`` (``single_environment``).
+_BEGIN_LINE = re.compile(r"\\begin\{([A-Za-z]+\*?)\}")
+_END_LINE = re.compile(r"\\end\{([A-Za-z]+\*?)\}")
+
 
 class ScanTimeout(Exception):
     """Se agotó el tiempo del análisis (REQ-CI-24: expresiones con tiempo acotado)."""
@@ -559,6 +563,42 @@ def parse_label(text: str) -> Label | None:
     if m is None:
         return None
     return Label(kind=m.group(1), section=m.group(2), name=m.group(3))
+
+
+def single_environment(sc: Scan, *, deadline: Deadline | None = None) -> tuple[int, int] | None:
+    """Líneas (desde 1) del ``\\begin`` y del ``\\end`` si todo el texto es un solo entorno; si no, ``None``.
+
+    Sin contar las líneas en blanco ni los comentarios, la primera línea es solo
+    ``\\begin{<entorno>}``, la última es solo el ``\\end{<entorno>}`` del mismo entorno, y ese
+    ``\\end`` es el que cierra ese ``\\begin``, así que nada queda fuera del entorno. Es la
+    forma de bloque de un archivo de enlace (02-convencion REQ-CONV-92).
+    """
+    dl = deadline or _NO_DEADLINE
+    first: tuple[int, str] | None = None
+    last: tuple[int, str] | None = None
+    for number, raw in enumerate(sc.lines(), start=1):
+        dl.tick()
+        text = raw.strip()
+        if text:
+            if first is None:
+                first = (number, text)
+            last = (number, text)
+    if first is None or last is None or first[0] == last[0]:
+        return None
+    if len(first[1]) > MAX_ARG_CHARS or len(last[1]) > MAX_ARG_CHARS:
+        return None
+    opened = _BEGIN_LINE.fullmatch(first[1])
+    closed = _END_LINE.fullmatch(last[1])
+    if opened is None or closed is None or opened.group(1) != closed.group(1):
+        return None
+    depth = 0
+    for env, cmd in sc.environments(deadline=dl):
+        if depth == 0 and cmd.line != first[0]:
+            return None  # el bloque ya cerró: hay un entorno fuera de él
+        depth += 1 if env[0] == "+" else -1
+        if depth <= 0:
+            return (first[0], last[0]) if depth == 0 and cmd.line == last[0] else None
+    return None
 
 
 def _mask_math(line: str, closer: str | None) -> tuple[str, str | None]:

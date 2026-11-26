@@ -418,7 +418,7 @@ Este ejemplo es válido y produce una sola advertencia: `W_VALIDATION_LOGIN_CASE
 
 `none` se prohíbe como `id` porque GitHub reserva "None" en las opciones de los formularios para indicar que no se eligió nada (§8).
 
-La plantilla trae las 7 partes de 00-marco D-55, con el responsable de ejemplo como dueño: `introduction`, `background`, `theory`, `methodology`, `experiments`, `results` y `conclusions`. Si una sección del artículo necesita varios autores, se divide en subpartes con su propio `id` y su dueño (por ejemplo, `experiments-a` y `experiments-b`); con `format: latex`, el editor las agrupa en `tex/outline/<id>.tex` (02-convencion).
+La plantilla trae las 8 partes de 00-marco D-55, con el responsable de ejemplo como dueño: `abstract`, `introduction`, `background`, `theory`, `methodology`, `experiments`, `results` y `conclusions`. Si una sección del artículo necesita varios autores, se divide en subpartes con su propio `id` y su dueño (por ejemplo, `experiments-a` y `experiments-b`); con `format: latex`, el editor las agrupa en `tex/outline/<id>.tex` (02-convencion).
 
 ### 4.3 Roles CRediT
 

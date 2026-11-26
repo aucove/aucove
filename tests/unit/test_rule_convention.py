@@ -244,9 +244,9 @@ PROV_EXAMPLE = fixture("provenance", "example-02.yaml")
 LICENSES_BLOCK = "licenses:\n  text: CC-BY-4.0\n  code: MIT-0\n  data: CC0-1.0\n"
 # format: none (D-43): project.yaml del render none y lo que la variante none no trae.
 NONE_PROJECT: Callable[[str], str] = project_yaml_without_manuscript
-# Las 7 partes de la plantilla (00-marco D-55).
+# Las 8 partes de la plantilla (00-marco D-55).
 TEMPLATE_PARTS: tuple[str, ...] = (
-    "introduction", "background", "theory", "methodology", "experiments", "results", "conclusions",
+    "abstract", "introduction", "background", "theory", "methodology", "experiments", "results", "conclusions",
 )
 LATEX_ONLY: dict[str, Change] = {
     ".latexmkrc": None,
@@ -709,8 +709,9 @@ def test_old_section_folder_is_not_a_part(render: Mapping[str, Mapping[str, byte
     moved = {("tex/" + p if p.startswith("sections/") else p): data for p, data in original.items()}
     assert any(p.startswith("tex/sections/introduction/") for p in moved)
     findings = evaluate(moved, policy=snapshot(original), base=original)
-    parts = ("introduction", "background", "theory", "methodology", "experiments", "results", "conclusions")
-    assert sorted((f.code, f.path) for f in findings) == sorted(("conv.section.missing", f"sections/{p}") for p in parts)
+    assert sorted((f.code, f.path) for f in findings) == sorted(
+        ("conv.section.missing", f"sections/{p}") for p in TEMPLATE_PARTS
+    )
     intro = next(f for f in findings if f.path == "sections/introduction")
     assert "sections/introduction/" in intro.hint and "tex/sections" not in intro.hint
 

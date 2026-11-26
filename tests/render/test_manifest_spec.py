@@ -100,11 +100,11 @@ LATEX_ONLY_ITEMS = {
 NONE_ONLY_ITEMS = {"sections/<id>/<id>.md"}
 # REQ-MVP-4 y REQ-ARCH-100: lo que cambia del manifiesto de la variante latex a la none.
 DEFAULT_PARTS: tuple[str, ...] = (
-    "introduction", "background", "theory", "methodology", "experiments", "results", "conclusions",
+    "abstract", "introduction", "background", "theory", "methodology", "experiments", "results", "conclusions",
 )  # 00-marco D-55
 LATEX_ONLY_PATHS = {
     ".latexmkrc", "bib/references.bib", "tex/main.tex", "tex/preamble.tex", "tex/notation.tex", "tex/guide.md",
-    *(f"tex/outline/{p}.tex" for p in DEFAULT_PARTS),  # D-56: en la plantilla, una sección por parte
+    *(f"tex/outline/{p}.tex" for p in DEFAULT_PARTS),  # D-56: en la plantilla, un archivo de enlace por parte
     *(f"sections/{p}/{p}.tex" for p in DEFAULT_PARTS), *(f"sections/{p}/pending.bib" for p in DEFAULT_PARTS),
     *EDITOR_WORKFLOWS,  # 09-ci REQ-CI-57
 }

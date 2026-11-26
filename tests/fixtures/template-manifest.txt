@@ -29,6 +29,10 @@ memory/notes/.gitkeep
 plan.md
 project.yaml
 roles.yaml
+sections/abstract/abstract.tex
+sections/abstract/figures/.gitkeep
+sections/abstract/pending.bib
+sections/abstract/tables/.gitkeep
 sections/background/background.tex
 sections/background/figures/.gitkeep
 sections/background/pending.bib
@@ -60,6 +64,7 @@ sections/theory/theory.tex
 tex/guide.md
 tex/main.tex
 tex/notation.tex
+tex/outline/abstract.tex
 tex/outline/background.tex
 tex/outline/conclusions.tex
 tex/outline/experiments.tex

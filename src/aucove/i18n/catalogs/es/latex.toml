@@ -37,6 +37,7 @@ undefined_ref = "{command} apunta a '{label}', que no se define en ningún archi
 
 [latex.main]
 unknown_line = "la línea {text} no pertenece a la gramática"
+environment = "{text} abre o cierra un entorno, y `tex/main.tex` no lleva entornos: un bloque como el resumen va en su propio archivo de `tex/outline/`, que `tex/main.tex` incluye con `\\input{{outline/<id>}}`"
 input_target = "{text} no apunta a `preamble`, `notation`, un archivo de enlace (`outline/<id>`) ni otro `.tex` de `tex/`"
 part_input = "{text} incluye una parte, pero `tex/main.tex` solo incluye archivos de enlace (`\\input{{outline/<id>}}`), y cada uno incluye sus partes"
 repeated = "{text} aparece más de una vez"
@@ -58,8 +59,8 @@ missing_outline_fix = "Agrega `\\input{{outline/{outline}}}` entre `\\begin{{doc
 # -- convention: tex/outline/<id>.tex (conv.outline.*) ----------------------------------
 
 [latex.outline]
-head = "el archivo debe empezar con `\\section{{...}}` y, en la línea siguiente, `\\label{{sec:{outline}}}`"
-heading = "{command} sobra, porque el único comando de sección de un archivo de enlace es el `\\section` de su primera línea"
+head = "el archivo debe empezar con `\\section{{...}}` y, en la línea siguiente, `\\label{{sec:{outline}}}`, o ser un bloque: un solo entorno, con su `\\begin{{...}}` en la primera línea y su `\\end{{...}}` en la última"
+heading = "{command} sobra, porque el único comando de sección de un archivo de enlace es el `\\section` de su primera línea, y un bloque no lleva ninguno"
 input = "{text} no es una línea `\\input{{../sections/<id>/<id>}}`; un archivo de enlace solo incluye partes, cada una sola en su línea"
 undeclared = "incluye la parte '{part}', que no está en `roles.yaml`"
 undeclared_fix = "Quita la línea o declara la parte '{part}' en `roles.yaml`."
@@ -127,7 +128,7 @@ hint = "{fix}"
 
 [finding.conv.outline.grammar]
 message = "Archivo de enlace fuera de la gramática: {detail}."
-hint = "Un archivo de enlace tiene su `\\section{{...}}` y su `\\label{{sec:<id>}}`, la prosa del editor del artículo y las líneas `\\input{{../sections/<id>/<id>}}` de sus partes (02-convencion §4.1.1)."
+hint = "Un archivo de enlace es una sección, con su `\\section{{...}}` y su `\\label{{sec:<id>}}`, o un bloque, como el resumen, envuelto de principio a fin en un solo entorno. Adentro van la prosa del editor del artículo y las líneas `\\input{{../sections/<id>/<id>}}` de sus partes (02-convencion §4.1.1)."
 
 [finding.conv.outline.parts]
 message = "`tex/outline/` no coincide con `roles.yaml`: {detail}."

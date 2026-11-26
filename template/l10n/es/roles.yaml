@@ -2,7 +2,7 @@
 # Personas, roles y dueños de parte (clase lead). Formato: 03-esquemas §4.
 # Única fuente de personas y dueños: `aucove sync-roles` genera desde aquí
 # .github/CODEOWNERS y .github/ISSUE_TEMPLATE/task.yml.
-# Las 7 partes siguen el esquema del artículo por defecto (00-marco D-55). Renómbralas, quítalas o
+# Las 8 partes siguen el esquema del artículo por defecto (00-marco D-55). Renómbralas, quítalas o
 # divídelas en subpartes (por ejemplo, experiments-a y experiments-b), cada una con su dueño.
 # Con LaTeX, el editor del artículo reúne las partes de cada sección en tex/outline/<id>.tex.
 version: 1
@@ -29,6 +29,9 @@ people:
     account_type: team        # cámbialo por el régimen real de tu cuenta
     credit: []
 sections:
+  - id: abstract
+    title: "Resumen"
+    owner: example-lead
   - id: introduction
     title: "Introducción"
     owner: example-lead

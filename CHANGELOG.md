@@ -4,6 +4,18 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
+## [Unreleased]
+
+### Added
+
+- An outline file of `tex/outline/` can be a block instead of a section: a single environment, from its `\begin{...}` on the first line to its `\end{...}` on the last, without `\section` or `\label` (02-convencion REQ-CONV-92; #30). The environment comes from the class or from `tex/notation.tex`, such as `abstract`, the keywords or the `frontmatter` of elsarticle, and the environments of 02-convencion §4.6 stay forbidden. `tex/main.tex` does not change: the block's `\input{outline/<id>}` goes before or after `\maketitle`, as the class needs. Before, every outline file had to start with `\section` and `\label`, so the abstract could only be an unnumbered section.
+- The template brings an eighth part, `abstract`, first in `roles.yaml` (00-marco D-55). With LaTeX, its outline file is a block with the `abstract` environment of the class, right after `\maketitle`, and the article guide describes it. As with any part, the lead removes it from `roles.yaml` before `init` if the project does not need it. A project created with an earlier version adds it like any new part (02-convencion §4.2.1) and raises `core` and `core_pin` in `project.yaml` to this version, because earlier versions reject the block.
+
+### Changed
+
+- When `init` adds a part to an outline file that already exists and is a block, the part's `\input` goes inside the block, before its `\end`.
+- A `\begin{...}` or `\end{...}` line in `tex/main.tex` still breaks `conv.main.grammar`, and its message now says that a block, such as the abstract, goes in its own file of `tex/outline/`.
+
 ## [0.1.0rc6] - 2026-11-26
 
 Sixth preliminary release of `0.1.0`. `init --repo` now works on a private repository of a personal account, where it failed every time with 0.1.0rc5, and every `astral-sh/setup-uv` step refuses a uv whose checksum the action does not bring. The lock of the release brings `opentelemetry-api` 1.45.2.

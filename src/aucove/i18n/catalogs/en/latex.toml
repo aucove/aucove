@@ -37,6 +37,7 @@ undefined_ref = "{command} points to '{label}', which no file defines"
 
 [latex.main]
 unknown_line = "line {text} is not part of the grammar"
+environment = "{text} opens or closes an environment, and `tex/main.tex` has none: a block such as the abstract goes in its own file in `tex/outline/`, which `tex/main.tex` includes with `\\input{{outline/<id>}}`"
 input_target = "{text} does not point to `preamble`, `notation`, an outline file (`outline/<id>`) or another `.tex` in `tex/`"
 part_input = "{text} includes a part, but `tex/main.tex` only includes outline files (`\\input{{outline/<id>}}`), and each of those includes its parts"
 repeated = "{text} appears more than once"
@@ -58,8 +59,8 @@ missing_outline_fix = "Add `\\input{{outline/{outline}}}` between `\\begin{{docu
 # -- convention: tex/outline/<id>.tex (conv.outline.*) ----------------------------------
 
 [latex.outline]
-head = "the file must start with `\\section{{...}}` and, on the next line, `\\label{{sec:{outline}}}`"
-heading = "{command} is extra, because the only sectioning command of an outline file is the `\\section` on its first line"
+head = "the file must start with `\\section{{...}}` and, on the next line, `\\label{{sec:{outline}}}`, or be a block: a single environment, with its `\\begin{{...}}` on the first line and its `\\end{{...}}` on the last"
+heading = "{command} is extra, because the only sectioning command of an outline file is the `\\section` on its first line, and a block has none"
 input = "{text} is not an `\\input{{../sections/<id>/<id>}}` line; an outline file only includes parts, each on its own line"
 undeclared = "it includes part '{part}', which is not in `roles.yaml`"
 undeclared_fix = "Remove the line or declare part '{part}' in `roles.yaml`."
@@ -127,7 +128,7 @@ hint = "{fix}"
 
 [finding.conv.outline.grammar]
 message = "Outline file outside the grammar: {detail}."
-hint = "An outline file has its `\\section{{...}}` and its `\\label{{sec:<id>}}`, the prose of the article editor and the `\\input{{../sections/<id>/<id>}}` lines of its parts (02-convencion §4.1.1)."
+hint = "An outline file is a section, with its `\\section{{...}}` and its `\\label{{sec:<id>}}`, or a block, like the abstract, wrapped from start to end in a single environment. Inside go the prose of the article editor and the `\\input{{../sections/<id>/<id>}}` lines of its parts (02-convencion §4.1.1)."
 
 [finding.conv.outline.parts]
 message = "`tex/outline/` does not match `roles.yaml`: {detail}."

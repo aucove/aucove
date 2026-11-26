@@ -2,7 +2,7 @@
 # People, roles and part owners (lead class). Format: 03-esquemas §4.
 # Single source of people and owners: `aucove sync-roles` generates
 # .github/CODEOWNERS and .github/ISSUE_TEMPLATE/task.yml from it.
-# The 7 parts follow the default article outline (00-marco D-55). Rename them, remove them or
+# The 8 parts follow the default article outline (00-marco D-55). Rename them, remove them or
 # split them into subparts (for example, experiments-a and experiments-b), each with its owner.
 # With LaTeX, the article editor gathers the parts of each section in tex/outline/<id>.tex.
 version: 1
@@ -29,6 +29,9 @@ people:
     account_type: team        # change it to the real regime of your account
     credit: []
 sections:
+  - id: abstract
+    title: "Abstract"
+    owner: example-lead
   - id: introduction
     title: "Introduction"
     owner: example-lead

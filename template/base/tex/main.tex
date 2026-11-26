@@ -1,9 +1,11 @@
 % tex/main.tex (clase editor). Solo incluye archivos: 02-convencion §4.1.
 % Cada sección del artículo es un archivo de tex/outline/, que incluye sus partes (§4.1.1).
+% El resumen es un bloque de tex/outline/: según la clase, va antes o después de \maketitle.
 \documentclass[11pt,a4paper]{article}
 \input{preamble}
 \input{notation}
 \addbibresource{../bib/references.bib}
+\addbibresource{../sections/abstract/pending.bib}
 \addbibresource{../sections/introduction/pending.bib}
 \addbibresource{../sections/background/pending.bib}
 \addbibresource{../sections/theory/pending.bib}
@@ -13,6 +15,7 @@
 \addbibresource{../sections/conclusions/pending.bib}
 \begin{document}
 \maketitle
+\input{outline/abstract}
 \input{outline/introduction}
 \input{outline/background}
 \input{outline/theory}

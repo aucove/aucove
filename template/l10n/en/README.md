@@ -16,7 +16,7 @@ It works with Claude Code, Codex and other AI tools that read `AGENTS.md`.
 | `AGENTS.md`, `CLAUDE.md` | Rules for AI agents. |
 | `sections/<section-id>/` | One folder per part, with a single owner. |
 | `tex/main.tex` | Main manuscript (with `format: latex`); it only includes the other files. |
-| `tex/outline/` | One file per article section, with its title and its parts in order (with `format: latex`). |
+| `tex/outline/` | One file per article section, with its title and its parts in order, and one for the abstract (with `format: latex`). |
 | `tex/guide.md` | Article guide: what each section and each part covers, the notation and the tone (with `format: latex`). |
 | `bib/references.bib` | Export of the project's Zotero group (with `format: latex`). |
 | `data/README.md` | Index of the datasets, which are not versioned. |

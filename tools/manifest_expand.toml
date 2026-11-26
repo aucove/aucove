@@ -30,7 +30,7 @@
 # ya están en H2.
 
 milestone = "H3"
-sections_example = ["introduction", "background", "theory", "methodology", "experiments", "results", "conclusions"]
+sections_example = ["abstract", "introduction", "background", "theory", "methodology", "experiments", "results", "conclusions"]
 
 [[item]]
 spec = "README.md"

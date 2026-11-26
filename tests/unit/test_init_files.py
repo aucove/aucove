@@ -75,11 +75,16 @@ def test_a_fresh_spanish_project(published: Mapping[str, bytes]) -> None:
     roles, _ = parse_roles(after["roles.yaml"])
     assert roles is not None and roles.lead == LEAD and [p.login for p in roles.people] == [LEAD]
     assert {s.owner for s in roles.sections} == {LEAD}
-    assert roles.sections[0].title == "Introducción"  # roles.yaml en el idioma elegido
+    assert [s.title for s in roles.sections[:2]] == ["Resumen", "Introducción"]  # roles.yaml en el idioma elegido
     assert text(after, "README.md").startswith("# Estudio_X\n\nProyecto de investigación")
     assert f"*   @{LEAD}\n" in text(after, ".github/CODEOWNERS")
     assert "Introducción" in text(after, ".github/ISSUE_TEMPLATE/task.yml")
     assert "\\section{Introducción}" in text(after, "tex/outline/introduction.tex")
+    # El resumen es un bloque (02 REQ-CONV-92), justo después de \maketitle.
+    assert "\n\\begin{abstract}\n\\input{../sections/abstract/abstract}\n\\end{abstract}\n" in text(
+        after, "tex/outline/abstract.tex"
+    )
+    assert "\\maketitle\n\\input{outline/abstract}\n\\input{outline/introduction}\n" in text(after, "tex/main.tex")
     assert text(after, "sections/introduction/introduction.tex").startswith("% Parte de ejemplo «introduction»")
     assert f"https://github.com/{REPO}#readme" in text(after, ".github/ISSUE_TEMPLATE/config.yml")
     assert {c.action for c in result.changes} == {"updated"}  # nada se crea ni se borra
@@ -120,6 +125,7 @@ def test_parts_follow_roles(published: Mapping[str, bytes]) -> None:
     assert errors(after, "es") == []
     assert after["roles.yaml"] == files["roles.yaml"]  # lo escribió el responsable: no se toca
     assert not [p for p in after if p.startswith(("sections/methodology/", "tex/outline/methodology"))]
+    assert not [p for p in after if p.startswith(("sections/abstract/", "tex/outline/abstract"))]
     assert sorted(p for p in after if p.startswith("sections/experiments-a/")) == [
         "sections/experiments-a/experiments-a.tex", "sections/experiments-a/figures/.gitkeep",
         "sections/experiments-a/pending.bib", "sections/experiments-a/tables/.gitkeep"]
@@ -128,9 +134,30 @@ def test_parts_follow_roles(published: Mapping[str, bytes]) -> None:
     assert "\\input{../sections/experiments-a/experiments-a}" in outline
     main = text(after, "tex/main.tex")
     assert "\\addbibresource{../sections/experiments-a/pending.bib}" in main and "methodology" not in main
+    assert "abstract" not in main
     assert main.index("\\input{outline/introduction}") < main.index("\\input{outline/experiments-a}") \
         < main.index("\\printbibliography")
     assert plan(after).changes == ()
+
+
+@pytest.mark.parametrize(
+    ("block", "expected"),
+    [
+        (
+            "\\begin{abstract}\nThe editor wrote this abstract.\n\\end{abstract}\n",
+            "\\begin{abstract}\nThe editor wrote this abstract.\n\n\\input{../sections/abstract/abstract}\n\\end{abstract}\n",
+        ),
+        ("% Empty.\n\\begin{abstract}\n\\end{abstract}\n", "% Empty.\n\\begin{abstract}\n\\input{../sections/abstract/abstract}\n\\end{abstract}\n"),
+    ],
+)
+def test_a_part_joins_a_block_inside_its_environment(published: Mapping[str, bytes], block: str, expected: str) -> None:
+    """REQ-CONV-2 y REQ-CONV-92: en un bloque, el ``\\input`` de la parte va antes de su ``\\end``."""
+    choices = replace(CHOICES, language="en")
+    files = {**published, "tex/outline/abstract.tex": block.encode("utf-8")}
+    after = apply(files, plan(files, choices))
+    assert text(after, "tex/outline/abstract.tex") == expected
+    assert errors(after, "en") == []
+    assert plan(after, choices).changes == ()
 
 
 def test_changed_files_are_kept(published: Mapping[str, bytes]) -> None:

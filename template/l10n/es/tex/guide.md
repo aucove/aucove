@@ -14,6 +14,11 @@ Mantenla corta, con una oración por línea: entra al contexto de cada sesión y
 
 ## Secciones del artículo
 Cada sección es un archivo de `tex/outline/` que incluye sus partes en orden.
+El resumen también tiene el suyo, pero es un bloque: va en el entorno `abstract` de la clase, sin título de sección.
+
+### Resumen (`tex/outline/abstract.tex`)
+- Qué cubre: el problema, la propuesta, los resultados principales y su alcance, en un solo párrafo.
+- Partes: `abstract`.
 
 ### Introducción (`tex/outline/introduction.tex`)
 - Qué cubre: el problema, la motivación, las preguntas de investigación y las contribuciones.

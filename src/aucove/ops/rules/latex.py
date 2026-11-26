@@ -21,7 +21,8 @@
 Las partes viven en ``sections/<id>/``, fuera de ``tex/`` (D-43): la compilación corre en
 ``tex/`` y las rutas de LaTeX hacia una parte empiezan con ``../sections/<id>/`` (02 §4.5).
 ``main.tex`` no incluye las partes: incluye los archivos de enlace ``tex/outline/<id>.tex``
-del editor, uno por sección del artículo, y cada uno incluye sus partes (02 §4.1.1; D-56).
+del editor, uno por sección del artículo o por bloque, como el resumen, y cada uno incluye
+sus partes (02 §4.1.1; D-56).
 Con ``format: none`` (sin manuscrito) el motor de ``validate`` da ``skip`` en
 ``citations``, ``labels-refs`` y ``latex-macros``, y la parte de ``convention`` de este
 módulo no informa nada (00-marco D-33; ``convention.tree_format``).
@@ -778,6 +779,7 @@ _INPUT = re.compile(r"\\input\{([^{}\\]*)\}")
 _BIB_LINE = re.compile(r"\\(?:addbibresource|addglobalbib|addsectionbib|bibliography|nobibliography)(?![A-Za-z@])")
 _EXACT_BIB = re.compile(r"\\addbibresource\{([^{}\\]*)\}")
 _PRINTBIB = re.compile(r"\\printbibliography(?:\[[^\[\]{}]*\])?")
+_ENVIRONMENT = re.compile(r"\\(?:begin|end)(?![A-Za-z@])")  # salvo document: un bloque va en tex/outline/
 BODY_COMMANDS: frozenset[str] = frozenset(
     "\\" + name
     for name in (
@@ -834,6 +836,8 @@ def classify_main_line(text: str, entries: Mapping[str, str]) -> tuple[int, str,
         if found is not None and found[1] == "pending.bib":
             return R_BIB, "pending", found[0]
         return R_BIB, "bib", None  # la forma exacta la exige citations
+    if _ENVIRONMENT.match(text):  # p. ej. \begin{abstract}: el bloque es un archivo de enlace (02 §4.1.1)
+        return "latex.main.environment"
     m = _INPUT.fullmatch(text)
     if m is None:
         return "latex.main.unknown_line"
@@ -973,7 +977,16 @@ _PART_INPUT = re.compile(r"\\input\{\.\./sections/([a-z0-9]+(?:-[a-z0-9]+)*)/([a
 
 
 def _outline_head(sc: tex.Scan, meaningful: Sequence[tuple[int, str]], outline: str, dl: tex.Deadline) -> bool:
-    """REQ-CONV-92: las dos primeras líneas con contenido son ``\\section{<título>}`` y ``\\label{sec:<id>}``.
+    """REQ-CONV-92: el archivo de enlace es una sección o un bloque.
+
+    Un bloque, como el resumen, es un solo entorno de principio a fin
+    (``domain.latex.single_environment``): el de la clase o uno de ``tex/notation.tex``.
+    """
+    return _section_head(sc, meaningful, outline, dl) or tex.single_environment(sc, deadline=dl) is not None
+
+
+def _section_head(sc: tex.Scan, meaningful: Sequence[tuple[int, str]], outline: str, dl: tex.Deadline) -> bool:
+    """Las dos primeras líneas con contenido son ``\\section{<título>}`` y ``\\label{sec:<id>}``.
 
     La primera tiene solo un ``\\section`` o ``\\section*``, sin título corto y con el título
     entre llaves en esa misma línea.
@@ -991,7 +1004,7 @@ def _outline_head(sc: tex.Scan, meaningful: Sequence[tuple[int, str]], outline: 
 def _outline_findings(
     inp: RuleInput, docs: Sequence[Doc], sections: Sequence[str] | None, dl: tex.Deadline, *, report_missing: bool
 ) -> list[Finding]:
-    """REQ-CONV-92 y REQ-CONV-93: la cabecera de cada archivo de enlace y cada parte incluida una sola vez."""
+    """REQ-CONV-92 y REQ-CONV-93: la forma de cada archivo de enlace y cada parte incluida una sola vez."""
     rule = CONVENTION
     t = inp.t
     out: list[Finding] = []
@@ -1009,7 +1022,8 @@ def _outline_findings(
         if not _outline_head(sc, meaningful, outline, dl):
             first = meaningful[0][0] if meaningful else None
             add("conv.outline.grammar", "error", doc.path, first, detail=t("latex.outline.head", outline=outline))
-        # La primera línea es la cabecera, válida o ya informada: su comando de sección no cuenta como otro.
+        # La primera línea es la cabecera (el \section de una sección o el \begin de un bloque), válida o
+        # ya informada: un comando de sección en ella no cuenta como otro.
         head = {n for n, _text in meaningful[:1]}
         for cmd in sc.commands:
             dl.tick()

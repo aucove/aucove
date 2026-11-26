@@ -14,6 +14,11 @@ Keep it short, with one sentence per line: it goes into the context of every ses
 
 ## Article sections
 Each section is a file in `tex/outline/` that includes its parts in order.
+The abstract also has one, but it is a block: it goes in the `abstract` environment of the class, without a section title.
+
+### Abstract (`tex/outline/abstract.tex`)
+- What it covers: the problem, the proposal, the main results and their scope, in a single paragraph.
+- Parts: `abstract`.
 
 ### Introduction (`tex/outline/introduction.tex`)
 - What it covers: the problem, the motivation, the research questions and the contributions.

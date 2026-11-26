@@ -71,14 +71,16 @@ OWNER_REPO_RE = GITHUB_LOGIN_RE + r"/[A-Za-z0-9._-]{1,100}"
 EXAMPLE_OWNERS: frozenset[str] = frozenset({"example-org", "example", "example-com", "your-org", "org", "owner"})
 
 DEFAULT_PARTS: tuple[str, ...] = (
-    "introduction", "background", "theory", "methodology", "experiments", "results", "conclusions",
+    "abstract", "introduction", "background", "theory", "methodology", "experiments", "results", "conclusions",
 )  # 00-marco D-55
 PART_TITLES: dict[str, tuple[str, ...]] = {
-    "es": ("Introducción", "Antecedentes y trabajo previo", "Marco teórico", "Propuesta y metodología",
+    "es": ("Resumen", "Introducción", "Antecedentes y trabajo previo", "Marco teórico", "Propuesta y metodología",
            "Experimentos", "Análisis de resultados", "Conclusiones"),
-    "en": ("Introduction", "Background and related work", "Theoretical framework", "Proposal and methodology",
-           "Experiments", "Results analysis", "Conclusions"),
+    "en": ("Abstract", "Introduction", "Background and related work", "Theoretical framework",
+           "Proposal and methodology", "Experiments", "Results analysis", "Conclusions"),
 }
+# Partes cuyo archivo de enlace es un bloque (02 REQ-CONV-92), con su entorno; las demás son secciones.
+BLOCK_PARTS: dict[str, str] = {"abstract": "abstract"}
 # Rutas de template/base/ (los workflows de .github/workflows/ tienen sus propias pruebas).
 BASE_FILES: frozenset[str] = frozenset(
     {
@@ -110,7 +112,7 @@ L10N_FILES: frozenset[str] = frozenset(
         "data/README.md",
         "tex/preamble.tex",
         "tex/guide.md",  # 00-marco D-56: guía del artículo de ejemplo
-        *(f"tex/outline/{p}.tex" for p in DEFAULT_PARTS),  # D-56: una sección del artículo por parte
+        *(f"tex/outline/{p}.tex" for p in DEFAULT_PARTS),  # D-56: un archivo de enlace por parte
         "roles.yaml",  # 00-marco D-55: títulos de las partes y comentarios
         *(f"sections/{p}/{p}{ext}" for p in DEFAULT_PARTS for ext in (".tex", ".md")),
         *(f"sections/{p}/pending.bib" for p in DEFAULT_PARTS),
@@ -481,7 +483,7 @@ def test_path_segments_are_ascii() -> None:
 
 
 def test_single_example_section_and_empty_memory_dirs() -> None:
-    """REQ-CONV-1, REQ-CONV-4, REQ-CONV-5: las 7 partes de D-55 y memoria sin registros."""
+    """REQ-CONV-1, REQ-CONV-4, REQ-CONV-5: las 8 partes de D-55 y memoria sin registros."""
     for root in (BASE, L10N / "es", L10N / "en"):
         sections = root / "sections"
         if sections.is_dir():
@@ -652,7 +654,7 @@ def test_roles_yaml_valid_and_minimal(lang: str) -> None:
     assert people[0]["login"] == data["lead"]  # REQ-SCHEMA-24
     logins = [p["login"].lower() for p in people]
     assert len(set(logins)) == len(logins)  # REQ-SCHEMA-26
-    # 00-marco D-55: las 7 partes del esquema por defecto, con su título en cada idioma.
+    # 00-marco D-55: las 8 partes del esquema por defecto, con su título en cada idioma.
     assert data["sections"] == [
         {"id": p, "title": t, "owner": data["lead"]} for p, t in zip(DEFAULT_PARTS, PART_TITLES[lang], strict=True)
     ]
@@ -939,11 +941,20 @@ def test_section_file_follows_latex_rules(lang: str) -> None:
 
 @pytest.mark.parametrize("lang", LANGS)
 def test_outline_files_follow_their_grammar(lang: str) -> None:
-    """REQ-CONV-92 y REQ-CONV-93: una sección del artículo por parte, con su título y su etiqueta (D-56)."""
+    """REQ-CONV-92 y REQ-CONV-93: un archivo de enlace por parte (D-56).
+
+    El del resumen es un bloque, con el entorno ``abstract`` de la clase; los demás son
+    secciones, con su título y su etiqueta.
+    """
     for part, title in zip(DEFAULT_PARTS, PART_TITLES[lang], strict=True):
         body = strip_tex_comments(src(lang, f"tex/outline/{part}.tex"))
         lines = [line for line in body.split("\n") if line.strip()]
-        assert lines == [rf"\section{{{title}}}", rf"\label{{sec:{part}}}", rf"\input{{../sections/{part}/{part}}}"]
+        include = rf"\input{{../sections/{part}/{part}}}"
+        env = BLOCK_PARTS.get(part)
+        if env is not None:
+            assert lines == [rf"\begin{{{env}}}", include, rf"\end{{{env}}}"], part
+        else:
+            assert lines == [rf"\section{{{title}}}", rf"\label{{sec:{part}}}", include], part
 
 
 @pytest.mark.parametrize("lang", LANGS)

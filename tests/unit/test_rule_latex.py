@@ -652,6 +652,9 @@ def test_macro_exceptions_and_scanner_rules() -> None:
         ("\\input{preamble}\n\\input{notation}", "\\input{notation}\n\\input{preamble}", "out of order", 4),
         ("\\documentclass[11pt,a4paper]{article}", "\\documentclass[11pt]{article}\n\\documentclass{book}", "more than once", 3),
         ("\\begin{document}", "\\begin{document}\n\\usepackage{x}", "not part of the grammar", 10),
+        # El segundo intento del #30: un entorno en main.tex; el mensaje lleva al bloque de tex/outline/.
+        ("\\maketitle", "\\maketitle\n\\begin{abstract}", "a block such as the abstract goes in its own file", 11),
+        ("\\maketitle", "\\maketitle\n\\end{abstract}", "opens or closes an environment", 11),
     ],
 )
 def test_main_grammar(old: str, new: str, needle: str, line: int) -> None:
@@ -812,6 +815,88 @@ def test_outline_grammar_after_the_head(extra: str, needle: str) -> None:
     findings = run(latex.CONVENTION, tree_with({OUTLINE_RESULTS: text_of(OUTLINE_RESULTS) + extra + "\n"}))
     assert [(f.code, f.line) for f in findings] == [("conv.outline.grammar", 5)], summary(findings)
     assert needle in findings[0].message
+
+
+@pytest.mark.parametrize(
+    "block",
+    [
+        "\\begin{abstract}\n" + OUTLINE_TAIL + "\\end{abstract}\n",
+        # El primer intento del #30, con comentarios y líneas en blanco alrededor.
+        "% tex/outline/results.tex\n\n\\begin{abstract} % el de la clase\n\n" + OUTLINE_TAIL + "\n\\end{abstract}\n% fin\n",
+        # La prosa del editor dentro del bloque, en un entorno con asterisco.
+        "\\begin{summary*}\nThe editor writes this sentence.\n\n" + OUTLINE_TAIL + "\\end{summary*}\n",
+        # El frontmatter de elsarticle: entornos anidados dentro del bloque.
+        "\\begin{frontmatter}\n\\begin{abstract}\n" + OUTLINE_TAIL + "\\end{abstract}\n"
+        "\\begin{keyword}\nmodels \\sep data\n\\end{keyword}\n\\end{frontmatter}\n",
+    ],
+)
+def test_outline_block_valid(block: str) -> None:
+    """REQ-CONV-92: un archivo de enlace puede ser un bloque, un solo entorno sin ``\\section`` ni ``\\label``."""
+    tree = tree_with({OUTLINE_RESULTS: block})
+    for rule in ALL_RULES:
+        assert run(rule, tree) == [], rule.id
+
+
+@pytest.mark.parametrize(
+    "block",
+    [
+        "\\begin{abstract}\n" + OUTLINE_TAIL + "\\end{abstract}\nThe text goes on.\n",  # texto después del bloque
+        "\\begin{abstract}\nFirst block.\n\\end{abstract}\n\\begin{abstract}\n" + OUTLINE_TAIL + "\\end{abstract}\n",
+        "\\begin{abstract}\n" + OUTLINE_TAIL + "\\end{keywords}\n",  # otro entorno en la última línea
+        "\\begin{abstract}[Summary]\n" + OUTLINE_TAIL + "\\end{abstract}\n",  # con argumento
+        "\\begin{abstract}\n" + OUTLINE_TAIL,  # sin cerrar
+        "\\begin{abstract}\\end{abstract}\n" + OUTLINE_TAIL,  # en una sola línea
+        "\\label{sec:results}\n\\begin{abstract}\n" + OUTLINE_TAIL + "\\end{abstract}\n",
+    ],
+)
+def test_outline_block_errors(block: str) -> None:
+    findings = [f for f in run(latex.CONVENTION, tree_with({OUTLINE_RESULTS: block})) if f.code.startswith("conv.outline.")]
+    assert summary(findings) == [("conv.outline.grammar", "error", OUTLINE_RESULTS, 1)], summary(findings)
+    assert "or be a block: a single environment" in findings[0].message
+
+
+def test_a_block_has_no_sectioning_command() -> None:
+    block = "\\begin{abstract}\n\\section*{Abstract}\n" + OUTLINE_TAIL + "\\end{abstract}\n"
+    findings = run(latex.CONVENTION, tree_with({OUTLINE_RESULTS: block}))
+    assert summary(findings) == [("conv.outline.grammar", "error", OUTLINE_RESULTS, 2)]
+    assert "and a block has none" in findings[0].message
+
+
+@pytest.mark.parametrize(
+    ("env", "code", "lines"),
+    [
+        ("comment", "conv.latex.hidden-block", [1]),
+        ("minted", "conv.latex.forbidden-command", [1]),
+        ("document", "conv.latex.structure", [1, 3]),
+    ],
+)
+def test_a_block_keeps_the_forbidden_environments(env: str, code: str, lines: list[int]) -> None:
+    """El entorno del bloque es prosa del archivo de enlace: le valen §4.6 y la tabla de 10-seguridad."""
+    block = f"\\begin{{{env}}}\n{OUTLINE_TAIL}\\end{{{env}}}\n"
+    findings = run(latex.CONVENTION, tree_with({OUTLINE_RESULTS: block}))
+    assert summary(findings) == [(code, "error", OUTLINE_RESULTS, n) for n in lines], summary(findings)
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("\\begin{abstract}\nx\n\\end{abstract}\n", (1, 3)),
+        ("%c\n\n  \\begin{abstract}  \n\\begin{itemize}\n\\item a\n\\end{itemize}\n\\end{abstract} %c\n\n", (3, 7)),
+        ("\\begin{verbatim}\n\\input{x}\n\\end{verbatim}\n", (1, 3)),  # el \input queda oculto: lo avisa outline.missing
+        ("\\begin{abstract}\n\\end{abstract}\n", (1, 2)),
+        ("\\begin{abstract}\\end{abstract}\n", None),
+        ("\\begin{abstract}\nx\n\\end{abstract}\n\\begin{abstract}\ny\n\\end{abstract}\n", None),
+        ("\\begin{abstract}\nx\n\\end{abstract}\ny\n", None),
+        ("x\n\\begin{abstract}\ny\n\\end{abstract}\n", None),
+        ("\\begin{a}\n\\end{b}\n", None),
+        ("\\begin{abstract}\n\\begin{itemize}\n\\end{abstract}\n", None),  # el \end no cierra el \begin
+        ("\\begin{abstract}{x}\ny\n\\end{abstract}\n", None),
+        ("\\begin{abstract}\n" + "x" * 5000 + "\n\\end{abstract}\n", (1, 3)),
+        ("", None),
+    ],
+)
+def test_single_environment(text: str, expected: tuple[int, int] | None) -> None:
+    assert tex.single_environment(tex.scan(text)) == expected
 
 
 def test_outline_parts_match_roles() -> None:
