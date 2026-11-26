@@ -9,6 +9,7 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 ### Changed
 
 - The `evidence` extra requires `opentimestamps>=0.5,<0.6` (01-arquitectura §4). `evidence verify` reads proofs made by others, and 0.5.0 rejects malformed ones that 0.4.5 accepted: repeated operations after a fork, block heights over 32 bits and integers over 9 bytes.
+- Every `astral-sh/setup-uv` step, in the template's workflows and in the framework's, sets `require-checksums: true` (09-ci REQ-CI-47): if the pinned uv has no sha256 bundled with the pinned action, the step fails instead of accepting the one from the remote versions manifest. The action is pinned to v10.4.0, the first version with that input.
 
 ### Fixed
 

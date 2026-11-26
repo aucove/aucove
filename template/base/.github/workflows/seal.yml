@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { ref: "${{ github.event.pull_request.head.sha }}", path: pr, persist-credentials: false, fetch-depth: 0 }
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+        with: { enable-cache: false, require-checksums: true, version: "0.12.17", working-directory: "${{ runner.temp }}" }
       - name: Instalar el núcleo con el extra evidence (core_pin de la base, REQ-CI-12)
         # el paso de REQ-CI-12 con POLICY_YAML = base/project.yaml y el extra evidence
         working-directory: ${{ runner.temp }}
@@ -64,7 +64,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false, fetch-depth: 0 }
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+        with: { enable-cache: false, require-checksums: true, version: "0.12.17", working-directory: "${{ runner.temp }}" }
       - name: Instalar el núcleo con el extra evidence (core_pin del árbol, REQ-CI-12)
         # igual que en submission, con POLICY_YAML = project.yaml del árbol
         working-directory: ${{ runner.temp }}

@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false, fetch-depth: 0 }
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+        with: { enable-cache: false, require-checksums: true, version: "0.12.17", working-directory: "${{ runner.temp }}" }
       - name: Instalar el núcleo (core_pin del árbol, REQ-CI-12)
         working-directory: ${{ runner.temp }}
         env: { POLICY_YAML: "${{ github.workspace }}/project.yaml", UV_NO_CONFIG: "1" }
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with: { persist-credentials: false, fetch-depth: 0 }
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+        with: { enable-cache: false, require-checksums: true, version: "0.12.17", working-directory: "${{ runner.temp }}" }
       - name: Instalar el núcleo (core_pin del árbol, REQ-CI-12)
         working-directory: ${{ runner.temp }}
         env: { POLICY_YAML: "${{ github.workspace }}/project.yaml", UV_NO_CONFIG: "1" }
@@ -81,7 +81,7 @@ jobs:
         with: { pattern: "build-report-*", path: "${{ runner.temp }}/reports", merge-multiple: true }
         continue-on-error: true
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with: { enable-cache: false, version: "0.12.17", working-directory: "${{ runner.temp }}" }
+        with: { enable-cache: false, require-checksums: true, version: "0.12.17", working-directory: "${{ runner.temp }}" }
       - name: Instalar el núcleo (core_pin del árbol, REQ-CI-12)
         working-directory: ${{ runner.temp }}
         env: { POLICY_YAML: "${{ github.workspace }}/project.yaml", UV_NO_CONFIG: "1" }

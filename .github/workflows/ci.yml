@@ -57,9 +57,12 @@ jobs:
         with:
           # uv fijado (REQ-SEC-47). El sha256 de 0.12.17 está en la lista que trae esta
           # versión de setup-uv (src/download/checksum/known-checksums.json), así que el
-          # binario se verifica contra un valor fijado por el SHA de la acción, y no solo
-          # contra el manifiesto remoto. Lee el uv.lock actual (revisión 5).
+          # binario se verifica contra un valor fijado por el SHA de la acción. Con
+          # require-checksums, el paso falla si la lista no lo trae, en vez de aceptar el del
+          # manifiesto remoto, como en la plantilla (09-ci REQ-CI-47). Lee el uv.lock actual
+          # (revisión 5).
           version: "0.12.17"
+          require-checksums: true
           python-version: ${{ matrix.python }}
           enable-cache: false
       - name: uv.lock al día (REQ-SEC-44)
@@ -138,6 +141,7 @@ jobs:
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.12.17"   # el mismo uv que el job test
+          require-checksums: true
           python-version: "3.11"
           enable-cache: false
       - name: Dependencias de desarrollo del lock
@@ -218,6 +222,7 @@ jobs:
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.12.17"   # el mismo uv que el job test
+          require-checksums: true
           python-version: "3.11"
           enable-cache: false
       - name: Render de la plantilla en en y es
@@ -250,6 +255,7 @@ jobs:
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.12.17"   # el mismo uv que el job test
+          require-checksums: true
           python-version: "3.11"
           enable-cache: false
       - name: Dependencias de desarrollo y del extra evidence del lock

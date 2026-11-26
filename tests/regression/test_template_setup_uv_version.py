@@ -12,7 +12,9 @@ fijado (10-seguridad REQ-SEC-47), en jobs como ``report`` de ``build.yml``, que 
 
 Con ``version``, setup-uv verifica el binario con el sha256 que trae su propio código
 (``known-checksums.json`` del SHA fijado). El CI del framework fija una versión de uv que
-trae ese archivo para el mismo SHA de la acción; la plantilla usa la misma.
+trae ese archivo para el mismo SHA de la acción; la plantilla usa la misma. Con
+``require-checksums: true`` (desde setup-uv v10.4.0; 09-ci REQ-CI-47), si esa versión no
+está en el archivo, el paso falla en vez de aceptar el sha256 del manifiesto remoto.
 """
 
 from __future__ import annotations
@@ -24,11 +26,16 @@ import pytest
 import yaml
 
 from tests.conftest import REPO_ROOT
-from tests.render.test_template_workflows import WORKFLOW_FILES, action_of, jobs, steps_of
+from tests.render.test_template_workflows import WORKFLOW_FILES, WORKFLOWS_DIR, action_of, jobs, steps_of
 
 SETUP_UV = "astral-sh/setup-uv"
 EXACT_VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 FRAMEWORK_CI = REPO_ROOT / ".github" / "workflows" / "ci.yml"
+# Todos los workflows de la plantilla con setup-uv (09-ci REQ-CI-47 vale para todos), también los
+# que tienen su propio módulo de pruebas (seal.yml, editor-review.yml) y los de H3.
+WITH_SETUP_UV: tuple[str, ...] = tuple(sorted(
+    p.name for p in WORKFLOWS_DIR.glob("*.yml") if f"uses: {SETUP_UV}@" in p.read_text(encoding="utf-8")
+))
 
 
 def setup_uv_steps(name: str) -> list[tuple[str, dict[str, Any]]]:
@@ -62,6 +69,18 @@ def test_setup_uv_pins_an_exact_uv_version(name: str) -> None:
         assert isinstance(version, str) and EXACT_VERSION.match(version), f"{name}:{job_id}: {version!r}"
         assert "version-file" not in with_, f"{name}:{job_id}"
         assert with_.get("working-directory") == "${{ runner.temp }}", f"{name}:{job_id}"
+
+
+def test_every_template_workflow_with_setup_uv_is_checked() -> None:
+    assert set(WORKFLOW_FILES) <= set(WITH_SETUP_UV), WITH_SETUP_UV
+
+
+@pytest.mark.parametrize("name", WITH_SETUP_UV)
+def test_setup_uv_requires_the_bundled_checksum(name: str) -> None:
+    found = setup_uv_steps(name)
+    assert found, name
+    for job_id, step in found:
+        assert (step.get("with") or {}).get("require-checksums") is True, f"{name}:{job_id}"
 
 
 def test_template_uses_the_uv_verified_for_the_pinned_action() -> None:

@@ -252,6 +252,21 @@ def test_setup_uv_without_actions_cache(ci: Mapping[Any, Any]) -> None:
         assert (found[0].get("with") or {}).get("enable-cache") is False, name
 
 
+def test_setup_uv_requires_the_bundled_checksum() -> None:
+    """Todo setup-uv del framework lleva ``require-checksums: true``, como la plantilla (09-ci
+    REQ-CI-47): si la uv fijada no tiene sha256 en el ``known-checksums.json`` del SHA de la
+    acción, el paso falla en vez de aceptar el del manifiesto remoto (MAINTAINING, punto 0)."""
+    count = 0
+    for path in sorted(WORKFLOWS.glob("*.yml")):
+        for job_id, job in (load_doc(path).get("jobs") or {}).items():
+            for step in job.get("steps") or []:
+                if str(step.get("uses", "")).split("@", 1)[0] == "astral-sh/setup-uv":
+                    count += 1
+                    with_ = step.get("with") or {}
+                    assert with_.get("require-checksums") is True, f"{path.name}:{job_id}"
+    assert count >= 8, count  # ci.yml (4), nightly.yml (2) y release.yml (2)
+
+
 # ---------------------------------------------------------------------------
 # Matriz de D-38 (enmienda p de REQ-ARCH-6 y REQ-MVP-21)
 # ---------------------------------------------------------------------------

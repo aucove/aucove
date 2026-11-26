@@ -24,8 +24,9 @@ dueña. Hace falta `gh` con sesión iniciada por una persona administradora.
 - [ ] La versión de uv de `ci.yml` (`version:` de `astral-sh/setup-uv`, la misma en todos
   los jobs) tiene su sha256 en `src/download/checksum/known-checksums.json` del SHA fijado
   de `astral-sh/setup-uv`, para `x86_64-unknown-linux-gnu`, `x86_64-pc-windows-msvc` y
-  `aarch64-apple-darwin`. Si no lo tiene, setup-uv solo la contrasta con su manifiesto
-  remoto. Dependabot no cambia ese `version:`: se sube a mano junto con la acción.
+  `aarch64-apple-darwin`. Si no lo tiene, el CI falla en ese paso, que lleva
+  `require-checksums: true` (09-ci REQ-CI-47). Dependabot no cambia ese `version:`: se sube
+  a mano junto con la acción.
 - [ ] La versión y el sha256 de gitleaks están verificados contra
   `gitleaks_<versión>_checksums.txt` de esa versión, y son iguales en
   `tools/template_vars.toml` y en `ci.yml` (job `test`).

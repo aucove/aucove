@@ -221,7 +221,8 @@ def test_core_with_the_evidence_extra_is_installed_before_sealing(render: Render
     assert "set -euo pipefail" in run and 'test -n "$PIN"' in run and "curl -fsSL --proto '=https'" in run
     assert f'uv tool install "{NAME}[evidence]==${{PIN}}" --constraints lock.txt' in run
     assert "{{var:" not in render.text
-    assert found[setup]["with"] == {"enable-cache": False, "version": "0.12.17", "working-directory": "${{ runner.temp }}"}
+    assert found[setup]["with"] == {"enable-cache": False, "require-checksums": True, "version": "0.12.17",
+                                    "working-directory": "${{ runner.temp }}"}
 
 
 @pytest.mark.parametrize("job", ["submission", "integration"])
