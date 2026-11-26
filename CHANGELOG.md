@@ -4,7 +4,9 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
-## [Unreleased]
+## [0.1.0rc7] - 2026-11-26
+
+Seventh preliminary release of `0.1.0`. The abstract can go in the `abstract` environment of the class: an outline file of `tex/outline/` can be a block, a single environment, instead of a section, and the template brings the abstract as its first part (#30). With 0.1.0rc6, the abstract could only be an unnumbered section.
 
 ### Added
 
