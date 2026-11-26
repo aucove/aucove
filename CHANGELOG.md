@@ -4,7 +4,9 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
-## [Unreleased]
+## [0.1.0rc6] - 2026-11-26
+
+Sixth preliminary release of `0.1.0`. `init --repo` now works on a private repository of a personal account, where it failed every time with 0.1.0rc5, and every `astral-sh/setup-uv` step refuses a uv whose checksum the action does not bring. The lock of the release brings `opentelemetry-api` 1.45.2.
 
 ### Changed
 
@@ -15,6 +17,10 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 - `init --repo` failed every time with `E_FORGE_UNEXPECTED` (`{"kind":"validation","status":422}`) on a private repository of a personal account: it asked GitHub for `allow_forking: false`, which GitHub only lets an organization change on a private repository. `init` and `doctor` now leave that setting out unless the repository is a private or internal one of an organization (06-permisos §4.2; #27).
 - When a step of `init` fails, its readable output names the repository, the profile and the step where it stopped, instead of `init on None (None profile)`.
+
+### Security
+
+- `requirements-lock.txt`, the lock published with the release that the README installs with, pins `opentelemetry-api` 1.45.2 (brought by `mcp`) instead of 1.45.0. That version fixes the moderate advisories GHSA-xcq7-p3pf-p88h and GHSA-mf5v-w3w3-f6cg.
 
 ## [0.1.0rc5] - 2026-10-20
 
