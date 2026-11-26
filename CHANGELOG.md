@@ -6,6 +6,10 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Changed
+
+- The `evidence` extra requires `opentimestamps>=0.5,<0.6` (01-arquitectura §4). `evidence verify` reads proofs made by others, and 0.5.0 rejects malformed ones that 0.4.5 accepted: repeated operations after a fork, block heights over 32 bits and integers over 9 bytes.
+
 ### Fixed
 
 - `init --repo` failed every time with `E_FORGE_UNEXPECTED` (`{"kind":"validation","status":422}`) on a private repository of a personal account: it asked GitHub for `allow_forking: false`, which GitHub only lets an organization change on a private repository. `init` and `doctor` now leave that setting out unless the repository is a private or internal one of an organization (06-permisos §4.2; #27).

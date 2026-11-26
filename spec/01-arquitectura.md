@@ -266,7 +266,7 @@ def invoke(spec: OpSpec, ctx: "OpContext", **kwargs) -> "Result":
 | TOML | `tomllib` (stdlib) | — | sí | catálogos y metadatos de skills | — |
 | Git | ejecutable `git` por `subprocess` | — | no (la ruta caliente lee archivos de `.git`) | sin binarios nativos; mismo comportamiento que el usuario | GitPython, pygit2 |
 | Sellos RFC 3161 (extra `evidence`) | `rfc3161-client` | `>=1.0,<2` | no | arma la petición (SHA-256, nonce, `certReq`) y verifica respuesta y cadena; OCSP con `cryptography.x509.ocsp` | `openssl ts` por subprocess (Git for Windows lo trae) |
-| OpenTimestamps (extra `evidence`) | `opentimestamps` (LGPL-3.0-or-later; trae `python-bitcoinlib`) | `>=0.4.5,<0.5` | no | serialización de pruebas, calendarios y `upgrade` | cliente `ots` por subprocess |
+| OpenTimestamps (extra `evidence`) | `opentimestamps` (LGPL-3.0-or-later; trae `python-bitcoinlib`) | `>=0.5,<0.6` | no | serialización de pruebas, calendarios y `upgrade`; el piso es 0.5.0 porque `evidence verify` lee pruebas de otros, y esa versión rechaza las mal formadas que 0.4.5 aceptaba (operaciones repetidas tras una bifurcación, alturas de bloque de más de 32 bits y enteros de más de 9 bytes) | cliente `ots` por subprocess |
 | Zonas horarias en Windows (extra `evidence`) | `tzdata` | `>=2025.2`, solo si `sys_platform == "win32"` | no | `zoneinfo` sin base del sistema | mostrar solo UTC |
 | Firma del proyecto (extra `evidence`) | `cryptography` (Apache-2.0 o BSD-3-Clause; ya la trae `rfc3161-client`) | `>=44` | no | Ed25519 y llaves OpenSSH para firmar y verificar SSHSIG en `ci seal` y `evidence verify` (11-trazabilidad §8.10); `evidence sign` firma con `ssh-keygen` | `ssh-keygen -Y` por subprocess |
 
@@ -289,7 +289,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-evidence = ["rfc3161-client>=1.0,<2", "opentimestamps>=0.4.5,<0.5", "cryptography>=44",
+evidence = ["rfc3161-client>=1.0,<2", "opentimestamps>=0.5,<0.6", "cryptography>=44",
             "tzdata>=2025.2; sys_platform == 'win32'"]
 
 [project.scripts]

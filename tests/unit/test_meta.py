@@ -85,7 +85,7 @@ def test_pyproject_dependencies_match_spec() -> None:
     ]
     # el extra evidence (D-07 d): cryptography firma y verifica la firma del proyecto (D-72)
     assert data["project"]["optional-dependencies"] == {"evidence": [
-        "rfc3161-client>=1.0,<2", "opentimestamps>=0.4.5,<0.5", "cryptography>=44",
+        "rfc3161-client>=1.0,<2", "opentimestamps>=0.5,<0.6", "cryptography>=44",
         "tzdata>=2025.2; sys_platform == 'win32'",
     ]}
     dev = {re.split(r"[<>=!~\[ ]", item, maxsplit=1)[0] for item in data["dependency-groups"]["dev"]}
