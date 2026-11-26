@@ -53,12 +53,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           # uv fijado (REQ-SEC-47). El sha256 de 0.12.17 está en la lista que trae esta
           # versión de setup-uv (src/download/checksum/known-checksums.json), así que el
           # binario se verifica contra un valor fijado por el SHA de la acción, y no solo
-          # contra el manifiesto remoto. Lee el uv.lock actual (revisión 3).
+          # contra el manifiesto remoto. Lee el uv.lock actual (revisión 5).
           version: "0.12.17"
           python-version: ${{ matrix.python }}
           enable-cache: false
@@ -135,7 +135,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.12.17"   # el mismo uv que el job test
           python-version: "3.11"
@@ -215,7 +215,7 @@ jobs:
       # «dubious ownership» (lo que la acción resolvía con safe.directory). Sin red.
       - name: reuse lint del repo
         run: docker run --rm --network none --user "$(id -u):$(id -g)" -v "$GITHUB_WORKSPACE:/data" -w /data "$REUSE_IMAGE" lint
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.12.17"   # el mismo uv que el job test
           python-version: "3.11"
@@ -247,7 +247,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: "0.12.17"   # el mismo uv que el job test
           python-version: "3.11"

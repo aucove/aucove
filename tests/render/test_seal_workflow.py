@@ -40,7 +40,7 @@ SAME_REPO = "github.event.pull_request.head.repo.full_name == github.repository"
 PINS: Mapping[str, str] = {
     "actions/checkout": "3d3c42e5aac5ba805825da76410c181273ba90b1",
     "actions/upload-artifact": "cf430e030ddbb5b0abf93d22962f4752f3646cd9",
-    "astral-sh/setup-uv": "07a047e608db84b3d8c06cd9a7c7dcc9c355c18e",
+    "astral-sh/setup-uv": "1db35dd8eee11c5894872e0b383ae6c406cf738d",
 }
 COMMANDS: Mapping[str, str] = {
     "submission": (

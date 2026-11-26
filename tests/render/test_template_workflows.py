@@ -61,7 +61,7 @@ EXPECTED_PINS: Mapping[str, tuple[str, str]] = {
     "actions/checkout": ("3d3c42e5aac5ba805825da76410c181273ba90b1", "v7.0.1"),
     "actions/upload-artifact": ("cf430e030ddbb5b0abf93d22962f4752f3646cd9", "v7.0.2"),
     "actions/download-artifact": ("9000827ccba6bdab643e8b6fd33ac0654aef8333", "v8.0.2"),
-    "astral-sh/setup-uv": ("07a047e608db84b3d8c06cd9a7c7dcc9c355c18e", "v10.3.2"),
+    "astral-sh/setup-uv": ("1db35dd8eee11c5894872e0b383ae6c406cf738d", "v10.4.0"),
 }
 
 CHECK_NAMES: frozenset[str] = frozenset(
