@@ -4,7 +4,14 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
-## [Unreleased]
+## [0.1.0rc8] - 2026-11-27
+
+Eighth preliminary release of `0.1.0`. It fixes two CI failures of 0.1.0rc7 and earlier, both caused by `actions/checkout` not creating `origin/HEAD`: `aucove/validate` failed in every PR that changed `core_pin`, and the scheduled `aucove/expire-claims` job failed every day (#31). An existing project gets both fixes when it moves to this version (02-convencion §11), without changing its workflows. The README now says to close the agent's app before installing or updating aucove: on Windows, with the app open, the update failed halfway and left aucove broken (#32).
+
+### Changed
+
+- The README and each project's README say to close the agent's app before installing or updating aucove (#32). On Windows, its `aucove mcp --stdio` server keeps the installed copy in use, and the update fails halfway with "Access is denied (os error 5)". "If something fails" explains how to repair it with `uv tool install --force --reinstall`, and what to do about the two CI failures of 0.1.0rc7 and earlier.
+- The template self-test makes its checkouts the way `actions/checkout` does, without `origin/HEAD`. With `git clone` it did not see #31.
 
 ### Fixed
 
@@ -13,11 +20,6 @@ The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 - The `pin` job fails when `validate` could not run (an exit code other than 0 and 3) and still uploads its report, and `validate` says which code it ended with, instead of "the report of the `pin` job is not a valid envelope". Before, `|| true` hid the error and `aucove/validate-pin` stayed green.
 - `validate --mode tree` rejects `--policy` with `E_VALIDATION_INPUT` (`reason: mode`) instead of ignoring it: in that mode the policy is that of `origin/<base>` (05-operaciones §9.5). The help of `--policy` says so.
 - With an installed core newer than `core_pin`, `aucove doctor` no longer only proposes going back to `core_pin` (#32). It also says that, when the project is moving to the new version, the lead raises `core` and `core_pin` in a task of their own. The fix of the `evidence` extra proposes the newer of the installed version and `core_pin`.
-
-### Changed
-
-- The README and each project's README say to close the agent's app before installing or updating aucove (#32). On Windows, its `aucove mcp --stdio` server keeps the installed copy in use, and the update fails halfway with "Access is denied (os error 5)". "If something fails" explains how to repair it with `uv tool install --force --reinstall`, and what to do about the two CI failures of 0.1.0rc7 and earlier.
-- The template self-test makes its checkouts the way `actions/checkout` does, without `origin/HEAD`. With `git clone` it did not see #31.
 
 ## [0.1.0rc7] - 2026-11-26
 
