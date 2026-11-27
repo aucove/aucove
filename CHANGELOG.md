@@ -4,6 +4,21 @@ Todos los cambios relevantes se registran aquí. / All notable changes are recor
 
 The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/). The release notes of each version are taken from this file.
 
+## [Unreleased]
+
+### Fixed
+
+- In every PR that changed `core_pin`, `aucove/validate` failed with three `E_INTERNAL_UNEXPECTED`, for `schemas`, `roles-sync` and `generated-sync` (#31). The `pin` job runs `validate --mode tree`, which reads the policy from `origin/HEAD`, and `actions/checkout` does not create that reference. In GitHub Actions, the core now takes the default branch from the event (`repository.default_branch` of `GITHUB_EVENT_PATH`, written by the runner) when `origin/HEAD` is missing (07-hooks REQ-HOOK-41), so the workflows of existing projects work as soon as the submission raises `core_pin` to this version. The template's `pin` job also points `origin/HEAD` to the default branch with `git remote set-head`, and the `ci-policy` rule accepts that line (09-ci REQ-CI-29).
+- The scheduled `aucove/expire-claims` job failed every day with `E_CONFIG_POLICY_UNAVAILABLE`, for the same reason. The template passes `--policy .`, as the next line already did, and existing projects work again once their base branch is on this version.
+- The `pin` job fails when `validate` could not run (an exit code other than 0 and 3) and still uploads its report, and `validate` says which code it ended with, instead of "the report of the `pin` job is not a valid envelope". Before, `|| true` hid the error and `aucove/validate-pin` stayed green.
+- `validate --mode tree` rejects `--policy` with `E_VALIDATION_INPUT` (`reason: mode`) instead of ignoring it: in that mode the policy is that of `origin/<base>` (05-operaciones §9.5). The help of `--policy` says so.
+- With an installed core newer than `core_pin`, `aucove doctor` no longer only proposes going back to `core_pin` (#32). It also says that, when the project is moving to the new version, the lead raises `core` and `core_pin` in a task of their own. The fix of the `evidence` extra proposes the newer of the installed version and `core_pin`.
+
+### Changed
+
+- The README and each project's README say to close the agent's app before installing or updating aucove (#32). On Windows, its `aucove mcp --stdio` server keeps the installed copy in use, and the update fails halfway with "Access is denied (os error 5)". "If something fails" explains how to repair it with `uv tool install --force --reinstall`, and what to do about the two CI failures of 0.1.0rc7 and earlier.
+- The template self-test makes its checkouts the way `actions/checkout` does, without `origin/HEAD`. With `git clone` it did not see #31.
+
 ## [0.1.0rc7] - 2026-11-26
 
 Seventh preliminary release of `0.1.0`. The abstract can go in the `abstract` environment of the class: an outline file of `tex/outline/` can be a block, a single environment, instead of a section, and the template brings the abstract as its first part (#30). With 0.1.0rc6, the abstract could only be an unnumbered section.

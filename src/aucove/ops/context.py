@@ -344,14 +344,15 @@ class OpContext:
         """Política de la rama base (``config.base.read_base``), cacheada.
 
         El nombre de la rama base lo resuelve ``read_base`` desde ``origin/HEAD`` o, sin esa
-        ref, desde ``capabilities.json``; nunca del árbol de trabajo (07-hooks REQ-HOOK-41,
+        ref, desde el evento de GitHub Actions (``env`` de la invocación) o desde
+        ``capabilities.json``; nunca del árbol de trabajo (07-hooks REQ-HOOK-41,
         06-permisos §2.1). El ``project.yaml`` del árbol no decide la política (D-08): aquí no
         se lee, y dentro de ``validate`` sus errores son hallazgos (03-esquemas §2.4).
         """
         if self._base is None:
             from ..config.base import read_base
 
-            self._base = read_base(self.git(), t=self._t)
+            self._base = read_base(self.git(), t=self._t, env=self.inv.env)
         return self._base
 
     def use_policy(self, snapshot: BaseSnapshot) -> None:

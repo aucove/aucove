@@ -140,6 +140,8 @@ If you do not have an account, create one at [github.com/signup](https://github.
 
 > [!IMPORTANT]
 > Install and update aucove only from a terminal opened from the Start menu (or Terminal on macOS), never from inside your agent's app. On Windows, whatever is installed from inside Claude Desktop, by the agent or from its Terminal panel, stays in a private copy that only that app sees and that hides the one you install outside.
+>
+> Before you install or update, close your agent's app: quit Claude Desktop from its icon in the system tray, not just its window. On Windows, while it is open, its aucove server keeps the installed copy in use, and the update fails halfway.
 
 Install it once per computer, in two parts: first [uv](https://docs.astral.sh/uv/), the tool that installs it, and then aucove itself, in its exact version and with the dependencies pinned in the `requirements-lock.txt` of its Release (01-arquitectura §5.1).
 
@@ -179,7 +181,7 @@ UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc7" --constraints "$LOCK"
 uv tool update-shell
 ```
 
-Close the terminal, open a new one and check with `aucove --version`: it must show the version in these commands. If your agent was already open, close it and open it again; quit Claude Desktop from its icon in the system tray, not just its window. If your agent sees a different version than your terminal, see [If something fails](docs/en/when-something-happens.md#if-something-fails).
+Close the terminal, open a new one and check with `aucove --version`: it must show the version in these commands. Then open your agent again. If the update stopped with "Access is denied (os error 5)", or your agent sees a different version than your terminal, see [If something fails](docs/en/when-something-happens.md#if-something-fails).
 
 To verify evidence seals on your computer (`aucove evidence verify`), install it with the `evidence` extra: in the `uv tool install` command, write `"aucove[evidence]==0.1.0rc7"`. If aucove is already installed, the same command adds the extra. CI seals every submission without it.
 
@@ -517,6 +519,8 @@ Si no tienes cuenta, créala en [github.com/signup](https://github.com/signup). 
 
 > [!IMPORTANT]
 > Instala y actualiza aucove solo desde una terminal abierta desde el menú Inicio (o Terminal en macOS), nunca desde la app de tu agente. En Windows, lo que se instala desde Claude Desktop, sea el agente o su panel Terminal, queda en una copia privada que solo ve esa app y que tapa a la que instalas afuera.
+>
+> Antes de instalar o actualizar, cierra la app de tu agente: a Claude Desktop, desde su ícono en la bandeja del sistema, no solo su ventana. En Windows, mientras está abierta, su servidor de aucove mantiene en uso la copia instalada, y la actualización falla a medias.
 
 Se instala una vez por computadora, en dos partes: primero [uv](https://docs.astral.sh/uv/), la herramienta que lo instala, y después aucove, en su versión exacta y con las dependencias fijadas en el `requirements-lock.txt` de su Release (01-arquitectura §5.1).
 
@@ -556,7 +560,7 @@ UV_COMPILE_BYTECODE=1 uv tool install "aucove==0.1.0rc7" --constraints "$LOCK"
 uv tool update-shell
 ```
 
-Cierra la terminal, abre una nueva y comprueba con `aucove --version`: debe decir la versión de estos comandos. Si tu agente ya estaba abierto, ciérralo y ábrelo otra vez; a Claude Desktop, ciérralo desde su ícono en la bandeja del sistema, no solo su ventana. Si tu agente ve otra versión que tu terminal, mira [Si algo falla](docs/es/cuando-pasa.md#si-algo-falla).
+Cierra la terminal, abre una nueva y comprueba con `aucove --version`: debe decir la versión de estos comandos. Después vuelve a abrir tu agente. Si la actualización se detuvo con «Acceso denegado (os error 5)», o tu agente ve otra versión que tu terminal, mira [Si algo falla](docs/es/cuando-pasa.md#si-algo-falla).
 
 Para verificar sellos en tu computadora (`aucove evidence verify`), instálalo con el extra `evidence`: en el comando `uv tool install`, escribe `"aucove[evidence]==0.1.0rc7"`. Si aucove ya estaba instalado, el mismo comando le agrega el extra. El CI sella cada entrega sin él.
 

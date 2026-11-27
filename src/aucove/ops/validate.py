@@ -134,11 +134,13 @@ class PinReport:
     """Reglas de ``PIN_RULES`` leídas del reporte del job ``pin`` (REQ-CI-45).
 
     ``problem`` no es ``None`` si el reporte falta o no es legible: entonces las tres
-    reglas fallan con ``unavailable``.
+    reglas fallan con ``unavailable``. Con ``problem="failed"``, ``validate`` no pudo correr
+    en el job ``pin`` y ``error`` dice con qué código terminó, y su ``reason`` si la trae.
     """
 
     outcomes: Mapping[str, RuleOutcome] = field(default_factory=dict)
     problem: str | None = None
+    error: str | None = None
 
 
 def _finding_from_dict(check: str, item: object) -> Finding:
@@ -154,6 +156,28 @@ def _finding_from_dict(check: str, item: object) -> Finding:
         hint=item.get("hint"),
         pointer=item.get("pointer"),
     )
+
+
+_ERROR_CODE = re.compile(r"E_[A-Z0-9_]{1,60}")
+_ERROR_REASON = re.compile(r"[a-z][a-z0-9_]{0,40}")
+
+
+def _pin_error(envelope: Mapping[str, object]) -> str | None:
+    """``E_X`` o ``E_X (reason)`` si el sobre es el de un ``validate`` que no pudo correr.
+
+    Solo se citan un código y una razón con la forma del catálogo: el reporte es un dato.
+    """
+    error = envelope.get("error")
+    if envelope.get("ok") is not False or not isinstance(error, Mapping):
+        return None
+    code = error.get("code")
+    if not isinstance(code, str) or _ERROR_CODE.fullmatch(code) is None:
+        return None
+    details = error.get("details")
+    reason = details.get("reason") if isinstance(details, Mapping) else None
+    if isinstance(reason, str) and _ERROR_REASON.fullmatch(reason):
+        return f"{code} ({reason})"
+    return code
 
 
 def read_pin_report(path: Path) -> PinReport:
@@ -173,6 +197,9 @@ def read_pin_report(path: Path) -> PinReport:
     except Exception:
         problems = ["error"]
     data = envelope.get("data")
+    failed = _pin_error(envelope) if not problems and envelope.get("op") == OP and data is None else None
+    if failed is not None:
+        return PinReport(problem="failed", error=failed)
     if problems or envelope.get("op") != OP or not isinstance(data, Mapping) or data.get("mode") != "tree":
         return PinReport(problem="invalid")
     outcomes: dict[str, RuleOutcome] = {}
@@ -293,7 +320,10 @@ def _pin_supplement(rule_id: str, specs: Sequence[RuleSpec], inp: RuleInput) -> 
 def _pin_outcome(rule_id: str, specs: Sequence[RuleSpec], inp: RuleInput, pin: PinReport) -> RuleOutcome:
     found = pin.outcomes.get(rule_id) if pin.problem is None else None
     if found is None:
-        reason = inp.t(f"validate.reason.pin_{pin.problem}" if pin.problem else "validate.reason.pin_rule_missing")
+        if pin.problem == "failed":
+            reason = inp.t("validate.reason.pin_failed", error=pin.error or "")
+        else:
+            reason = inp.t(f"validate.reason.pin_{pin.problem}" if pin.problem else "validate.reason.pin_rule_missing")
         return RuleOutcome(rule_id, "fail", (unavailable(specs[0], inp, reason),))
     seen = {(f.code, f.path, f.line, f.message) for f in found.findings}
     extra = [f for f in _pin_supplement(rule_id, specs, inp) if (f.code, f.path, f.line, f.message) not in seen]
@@ -665,6 +695,8 @@ def _prepare_tree(ctx: OpContext, args: Args, holder: list[Translator]) -> Prepa
     from ..config.base import read_tree_base
     from ..vcs.tree import git_tree, worktree
 
+    if args.policy is not None:  # la política es la de origin/<base> (05 §9.5); --policy es de pr y base
+        raise _input_error("policy", "mode", mode="tree")
     if args.tree is not None:
         project = resolve_project(str(_dir_arg(ctx, "tree", args.tree)))
         if project is None:

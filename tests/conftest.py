@@ -92,7 +92,9 @@ def isolated_git_env(tmp: Path) -> dict[str, str]:
     global_config = tmp / "gitconfig-global"
     if not global_config.exists():
         global_config.write_bytes(b"")
-    env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+    # Sin GIT_* ni las variables de GitHub Actions del CI del framework: con GITHUB_ACTIONS y
+    # GITHUB_EVENT_PATH, la base sale del evento cuando falta origin/HEAD (config.base; #31).
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith(("GIT_", "GITHUB_", "RUNNER_"))}
     env.update(GIT_IDENTITY)
     env.update(
         {

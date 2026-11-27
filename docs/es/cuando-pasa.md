@@ -196,6 +196,18 @@ Desde entonces, instala y actualiza aucove solo desde PowerShell.
 </details>
 
 <details>
+<summary>Actualizar aucove en Windows se detiene con «Acceso denegado (os error 5)», y después aucove no arranca</summary>
+
+La actualización corrió con la app de tu agente abierta. Su servidor de aucove mantenía en uso la copia instalada, y uv no pudo borrar su carpeta `Scripts`: la versión anterior ya se había quitado y la nueva quedó a medias. Desde entonces, `aucove --version` dice `No module named 'aucove'`. Para repararla:
+
+1. Sal de la app de tu agente; a Claude Desktop, desde su ícono en la bandeja del sistema.
+2. En una PowerShell abierta desde el menú Inicio, repite los comandos de [«4. Instala aucove»](../../README.md#4-instala-aucove), pero con `uv tool install --force --reinstall` en lugar de `uv tool install`.
+3. Abre otra terminal y comprueba con `aucove --version` que diga la versión nueva.
+4. Vuelve a abrir tu agente.
+
+</details>
+
+<details>
 <summary><code>aucove status</code> muestra una tarea con <code>partes: -</code></summary>
 
 aucove no puede leer el formulario de la tarea, casi siempre porque su texto repite un encabezado, como `### Criterio de terminado` (`### Definition of done` en un proyecto en inglés, donde se ve `parts: -`). Mientras tanto la tarea no tiene partes, y no se puede aceptar ni reclamar. Quien la propuso o el responsable la arregla en GitHub: abre el Issue, pulsa los tres puntos → **Edit**, deja un solo encabezado de cada sección, con las condiciones bajo el de terminado, y guarda. Después, `aucove status` muestra sus partes.
@@ -225,6 +237,15 @@ El responsable la cambia a mano, en una tarea suya, por
 ```
 
 y entrega la tarea como siempre. El agente no edita `.github/`, así que ese cambio lo haces tú. Desde la integración siguiente, la auditoría termina.
+
+</details>
+
+<details>
+<summary><code>aucove/validate</code> falla en la entrega que sube <code>core_pin</code>, o <code>aucove/expire-claims</code> falla todos los días</summary>
+
+En la entrega, `aucove/validate-pin` queda en verde, pero `aucove/validate` dice que no pudo evaluar `schemas`, `roles-sync` y `generated-sync` porque el reporte del job `pin` no es un sobre válido. Y el job programado `aucove/expire-claims` termina con `E_CONFIG_POLICY_UNAVAILABLE` (`origin/HEAD`, `ref_missing`). Es un error de aucove hasta la 0.1.0rc7: en GitHub Actions buscaba la rama base en una referencia que el checkout no crea.
+
+Se arregla al pasar el proyecto a la 0.1.0rc8 o posterior. El responsable, en una tarea suya, instala la versión nueva, sube `core` y `core_pin` en `project.yaml`, corre `aucove init --regenerate` y entrega. Esa entrega ya pasa `aucove/validate`, porque el job `pin` corre con la versión nueva, y `expire-claims` vuelve a funcionar desde que se integra. No hace falta tocar los workflows.
 
 </details>
 

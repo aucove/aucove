@@ -40,9 +40,10 @@ estricto de ``config.yamlload`` y nunca se ejecuta nada. Hallazgos
   - Nada del job trabaja dentro de ese directorio (``working-directory``, también el
     de ``defaults.run`` del job o del workflow) ni lo nombra en ``run:``, ``shell:``,
     ``env:`` (``BASH_ENV`` ejecuta un archivo) o el ``with:`` de otra acción, salvo
-    como valor de ``--tree`` o ``--repo-dir`` (las líneas de 09-ci §4.3 y §7.4) o en
-    una prueba de existencia (``[ -d … ]``); el nombre suelto tras ``--mode`` es el modo
-    de ``validate`` (``--mode pr``), no la carpeta. Cuentan también ``env:`` y
+    como valor de ``--tree`` o ``--repo-dir`` (las líneas de 09-ci §4.3 y §7.4), en
+    una prueba de existencia (``[ -d … ]``) o como ``-C`` de ``git remote set-head``, que
+    apunta ``origin/HEAD`` sin leer el árbol (09-ci REQ-CI-45); el nombre suelto tras
+    ``--mode`` es el modo de ``validate`` (``--mode pr``), no la carpeta. Cuentan también ``env:`` y
     ``defaults.run.shell`` del workflow.
 - Ningún workflow usa el contexto ``secrets`` (``secrets.X``, ``secrets['X']``,
   ``toJSON(secrets)``, también en un ``if:`` sin ``${{ }}``) ni ``secrets:`` en un job
@@ -157,6 +158,10 @@ _DATA_VALUE = re.compile(
     r"(?<![\w-])(?:" + "|".join(re.escape(o) for o in PR_DATA_OPTIONS) + r")(?:[ \t]*=[ \t]*|(?:[ \t]|\\\n)+)[\"']?\Z"
 )
 _EXISTS_TEST = re.compile(r"(?:\[\[?|(?<![\w-])test)(?:[ \t]+!)?[ \t]+-[A-Za-z][ \t]+[\"']?\Z")
+# git -C <pr> remote set-head: apunta origin/HEAD a la rama por defecto sin leer el árbol del PR,
+# porque actions/checkout no lo crea y el job pin lo necesita (09-ci REQ-CI-45; #31).
+_GIT_C = re.compile(r"(?<![\w-])git[ \t]+-C[ \t]+[\"']?\Z")
+_SET_HEAD = re.compile(r"[\"']?[ \t]+remote[ \t]+set-head[ \t]")
 # El nombre suelto, sin ruta, como valor de --mode es el modo de validate (--mode pr), no la carpeta.
 _WORD_VALUE = re.compile(r"(?<![\w-])--mode(?:[ \t]*=[ \t]*|[ \t]+)[\"']?\Z")
 _CONTEXT = 256  # caracteres antes de una mención en los que se busca ese contexto (tiempo acotado)
@@ -377,6 +382,8 @@ def _pr_dir_use(text: str, names: Sequence[str]) -> str | None:
         for m in _mention(name).finditer(text):
             before = text[max(0, m.start() - _CONTEXT) : m.start()]
             if _DATA_VALUE.search(before) or _EXISTS_TEST.search(before):
+                continue
+            if _GIT_C.search(before) and _SET_HEAD.match(text, m.end()):
                 continue
             if m.group(0).casefold() == name.casefold() and _WORD_VALUE.search(before):
                 continue

@@ -211,6 +211,16 @@ def test_tree_mode_with_head_validates_the_commit(git_repo: GitRepo, monkeypatch
     assert bad.error is not None and bad.error.code == "E_VALIDATION_INPUT"
 
 
+def test_tree_mode_rejects_policy(git_repo: GitRepo, monkeypatch: pytest.MonkeyPatch) -> None:
+    """#31: en modo tree la política es la de origin/<base> (05 §9.5); --policy no se ignora en silencio."""
+    default_probe(monkeypatch)
+    git_repo.commit("base", files={"project.yaml": PROJECT, "roles.yaml": ROLES})
+    result = run_validate(git_repo.path, git_repo.env, policy=str(git_repo.path))
+    assert result.error is not None and result.error.code == "E_VALIDATION_INPUT"
+    assert result.error.details == {"errors": [{"param": "policy", "reason": "mode", "mode": "tree"}]}
+    assert result.exit_code() == 3
+
+
 def test_tree_mode_without_remote_base_fails(git_repo: GitRepo, monkeypatch: pytest.MonkeyPatch) -> None:
     default_probe(monkeypatch)
     git_repo.commit("base", files={"project.yaml": PROJECT, "roles.yaml": ROLES})  # sin push ni fetch

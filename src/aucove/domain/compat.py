@@ -236,6 +236,12 @@ def same_version(a: str, b: str) -> bool:
     return va is not None and vb is not None and va.key() == vb.key()
 
 
+def newer(a: str, b: str) -> bool:
+    """``True`` si ``a`` es posterior a ``b`` según PEP 440; ``False`` si alguna no es válida."""
+    va, vb = parse_version(a), parse_version(b)
+    return va is not None and vb is not None and va.key() > vb.key()
+
+
 def check(installed: str, convention: str, core: str, pin: str | None) -> Compat:
     """Algoritmo de 01 §6.3 sobre cadenas ya validadas por el esquema.
 

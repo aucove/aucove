@@ -158,6 +158,7 @@ pin_missing = "the report of the `pin` job is missing"
 pin_unreadable = "the report of the `pin` job cannot be read"
 pin_invalid = "the report of the `pin` job is not a valid envelope of `validate --mode tree`"
 pin_rule_missing = "the report of the `pin` job does not include this rule"
+pin_failed = "`validate` could not run in the `pin` job, which ended with `{error}`; the detail is in the log of that job"
 
 # --- schemas rule ---
 

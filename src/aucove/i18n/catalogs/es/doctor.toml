@@ -48,6 +48,7 @@ warn = "El núcleo {installed} satisface `core`, pero `core_pin` fija {pin}."
 fail = "Convención {convention} y núcleo {installed}: incompatibles."
 fail_policy = "No se pudo leer la política de la rama base (`{reason}`): la compatibilidad se evalúa con su `project.yaml`."
 skip = "Sin un `project.yaml` válido no se puede comprobar."
+fix_newer = "Si el proyecto está pasando a la {installed}, el responsable sube `core` y `core_pin` en `project.yaml`, en una tarea suya (02-convencion §11). Si no, instala la {pin}: `uv tool install \"{name}=={pin}\" --constraints requirements-lock.txt`, con el `requirements-lock.txt` de la Release de esa versión; después ejecuta `uv tool update-shell` y reinicia la terminal."
 
 [doctor.remote]
 ok = "`origin` apunta a {repo} y existe `{ref}`."

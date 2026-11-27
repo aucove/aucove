@@ -446,6 +446,27 @@ def test_unreadable_pin_report_fails_the_three_rules(tmp_path: Path, kind: str) 
             assert [f.code for f in o.findings] == ["E_INTERNAL_UNEXPECTED"]
 
 
+@pytest.mark.parametrize(
+    ("details", "shown"),
+    [
+        ({"ref": "origin/HEAD", "reason": "ref_missing"}, "E_CONFIG_POLICY_UNAVAILABLE (ref_missing)"),
+        (None, "E_CONFIG_POLICY_UNAVAILABLE"),
+        ({"reason": "Not A Reason; rm -rf"}, "E_CONFIG_POLICY_UNAVAILABLE"),  # solo se cita la forma del catálogo
+    ],
+)
+def test_a_pin_report_of_a_failed_run_names_its_code(tmp_path: Path, details: dict[str, str] | None,
+                                                     shown: str) -> None:
+    """#31: si ``validate`` no pudo correr en el job ``pin``, las tres reglas dicen con qué terminó."""
+    failed = fail("validate", make_error("E_CONFIG_POLICY_UNAVAILABLE", translator("en"), details=details))
+    pin = validate.read_pin_report(_write(tmp_path / "pin.json", failed))
+    assert (pin.problem, pin.error) == ("failed", shown)
+    out = validate.evaluate(_pin_rules(Recorder()), make_input("pr"), pin=pin)
+    for o in out:
+        if o.check in PIN_RULES:
+            assert o.status == "fail" and [f.code for f in o.findings] == ["E_INTERNAL_UNEXPECTED"]
+            assert f"`{shown}`" in o.findings[0].message
+
+
 def test_pin_report_without_one_rule_fails_only_that_rule(tmp_path: Path) -> None:
     report = _write(tmp_path / "pin.json", _pin_envelope([
         {"check": "schemas", "status": "pass", "findings": []},
@@ -598,7 +619,8 @@ def test_validate_catalog_keys_used_by_engine_exist() -> None:
         catalog = load_catalog(lang)  # type: ignore[arg-type]
         for key in ("validate.reason.no_tree", "validate.reason.no_forge", "validate.reason.exception",
                     "validate.reason.pin_missing", "validate.reason.pin_unreadable", "validate.reason.pin_invalid",
-                    "validate.reason.pin_rule_missing", "validate.text.valid", "validate.text.invalid",
+                    "validate.reason.pin_rule_missing", "validate.reason.pin_failed", "validate.text.valid",
+                    "validate.text.invalid",
                     "validate.text.result", "validate.text.finding", "validate.text.hint",
                     "validate.text.status.pass", "validate.text.status.fail", "validate.text.status.skip",
                     "validate.text.annotations_omitted.one", "validate.text.annotations_omitted.other"):

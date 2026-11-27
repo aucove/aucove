@@ -1057,6 +1057,15 @@ def test_pin_job_plan_and_report() -> None:
     for check in ("generated-sync", "roles-sync", "schemas"):
         assert f"--check {check}" in run
     assert "--mode tree" in run and "test -s pin.json" in run
+    # #31: actions/checkout no crea origin/HEAD, y el modo tree lee de ahí la política.
+    lines = [line.strip() for line in str(rules["run"]).split("\n") if line.strip()]
+    assert lines[0] == 'git -C pr remote set-head origin "$DEFAULT_BRANCH"'
+    assert rules["env"] == {"DEFAULT_BRANCH": "${{ github.event.repository.default_branch }}"}
+    # Si validate no pudo correr (ni 0 ni 3, 05 §5), el paso falla; el reporte se sube igual.
+    assert "|| rc=$?" in run and "|| true" not in run
+    assert lines[-1] == '[ "$rc" -eq 0 ] || [ "$rc" -eq 3 ]'
+    upload = next(s for s in steps if str(s.get("uses", "")).startswith("actions/upload-artifact@"))
+    assert upload["if"] == "${{ !cancelled() && steps.plan.outputs.run == 'true' }}"
 
 
 # ---------------------------------------------------------------------------

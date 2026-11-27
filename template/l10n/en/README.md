@@ -29,6 +29,7 @@ If you would rather have your agent with you, use [Setting up aucove with your a
 
 This project uses the `aucove` core `{{var:core_pin}}`.
 Install and update it only from a terminal opened from the Start menu (or Terminal on macOS), never from inside your agent's app: on Windows, whatever is installed from inside Claude Desktop stays in a separate copy that only that app sees.
+Before you install or update, close your agent's app (Claude Desktop, from its icon in the system tray): on Windows, while it is open, its aucove server keeps the installed copy in use, and the update fails halfway.
 First you need [uv](https://docs.astral.sh/uv/).
 On macOS or Linux:
 
@@ -48,7 +49,7 @@ $env:UV_COMPILE_BYTECODE = "1"; uv tool install "aucove=={{var:core_pin}}" --con
 uv tool update-shell
 ```
 
-Close the terminal, open a new one and check everything with `aucove doctor` in the project folder.
+Close the terminal, open a new one, check everything with `aucove doctor` in the project folder and open your agent again.
 
 ## If you are the lead
 

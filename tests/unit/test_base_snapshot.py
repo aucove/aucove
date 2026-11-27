@@ -10,6 +10,7 @@ crea al hacer ``fetch`` y sin él (ni ``capabilities.json``) la base no se puede
 
 from __future__ import annotations
 
+import json
 import subprocess
 from collections.abc import Mapping
 from pathlib import Path
@@ -17,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from aucove.config import base as base_mod
-from aucove.config.base import BaseSnapshot, read_base, read_policy_dir, read_tree_base, to_policy
+from aucove.config.base import BaseSnapshot, read_base, read_policy_dir, read_tree_base, resolve_base_branch, to_policy
 from aucove.ops.result import OpError
 from tests.conftest import FIXTURES, GIT_OPTIONS, GitRepo, roles_fixture
 
@@ -185,6 +186,70 @@ def test_without_fetch_the_policy_is_unavailable(git_repo: GitRepo) -> None:
         read_base(_git(git_repo))  # type: ignore[arg-type]
     details = _unavailable(info)
     assert details == {"ref": "origin/HEAD", "reason": "ref_missing"}
+
+
+# -- GitHub Actions: actions/checkout no crea origin/HEAD (09-ci REQ-CI-45; #31) -------------
+
+
+def _actions_env(tmp_path: Path, event: object, *, actions: str = "true") -> dict[str, str]:
+    path = tmp_path / "event.json"
+    path.write_text(event if isinstance(event, str) else json.dumps(event), encoding="utf-8")
+    return {"GITHUB_ACTIONS": actions, "GITHUB_EVENT_PATH": str(path)}
+
+
+def test_in_github_actions_the_event_names_the_default_branch(git_repo: GitRepo, tmp_path: Path) -> None:
+    sha = _publish(git_repo, {"project.yaml": PROJECT, "roles.yaml": ROLES})
+    git_repo.git("symbolic-ref", "-d", "refs/remotes/origin/HEAD")  # como deja el checkout actions/checkout
+    env = _actions_env(tmp_path, {"repository": {"default_branch": "main"}, "pull_request": {"number": 7}})
+    snap = read_base(_git(git_repo), env=env)  # type: ignore[arg-type]
+    assert (snap.ref, snap.sha) == ("origin/main", sha)
+    assert resolve_base_branch(_git(git_repo), env=env) == "main"  # type: ignore[arg-type]
+    # Sin el entorno de Actions, falla cerrado como antes (REQ-HOOK-41).
+    with pytest.raises(OpError) as info:
+        read_base(_git(git_repo))  # type: ignore[arg-type]
+    assert _unavailable(info) == {"ref": "origin/HEAD", "reason": "ref_missing"}
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        "{no es json",
+        [],
+        {"repository": None},
+        {"repository": {"default_branch": "-x"}},  # no es una rama admitida: no llega a git
+        {"repository": {"default_branch": ["main"]}},
+    ],
+)
+def test_an_unusable_event_fails_closed(git_repo: GitRepo, tmp_path: Path, event: object) -> None:
+    _publish(git_repo, {"project.yaml": PROJECT, "roles.yaml": ROLES})
+    git_repo.git("symbolic-ref", "-d", "refs/remotes/origin/HEAD")
+    with pytest.raises(OpError) as info:
+        read_base(_git(git_repo), env=_actions_env(tmp_path, event))  # type: ignore[arg-type]
+    assert _unavailable(info) == {"ref": "origin/HEAD", "reason": "ref_missing"}
+
+
+def test_the_event_only_counts_in_github_actions(git_repo: GitRepo, tmp_path: Path) -> None:
+    _publish(git_repo, {"project.yaml": PROJECT, "roles.yaml": ROLES})
+    git_repo.git("symbolic-ref", "-d", "refs/remotes/origin/HEAD")
+    env = _actions_env(tmp_path, {"repository": {"default_branch": "main"}}, actions="false")
+    with pytest.raises(OpError) as info:
+        read_base(_git(git_repo), env=env)  # type: ignore[arg-type]
+    assert _unavailable(info)["ref"] == "origin/HEAD"
+
+
+def test_the_default_branch_of_the_event_needs_its_remote_ref(git_repo: GitRepo, tmp_path: Path) -> None:
+    _publish(git_repo, {"project.yaml": PROJECT, "roles.yaml": ROLES})
+    git_repo.git("symbolic-ref", "-d", "refs/remotes/origin/HEAD")
+    with pytest.raises(OpError) as info:
+        read_base(_git(git_repo), env=_actions_env(tmp_path, {"repository": {"default_branch": "trunk"}}))  # type: ignore[arg-type]
+    assert _unavailable(info) == {"ref": "origin/trunk", "reason": "ref_missing"}
+
+
+def test_origin_head_wins_over_the_event(git_repo: GitRepo, tmp_path: Path) -> None:
+    sha = _publish(git_repo, {"project.yaml": PROJECT, "roles.yaml": ROLES})
+    env = _actions_env(tmp_path, {"repository": {"default_branch": "trunk"}})
+    snap = read_base(_git(git_repo), env=env)  # type: ignore[arg-type]
+    assert (snap.ref, snap.sha) == ("origin/main", sha)
 
 
 def test_other_remote_name(git_repo: GitRepo) -> None:

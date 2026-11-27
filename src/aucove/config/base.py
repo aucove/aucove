@@ -12,8 +12,10 @@ versión válida, ``E_CONFIG_POLICY_UNAVAILABLE`` y se deniega toda escritura (R
 El nombre de la rama base nunca sale del árbol de trabajo (07-hooks REQ-HOOK-41,
 06-permisos §2.1): ``resolve_base_branch`` lo lee del ``project.yaml`` de la rama por
 defecto de la forja (``refs/remotes/<remote>/HEAD``) o, si esa ref no existe, de
-``capabilities.json``; sin ninguna de las dos, ``E_CONFIG_POLICY_UNAVAILABLE``. Después,
-el ``project.yaml`` de ``<remote>/<base>`` tiene que declarar esa misma rama.
+``capabilities.json``; sin ninguna de las dos, ``E_CONFIG_POLICY_UNAVAILABLE``. En GitHub
+Actions, donde ``actions/checkout`` no crea esa ref, la rama por defecto sale del evento
+(``repository.default_branch`` de ``GITHUB_EVENT_PATH``, que escribe el runner). Después, el
+``project.yaml`` de ``<remote>/<base>`` tiene que declarar esa misma rama.
 
 ``read_policy_dir`` lee la política de un directorio (en CI, ``--policy`` es un
 checkout de la base) y ``read_tree_base`` la de un árbol explícito (``--tree``) con
@@ -50,6 +52,7 @@ UNAVAILABLE = "E_CONFIG_POLICY_UNAVAILABLE"
 CAPABILITIES_FILE = "capabilities.json"  # en <checkout principal>/<CACHE_DIR>/cache/ (01 §7.3)
 _CACHE_SCHEMA = 1  # sobre común de las cachés (01 §7.3)
 _MAX_CAPABILITIES_BYTES = 1 << 20
+_MAX_EVENT_BYTES = 32 << 20  # el payload de un evento de GitHub llega a 25 MB
 
 Source = Literal["live", "cache", "local"]
 
@@ -256,7 +259,28 @@ class _Resolved:
     project_fb: str | None = None
 
 
-def _resolve(git: GitLike, remote: str, t: Translator | None) -> _Resolved:
+def _event_default_branch(env: Mapping[str, str] | None) -> str | None:
+    """Rama por defecto del repositorio según el evento de GitHub Actions, o ``None``.
+
+    Solo con ``GITHUB_ACTIONS=true``: ``repository.default_branch`` del JSON de
+    ``GITHUB_EVENT_PATH``, que escribe el runner con lo que manda GitHub, nunca el contenido de
+    un PR. ``actions/checkout`` no crea ``<remote>/HEAD`` (09-ci REQ-CI-45; #31).
+    """
+    if not env or env.get("GITHUB_ACTIONS") != "true" or not env.get("GITHUB_EVENT_PATH"):
+        return None
+    path = Path(env["GITHUB_EVENT_PATH"])
+    try:
+        if path.is_symlink() or not path.is_file() or path.stat().st_size > _MAX_EVENT_BYTES:
+            return None
+        event = json.loads(path.read_bytes().decode("utf-8"))
+    except (OSError, ValueError, RecursionError):  # UnicodeDecodeError y JSONDecodeError son ValueError
+        return None
+    repository = event.get("repository") if isinstance(event, dict) else None
+    branch = repository.get("default_branch") if isinstance(repository, dict) else None
+    return branch if _valid_branch(branch) else None
+
+
+def _resolve(git: GitLike, remote: str, t: Translator | None, env: Mapping[str, str] | None = None) -> _Resolved:
     head_ref = f"{remote}/HEAD"
     if not isinstance(remote, str) or not _REMOTE_RE.fullmatch(remote):
         raise _op_error({"ref": head_ref, "reason": "invalid_ref"})
@@ -265,6 +289,12 @@ def _resolve(git: GitLike, remote: str, t: Translator | None) -> _Resolved:
     branch: str | None = None
     try:
         head = git.rev_parse(f"refs/remotes/{head_ref}")
+        default = _event_default_branch(env) if head is None else None
+        if default is not None:  # en GitHub Actions: la rama por defecto del evento hace de <remote>/HEAD
+            head_ref = f"{remote}/{default}"
+            head = git.rev_parse(f"refs/remotes/{head_ref}")
+            if head is None:
+                raise _op_error({"ref": head_ref, "reason": "ref_missing"})
         if head is not None:
             project, project_fb = _read_versioned(
                 git, head, PROJECT_FILE, lambda b: _parse_project_bytes(b, t), current=git.show(head, PROJECT_FILE)
@@ -286,16 +316,20 @@ def _resolve(git: GitLike, remote: str, t: Translator | None) -> _Resolved:
     return _Resolved(branch, head, project, project_fb)
 
 
-def resolve_base_branch(git: GitLike, *, remote: str = "origin", t: Translator | None = None) -> str:
+def resolve_base_branch(
+    git: GitLike, *, remote: str = "origin", t: Translator | None = None, env: Mapping[str, str] | None = None
+) -> str:
     """Nombre de la rama base, sin mirar el árbol de trabajo (07-hooks REQ-HOOK-41).
 
     1. ``forge.base_branch`` del ``project.yaml`` de ``refs/remotes/<remote>/HEAD``, la rama
        por defecto de la forja, con el respaldo de REQ-PERM-4 si su punta no valida.
-    2. Si esa ref no existe, ``key.base_branch`` de ``capabilities.json`` (08-forja §3.4).
-    3. Si no hay ninguna de las dos: ``E_CONFIG_POLICY_UNAVAILABLE``
+    2. Si esa ref no existe y ``env`` es el de GitHub Actions, lo mismo con
+       ``refs/remotes/<remote>/<rama por defecto del evento>`` (:func:`_event_default_branch`).
+    3. Si no, ``key.base_branch`` de ``capabilities.json`` (08-forja §3.4).
+    4. Si no hay ninguna: ``E_CONFIG_POLICY_UNAVAILABLE``
        (``{"ref": "<remote>/HEAD", "reason": "ref_missing"}``).
     """
-    return _resolve(git, remote, t).branch
+    return _resolve(git, remote, t, env).branch
 
 
 def read_base(
@@ -304,6 +338,7 @@ def read_base(
     *,
     remote: str = "origin",
     t: Translator | None = None,
+    env: Mapping[str, str] | None = None,
 ) -> BaseSnapshot:
     """Política de ``<remote>/<base>`` con el respaldo de REQ-PERM-4.
 
@@ -318,7 +353,7 @@ def read_base(
     otra rama base que la que declara la rama por defecto.
     """
     del base_branch  # no decide nada (REQ-HOOK-41)
-    resolved = _resolve(git, remote, t)
+    resolved = _resolve(git, remote, t, env)
     ref = f"{remote}/{resolved.branch}"
     try:
         sha = git.rev_parse(f"refs/remotes/{ref}")
@@ -486,7 +521,7 @@ def read_tree_base(
         git = Git(root, env=env)
     except Exception as exc:
         raise _op_error({"root": root.as_posix()}, code="E_CONFIG_GIT_UNAVAILABLE") from exc
-    return read_base(git, remote=remote, t=t)
+    return read_base(git, remote=remote, t=t, env=env)
 
 
 def to_policy(

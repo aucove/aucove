@@ -8,7 +8,7 @@ reclamada por el ``lead`` sin PR ni actividad desde el primer día. Con el reloj
 ``$GITHUB_WORKSPACE`` y el directorio de trabajo, y las dos líneas del paso «Vencer reclamos»
 se ejecutan por subproceso con el lanzador instalado.
 
-- ``expire-claims --json`` deja su sobre en ``$RUNNER_TEMP/expire.json`` (valida contra
+- ``expire-claims --policy . --json`` deja su sobre en ``$RUNNER_TEMP/expire.json`` (valida contra
   ``result``) y vence la 30 (``state:expired``); las tareas de E1 tienen PR (en revisión) y no
   vencen.
 - ``ci comment --kind expire-claims`` escribe el resumen del job en el idioma del proyecto

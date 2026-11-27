@@ -144,7 +144,7 @@ def test_repository_from_the_template_has_exactly_the_manifest(ci: TemplateCi) -
 
 
 def test_validate_tree_has_no_errors(launcher: Launcher, ci: TemplateCi, tmp_path: Path) -> None:
-    checkout = ci.clone_main(tmp_path / "main")
+    checkout = ci.clone_local(tmp_path / "main")  # el modo tree es local (09-ci §4.1)
     outside = runner_temp(tmp_path)
     run = launcher.run(
         ["validate", "--mode", "tree", "--tree", str(checkout), "--report", str(outside / "tree.json")],
@@ -335,8 +335,22 @@ def test_pin_plan(launcher: Launcher, ci: TemplateCi, tmp_path: Path, number: in
         assert out["pin"] == next_patch(ci.project.core_pin) != ci.project.core_pin
 
 
-def run_pin_job(launcher: Launcher, ci: TemplateCi, ws: Path, env: Mapping[str, str]) -> tuple[Run, Path]:
-    """Paso 'Reglas que dependen de la versión del núcleo' (cwd = $GITHUB_WORKSPACE)."""
+PIN_STEP = "Reglas que dependen de la versión del núcleo"
+SET_HEAD = 'git -C pr remote set-head origin "$DEFAULT_BRANCH"'
+
+
+def run_pin_job(launcher: Launcher, ci: TemplateCi, ws: Path, env: Mapping[str, str], *,
+                set_head: bool = True) -> tuple[Run, Path]:
+    """Paso 'Reglas que dependen de la versión del núcleo' (cwd = $GITHUB_WORKSPACE).
+
+    Primero apunta ``origin/HEAD`` de ``pr`` a la rama por defecto, como la línea del paso:
+    actions/checkout no lo crea, y el modo tree lee de ahí la política (#31).
+    """
+    # Con pull_request_target, el workflow que corre es el de la base.
+    script = _step_script(ws / "base" / ".github" / "workflows" / "validate.yml", name=PIN_STEP)
+    assert SET_HEAD in script.split("\n"), script
+    if set_head:
+        git(ws / "pr", ci.git_env, "remote", "set-head", "origin", "main")  # DEFAULT_BRANCH del evento
     run = launcher.run_line(workflow_command("validate --mode tree"), {}, cwd=ws, env=env)
     return run, ws / "pin.json"
 
@@ -430,6 +444,34 @@ def test_validate_pr_with_pin_ran_and_no_report(launcher: Launcher, ci: Template
     }
     for f in _findings(report, "error"):
         assert f["check"] in PIN_RULES and f["code"] == "E_INTERNAL_UNEXPECTED", f
+
+
+def test_pin_job_without_origin_head(launcher: Launcher, ci: TemplateCi, tmp_path: Path) -> None:
+    """#31: sin la línea de ``set-head``, ``validate`` no encuentra la política y no puede correr.
+
+    El paso falla (sale con 8, no con 0 ni 3), su reporte es el sobre del error, y ``validate``
+    dice con qué código terminó, en lugar de «no es un sobre válido».
+    """
+    pr = ci.prs[PR_PIN]
+    ws = ci.workspace(tmp_path, pr)
+    rt = runner_temp(tmp_path)
+    env = ci.env(tmp_path)
+    assert git(ws / "pr", ci.git_env, "for-each-ref", "refs/remotes/origin/HEAD").strip() == ""  # como actions/checkout
+    assert pin_plan(launcher, ci, ws, env, rt)["run"] == "true"
+    pin_run, pin = run_pin_job(launcher, ci, ws, env, set_head=False)
+    assert pin_run.returncode == 8, pin_run.explain()
+    failed = read_json(pin)
+    assert failed["ok"] is False and failed["error"]["code"] == "E_CONFIG_POLICY_UNAVAILABLE"
+    assert failed["error"]["details"] == {"ref": "origin/HEAD", "reason": "ref_missing"}
+    (rt / "pin").mkdir()
+    shutil.copyfile(pin, rt / "pin" / "pin.json")
+    run, path = validate_pr(launcher, ws, rt, env, pr.number, pin_ran=True)
+    report = _envelope(path, run)
+    assert run.returncode == EXIT_VALIDATION, run.explain()
+    errors = _findings(report, "error")
+    assert sorted(f["check"] for f in errors) == sorted(PIN_RULES)
+    for f in errors:
+        assert "E_CONFIG_POLICY_UNAVAILABLE (ref_missing)" in f["message"], f
 
 
 # El binario real solo está en el job test del CI del framework (Linux), que lo baja

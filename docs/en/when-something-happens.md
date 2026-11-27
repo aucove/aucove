@@ -196,6 +196,18 @@ From then on, install and update aucove only from PowerShell.
 </details>
 
 <details>
+<summary>Updating aucove on Windows stops with "Access is denied (os error 5)", and then aucove does not start</summary>
+
+The update ran with your agent's app open. Its aucove server kept the installed copy in use, and uv could not delete its `Scripts` folder: the previous version was already removed and the new one was left half installed. Since then, `aucove --version` says `No module named 'aucove'`. To repair it:
+
+1. Quit your agent's app; Claude Desktop, from its icon in the system tray.
+2. In a PowerShell opened from the Start menu, repeat the commands of ["4. Install aucove"](../../README.md#4-install-aucove), but with `uv tool install --force --reinstall` instead of `uv tool install`.
+3. Open another terminal and check with `aucove --version` that it shows the new version.
+4. Open your agent again.
+
+</details>
+
+<details>
 <summary><code>aucove status</code> shows a task with <code>parts: -</code></summary>
 
 aucove cannot read the task's form, almost always because its text repeats a heading, such as `### Definition of done` (`### Criterio de terminado` in a project in Spanish, where you see `partes: -`). Until then the task has no parts, and it cannot be accepted or claimed. Whoever proposed it, or the lead, fixes it on GitHub: open the Issue, press the three dots → **Edit**, leave a single heading for each section, with the conditions under the one for done, and save. Then `aucove status` shows its parts.
@@ -225,6 +237,15 @@ The lead changes it by hand, in a task of theirs, to
 ```
 
 and submits the task as usual. The agent does not edit `.github/`, so you make that change yourself. From the next merge on, the audit finishes.
+
+</details>
+
+<details>
+<summary><code>aucove/validate</code> fails in the submission that raises <code>core_pin</code>, or <code>aucove/expire-claims</code> fails every day</summary>
+
+In the submission, `aucove/validate-pin` stays green, but `aucove/validate` says that it could not evaluate `schemas`, `roles-sync` and `generated-sync` because the report of the `pin` job is not a valid envelope. And the scheduled `aucove/expire-claims` job ends with `E_CONFIG_POLICY_UNAVAILABLE` (`origin/HEAD`, `ref_missing`). It is an aucove bug up to 0.1.0rc7: in GitHub Actions it looked for the base branch in a reference that the checkout does not create.
+
+It is fixed by moving the project to 0.1.0rc8 or later. The lead, in a task of their own, installs the new version, raises `core` and `core_pin` in `project.yaml`, runs `aucove init --regenerate` and submits. That submission already passes `aucove/validate`, because the `pin` job runs with the new version, and `expire-claims` works again once it is merged. The workflows do not need to change.
 
 </details>
 

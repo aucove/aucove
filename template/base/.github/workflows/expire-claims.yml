@@ -29,5 +29,5 @@ jobs:
       - name: Vencer reclamos
         env: { GITHUB_TOKEN: "${{ github.token }}" }
         run: |
-          aucove expire-claims --json > "$RUNNER_TEMP/expire.json"
+          aucove expire-claims --policy . --json > "$RUNNER_TEMP/expire.json"
           aucove ci comment --kind expire-claims --policy . --report "$RUNNER_TEMP/expire.json" --summary "$GITHUB_STEP_SUMMARY"

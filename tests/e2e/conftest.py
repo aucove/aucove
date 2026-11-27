@@ -118,7 +118,7 @@ WORKFLOW_COMMANDS: tuple[WorkflowCommand, ...] = (
         "evaluate",
         _cmd('ci editor-review --pr "$PR_NUMBER" --policy "$GITHUB_WORKSPACE/base" --summary "$GITHUB_STEP_SUMMARY"'),
     ),
-    WorkflowCommand("expire-claims.yml", "expire", _cmd('expire-claims --json > "$RUNNER_TEMP/expire.json"')),
+    WorkflowCommand("expire-claims.yml", "expire", _cmd('expire-claims --policy . --json > "$RUNNER_TEMP/expire.json"')),
     WorkflowCommand(
         "expire-claims.yml",
         "expire",
@@ -174,7 +174,7 @@ WORKFLOW_COMMANDS: tuple[WorkflowCommand, ...] = (
         "pin",
         _cmd(
             "validate --mode tree --check generated-sync --check roles-sync --check schemas"
-            " --tree pr --report pin.json || true"
+            " --tree pr --report pin.json || rc=$?"
         ),
     ),
     WorkflowCommand(
@@ -299,11 +299,12 @@ def expand(
 
     Admite lo que usan los workflows: palabras entre comillas, ``$VAR`` y ``${VAR}``,
     ``"${ARR[@]}"`` (que se expande a los elementos del arreglo), ``>> ARCHIVO`` o ``> ARCHIVO``
-    y ``|| true`` al final. Cualquier otra cosa es un error: la prueba no debe adivinar.
+    y ``|| true`` o ``|| rc=$?`` al final (el código queda en ``Run.returncode``). Cualquier otra
+    cosa es un error: la prueba no debe adivinar.
     """
     tokens = shlex.split(line, posix=True)
     ignore = False
-    if tokens[-2:] == ["||", "true"]:
+    if tokens[-2:] in (["||", "true"], ["||", "rc=$?"]):
         ignore = True
         tokens = tokens[:-2]
     append_to: str | None = None

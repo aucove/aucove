@@ -158,6 +158,7 @@ pin_missing = "falta el reporte del job `pin`"
 pin_unreadable = "el reporte del job `pin` no se puede leer"
 pin_invalid = "el reporte del job `pin` no es un sobre válido de `validate --mode tree`"
 pin_rule_missing = "el reporte del job `pin` no trae esta regla"
+pin_failed = "`validate` no pudo correr en el job `pin`, que terminó con `{error}`; el detalle está en el log de ese job"
 
 # --- Regla schemas ---
 

@@ -47,6 +47,7 @@ warn = "Core {installed} satisfies `core`, but `core_pin` pins {pin}."
 fail = "Convention {convention} and core {installed}: incompatible."
 fail_policy = "The policy of the base branch could not be read (`{reason}`): compatibility is evaluated with its `project.yaml`."
 skip = "It cannot be checked without a valid `project.yaml`."
+fix_newer = "If the project is moving to {installed}, the lead raises `core` and `core_pin` in `project.yaml`, in a task of their own (02-convencion §11). If not, install {pin}: `uv tool install \"{name}=={pin}\" --constraints requirements-lock.txt`, with the `requirements-lock.txt` of that version's Release; then run `uv tool update-shell` and restart the terminal."
 
 [doctor.remote]
 ok = "`origin` points to {repo} and `{ref}` exists."

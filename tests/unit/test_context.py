@@ -183,7 +183,9 @@ def test_ctx_base_does_not_read_the_tree_project(
     monkeypatch.setattr(ctx, "git", lambda: git)
     assert ctx.base() is snapshot
     assert ctx.base() is snapshot  # cacheada
-    assert calls == [((git,), {"t": None})]  # sin base_branch: no lo decide el árbol
+    # Sin base_branch: no lo decide el árbol. El entorno sirve para leer el evento de GitHub
+    # Actions cuando falta origin/HEAD (config.base; #31).
+    assert calls == [((git,), {"t": None, "env": ctx.inv.env})]
 
 
 def test_env_helpers() -> None:

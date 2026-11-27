@@ -1146,6 +1146,38 @@ def test_incompatible_convention_fails(tmp_path: Path) -> None:
     assert result.error is not None and "convention" in result.error.details["failed"]  # type: ignore[index]
 
 
+def test_a_core_newer_than_the_pin_does_not_only_offer_going_back(tmp_path: Path,
+                                                                  monkeypatch: pytest.MonkeyPatch) -> None:
+    """#32: con el núcleo nuevo instalado y ``core_pin`` todavía en la anterior (02 §11), dos caminos."""
+    monkeypatch.setitem(sys.modules, "rfc3161_client", None)
+    monkeypatch.setitem(sys.modules, "opentimestamps", None)
+    repo = new_repo(tmp_path, extra={"project.yaml": pinned_to("0.1.0rc1")})
+    result = run_op(repo.path, env_for(tmp_path, repo.env))
+    assert_valid(result)
+    convention = checks_of(result)["convention"]
+    assert convention["status"] == "warn"
+    assert convention["fix"] == translator("es")(
+        "doctor.convention.fix_newer", name=_meta.NAME, installed=_meta.__version__, pin="0.1.0rc1"
+    )
+    assert "`core_pin`" in str(convention["fix"]) and f'"{_meta.NAME}==0.1.0rc1"' in str(convention["fix"])
+    # El extra evidence se agrega a la versión instalada, sin volver a la del pin.
+    evidence = checks_of(result)["evidence_tools"]
+    assert f'"{_meta.NAME}[evidence]=={_meta.__version__}"' in str(evidence["fix"])
+
+
+def test_a_core_older_than_the_pin_installs_the_pin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setitem(sys.modules, "rfc3161_client", None)
+    monkeypatch.setitem(sys.modules, "opentimestamps", None)
+    ahead = pinned_to("0.1.0rc1").replace('core_pin: "0.1.0rc1"', 'core_pin: "0.1.99"')
+    repo = new_repo(tmp_path, extra={"project.yaml": ahead})
+    result = run_op(repo.path, env_for(tmp_path, repo.env))
+    convention = checks_of(result)["convention"]
+    assert convention["status"] == "warn"
+    assert convention["fix"] == translator("es")("doctor.python.fix_launcher", name=_meta.NAME, pin="0.1.99")
+    evidence = checks_of(result)["evidence_tools"]
+    assert f'"{_meta.NAME}[evidence]==0.1.99"' in str(evidence["fix"])  # el pin, que es la más nueva
+
+
 def test_python_launcher_missing_warns_with_install_command(tmp_path: Path, repo: GitRepo) -> None:
     result = run_op(repo.path, env_for(tmp_path, repo.env, launcher=False))
     python = checks_of(result)["python"]

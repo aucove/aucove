@@ -458,6 +458,11 @@ def test_the_pr_checkout_needs_a_literal_folder_inside_the_workspace(path: str) 
         ("python3 pr/check.py --tree pr", "pr/check.py"),
         ("aucove validate --tree pr\nbash \\\n  pr/x.sh", "pr/x.sh"),
         ("gh pr comment 1", "pr"),  # conservadora: la palabra suelta cuenta, salvo tras --mode
+        # Solo remote set-head es un dato: cualquier otro git -C trabaja en el árbol del PR (#31).
+        ("git -C pr checkout main", "pr"),
+        ('git -C "$GITHUB_WORKSPACE/pr" config core.hooksPath x', "$GITHUB_WORKSPACE/pr"),
+        ("git -C pr remote set-head origin main && ./pr/x.sh", "./pr/x.sh"),
+        ("git remote set-head origin main -C pr", "pr"),
     ],
 )
 def test_a_run_that_uses_the_pr_checkout_is_reported(script: str, shown: str) -> None:
@@ -471,7 +476,10 @@ def test_a_run_that_uses_the_pr_checkout_is_reported(script: str, shown: str) ->
     "script",
     [
         # Las líneas de 09-ci §4.3 y §7.4: el directorio del PR solo como dato.
-        "aucove validate --mode tree --check schemas --tree pr --report pin.json || true",
+        "aucove validate --mode tree --check schemas --tree pr --report pin.json || rc=$?",
+        # La línea del job pin: origin/HEAD de pr apunta a la rama por defecto (REQ-CI-45; #31).
+        'git -C pr remote set-head origin "$DEFAULT_BRANCH"',
+        'git -C "$GITHUB_WORKSPACE/pr" remote set-head origin main',
         'TREE=(); [ -d "$GITHUB_WORKSPACE/pr" ] && TREE=(--tree "$GITHUB_WORKSPACE/pr")',
         'aucove validate --mode pr --pr "$PR_NUMBER" "${TREE[@]}"',
         'aucove ci seal --kind submission --repo-dir "$GITHUB_WORKSPACE/pr" --pr "$PR_NUMBER"',

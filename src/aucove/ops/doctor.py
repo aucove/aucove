@@ -90,6 +90,7 @@ from urllib.parse import urlencode
 
 from .. import _meta
 from ..config.project import ProjectConfig, compat, parse_project
+from ..domain.compat import newer
 from ..config.roles import Person, Roles, parse_roles
 from ..domain.checks import required_checks
 from ..domain.findings import has_errors
@@ -787,7 +788,11 @@ class _Doctor:
             fix = t.get(f"error.{result.code}.hint") if result.code else None
             return Check("convention", "fail", t("doctor.convention.fail", **params), fix)
         if result.level == "warning":
-            return Check("convention", "warn", t("doctor.convention.warn", **params), t("doctor.python.fix_launcher", name=_meta.NAME, pin=cfg.core_pin))
+            if newer(_meta.__version__, cfg.core_pin):  # puede ser un paso de 02 §11: no se propone volver atrás
+                fix = t("doctor.convention.fix_newer", name=_meta.NAME, installed=_meta.__version__, pin=cfg.core_pin)
+            else:
+                fix = t("doctor.python.fix_launcher", name=_meta.NAME, pin=cfg.core_pin)
+            return Check("convention", "warn", t("doctor.convention.warn", **params), fix)
         return Check("convention", "ok", t("doctor.convention.ok", **params))
 
     def remote(self) -> Check:
@@ -1261,7 +1266,10 @@ class _Doctor:
         if not missing:
             return Check("evidence_tools", "ok", t("doctor.evidence_tools.ok"))
         self.warnings.append(make_warning("W_CONFIG_TOOL_MISSING", t))
-        pin = self.cfg.core_pin if self.cfg is not None else _meta.__version__
+        installed = _meta.__version__
+        pin = self.cfg.core_pin if self.cfg is not None else installed
+        if newer(installed, pin):  # el extra se agrega a la versión instalada, sin volver a la anterior
+            pin = installed
         return Check(
             "evidence_tools",
             "warn",

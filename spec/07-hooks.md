@@ -616,7 +616,7 @@ Los subagentes disparan los mismos hooks, con `agent_id`; con `isolation: worktr
 
 ### 8.2 Rama base y política
 
-- **REQ-HOOK-41:** El nombre de la base NO DEBE leerse del árbol de trabajo: se lee `forge.base_branch` de `project.yaml` en la rama por defecto de la forja (`refs/remotes/<remote>/HEAD`) o, si esa ref no existe, en `capabilities.json` (08-forja); si no hay ninguna de las dos, se falla cerrado con `E_CONFIG_POLICY_UNAVAILABLE`.
+- **REQ-HOOK-41:** El nombre de la base NO DEBE leerse del árbol de trabajo: se lee `forge.base_branch` de `project.yaml` en la rama por defecto de la forja (`refs/remotes/<remote>/HEAD`) o, si esa ref no existe, en `capabilities.json` (08-forja); si no hay ninguna de las dos, se falla cerrado con `E_CONFIG_POLICY_UNAVAILABLE`. En GitHub Actions (`GITHUB_ACTIONS=true`), donde `actions/checkout` no crea `refs/remotes/<remote>/HEAD`, la rama por defecto es `repository.default_branch` del evento (`GITHUB_EVENT_PATH`), que escribe el runner y no sale del contenido de un PR, y se lee `refs/remotes/<remote>/<esa rama>` (09-ci REQ-CI-45).
 - **REQ-HOOK-42:** `roles.yaml` y `project.yaml` DEBEN leerse con `git show <base_sha>:roles.yaml` y `git show <base_sha>:project.yaml` desde la base (D-08), nunca del árbol de trabajo; `<remote>` es el remoto que apunta al repositorio de `capabilities.json`, u `origin` por defecto.
 - **REQ-HOOK-43:** El resultado se guarda en `.aucove/cache/policy.json` indexado por `base_sha`; cada hook compara `base_sha` con el SHA local de `refs/remotes/<remote>/<base>`, leído del archivo de la ref o de `packed-refs`, y reconstruye si difieren.
 

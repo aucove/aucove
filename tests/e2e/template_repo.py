@@ -160,18 +160,40 @@ class TemplateCi:
         state.write_bytes(self.state0.read_bytes())
         return env
 
-    # Checkouts como los de actions/checkout (sin credenciales; origin es file://).
+    # Checkouts como los de actions/checkout (sin credenciales; origin es file://). Como él, no
+    # crean refs/remotes/origin/HEAD, que git clone sí crea: con clone, la autoprueba no vio que
+    # el modo tree del job pin la necesitaba (#31).
 
     def clone_main(self, dest: Path, *, depth: int | None = None) -> Path:
-        args = ["clone", "-q", "--branch", "main"]
-        if depth is not None:
-            args += ["--depth", str(depth)]
-        git(dest.parent, self.git_env, *args, self.origin_url, str(dest))
+        """Checkout de la rama por defecto: ``main`` local sobre ``origin/main``.
+
+        Con ``depth``, solo esa rama y esa profundidad; sin ella (fetch-depth 0), todas las ramas
+        y etiquetas, como actions/checkout.
+        """
+        dest.mkdir(parents=True)
+        git(dest, self.git_env, "init", "-q")
+        git(dest, self.git_env, "remote", "add", "origin", self.origin_url)
+        if depth is None:
+            refspecs = ["+refs/heads/*:refs/remotes/origin/*", "+refs/tags/*:refs/tags/*"]
+            git(dest, self.git_env, "fetch", "-q", "--prune", "origin", *refspecs)
+        else:
+            git(dest, self.git_env, "fetch", "-q", "--no-tags", "--depth", str(depth), "origin",
+                "+refs/heads/main:refs/remotes/origin/main")
+        git(dest, self.git_env, "checkout", "-q", "-B", "main", "refs/remotes/origin/main")
+        return dest
+
+    def clone_local(self, dest: Path) -> Path:
+        """El clon de una persona (``git clone``), que sí trae ``origin/HEAD``: el de ``validate --mode tree``."""
+        git(dest.parent, self.git_env, "clone", "-q", "--branch", "main", self.origin_url, str(dest))
         return dest
 
     def checkout_head(self, dest: Path, pr: Pr) -> Path:
         """``pr/`` de validate.yml y de seal.yml: la cabeza del PR con fetch-depth 0 (todas las ramas)."""
-        git(dest.parent, self.git_env, "clone", "-q", "--no-checkout", self.origin_url, str(dest))
+        dest.mkdir(parents=True)
+        git(dest, self.git_env, "init", "-q")
+        git(dest, self.git_env, "remote", "add", "origin", self.origin_url)
+        git(dest, self.git_env, "fetch", "-q", "--prune", "origin",
+            "+refs/heads/*:refs/remotes/origin/*", "+refs/tags/*:refs/tags/*")
         git(dest, self.git_env, "checkout", "-q", "--detach", pr.head_sha)
         return dest
 

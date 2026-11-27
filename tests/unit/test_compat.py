@@ -13,7 +13,7 @@ import pytest
 
 from aucove import _meta
 from aucove.domain import compat
-from aucove.domain.compat import Compat, check, parse_specifiers, parse_version, same_version, satisfies
+from aucove.domain.compat import Compat, check, newer, parse_specifiers, parse_version, same_version, satisfies
 
 packaging_version = pytest.importorskip("packaging.version")
 packaging_specifiers = pytest.importorskip("packaging.specifiers")
@@ -124,6 +124,13 @@ def test_same_version() -> None:
     assert same_version("1.0", "1.0.0")
     assert not same_version("1.0", "1.0.1")
     assert not same_version("x", "1.0")
+
+
+def test_newer() -> None:
+    """La usa doctor para no proponer volver a una versión anterior (#32)."""
+    assert newer("0.1.0rc7", "0.1.0rc6") and newer("0.1.0", "0.1.0rc9") and newer("0.1.0rc10", "0.1.0rc9")
+    assert not newer("0.1.0rc6", "0.1.0rc7") and not newer("1.0", "1.0.0")
+    assert not newer("x", "1.0") and not newer("1.0", "x")
 
 
 # -- parse_specifiers ------------------------------------------------------------
